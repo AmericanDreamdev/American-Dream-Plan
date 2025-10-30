@@ -298,66 +298,86 @@ const Index = () => {
       </section>
 
       {/* Investimento */}
-      <section className="py-24 bg-muted/30">
+      <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16 text-foreground">
-              Investimento
-            </h2>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-5xl font-bold mb-4 text-foreground">
+                Investimento na Sua Jornada
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Plano completo com garantia de resultado
+              </p>
+            </div>
             
-            <Card className="border-accent border-2 shadow-2xl overflow-hidden">
-              <div className="bg-gradient-to-br from-primary/10 to-accent/10 p-12 text-center">
-                <div className="text-5xl md:text-6xl font-bold text-foreground mb-3">
-                  US$ 1.998
+            <div className="grid lg:grid-cols-3 gap-8 items-start">
+              <Card className="lg:col-span-2 border-2 border-primary/20 shadow-2xl overflow-hidden">
+                <div className="bg-gradient-to-br from-primary to-primary/80 p-8 md:p-12 text-center text-white">
+                  <p className="text-sm font-semibold mb-2 opacity-90">Valor Total</p>
+                  <div className="text-5xl md:text-7xl font-bold mb-3">
+                    US$ 1.998
+                  </div>
+                  <div className="inline-block bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full">
+                    <p className="text-lg font-medium">2x US$ 999</p>
+                  </div>
                 </div>
-                <p className="text-lg text-muted-foreground">ou 2 parcelas de US$ 999</p>
-              </div>
               
-              <CardContent className="p-8 space-y-8">
-                <div>
-                  <h3 className="font-semibold text-lg mb-4 text-foreground">Formas de Pagamento</h3>
-                  <div className="grid gap-3">
-                    <div className="flex gap-2 items-center">
-                      <Check className="w-4 h-4 text-accent shrink-0" />
-                      <p className="text-muted-foreground text-sm">Cartão de crédito internacional</p>
+                <CardContent className="p-8 space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex gap-3 items-center">
+                      <Check className="w-5 h-5 text-primary shrink-0" />
+                      <p className="text-foreground font-medium">Cartão internacional</p>
                     </div>
-                    <div className="flex gap-2 items-center">
-                      <Check className="w-4 h-4 text-accent shrink-0" />
-                      <p className="text-muted-foreground text-sm">Transferência bancária internacional</p>
+                    <div className="flex gap-3 items-center">
+                      <Check className="w-5 h-5 text-primary shrink-0" />
+                      <p className="text-foreground font-medium">Transferência bancária</p>
                     </div>
-                    <div className="flex gap-2 items-center">
-                      <Check className="w-4 h-4 text-accent shrink-0" />
-                      <p className="text-muted-foreground text-sm">Outros meios eletrônicos</p>
+                    <div className="flex gap-3 items-center">
+                      <Check className="w-5 h-5 text-primary shrink-0" />
+                      <p className="text-foreground font-medium">Pagamentos eletrônicos</p>
                     </div>
                   </div>
-                </div>
 
-                <div className="border-t pt-6">
-                  <h3 className="font-semibold text-lg mb-4 text-foreground">Cronograma</h3>
-                  <div className="space-y-3">
+                  <div className="border-t pt-6 space-y-4">
                     <div className="flex gap-3 items-start">
-                      <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-semibold shrink-0">1</div>
-                      <p className="text-muted-foreground text-sm pt-0.5">Primeira parcela no ato da assinatura</p>
+                      <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                      <div>
+                        <p className="font-semibold text-foreground">Primeira parcela</p>
+                        <p className="text-sm text-muted-foreground">No ato da contratação</p>
+                      </div>
                     </div>
                     <div className="flex gap-3 items-start">
-                      <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-semibold shrink-0">2</div>
-                      <p className="text-muted-foreground text-sm pt-0.5">Segunda parcela até 1 dia antes da primeira sessão</p>
+                      <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">2</div>
+                      <div>
+                        <p className="font-semibold text-foreground">Segunda parcela</p>
+                        <p className="text-sm text-muted-foreground">1 dia antes da 1ª sessão</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card className="mt-8 border-primary/30 bg-primary/5">
-              <CardHeader className="text-center pb-3">
-                <CardTitle className="text-xl">Garantia 100% Elegibilidade</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-muted-foreground leading-relaxed text-sm">
-                  Se não for elegível para nenhum visto ou estratégia de permanência legal, devolvemos 100% do valor investido.
-                </p>
-              </CardContent>
-            </Card>
+                  <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-lg font-semibold">
+                    Garantir Minha Vaga
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-accent/30 bg-accent/5 flex flex-col justify-center">
+                <CardContent className="p-8 text-center space-y-6">
+                  <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto">
+                    <Check className="w-8 h-8 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-3 text-foreground">Garantia Total</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      100% do valor devolvido se você não for elegível para nenhum processo de visto
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-semibold text-accent">Risco Zero</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
