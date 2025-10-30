@@ -10,9 +10,9 @@ import successStudents from "@/assets/success-students.jpg";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white relative">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center">
+      <section className="relative min-h-screen flex items-center z-10">
         <div className="absolute inset-0 overflow-hidden">
           <img 
             src={heroImage} 
@@ -24,26 +24,26 @@ const Index = () => {
         
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl">
-            <div className="inline-block mb-6 px-4 py-2 border border-primary/30 rounded-full text-sm">
+            <div className="inline-block mb-6 px-4 py-2 glass border border-primary/30 rounded-full text-sm opacity-0 animate-fade-in-up hover-scale">
               ✓ Consultoria Especializada em Vistos Americanos
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight opacity-0 animate-fade-in-up delay-100">
               Realize seu sonho de{" "}
               <span className="text-primary">estudar e trabalhar</span>{" "}
               nos Estados Unidos
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl opacity-0 animate-fade-in-up delay-200">
               Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. 
               Metodologia comprovada com centenas de aprovações.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90">
+            <div className="flex flex-col sm:flex-row gap-4 opacity-0 animate-fade-in-up delay-300">
+              <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 hover-lift">
                 Quero Meu Visto
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/20 hover:bg-white/10">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/20 hover:bg-white/10 hover-lift">
                 Saiba Mais
               </Button>
             </div>
@@ -52,7 +52,7 @@ const Index = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 border-y border-border">
+      <section className="py-20 border-y border-border glass relative z-10">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
@@ -61,7 +61,7 @@ const Index = () => {
               { number: "15+", label: "Anos de Experiência" },
               { number: "24/7", label: "Suporte Dedicado" }
             ].map((stat, index) => (
-              <div key={index} className="text-center">
+              <div key={index} className={`text-center opacity-0 animate-fade-in-up delay-${index + 1}00`}>
                 <div className="text-4xl md:text-5xl font-bold text-primary mb-2">{stat.number}</div>
                 <div className="text-muted-foreground">{stat.label}</div>
               </div>
@@ -71,7 +71,7 @@ const Index = () => {
       </section>
 
       {/* O que é a Consultoria */}
-      <section className="py-24">
+      <section className="py-24 relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -100,7 +100,7 @@ const Index = () => {
                 description: "Treino intensivo com simulações reais de entrevista consular"
               }
             ].map((item, index) => (
-              <Card key={index} className="p-8 bg-card border-border hover:border-primary/50 transition-all">
+              <Card key={index} className="p-8 glass glass-hover">
                 <item.icon className="w-12 h-12 text-primary mb-4" />
                 <h3 className="text-2xl font-bold mb-3">{item.title}</h3>
                 <p className="text-muted-foreground">{item.description}</p>
@@ -111,7 +111,7 @@ const Index = () => {
       </section>
 
       {/* Processos de Visto */}
-      <section className="py-24 bg-secondary/30">
+      <section className="py-24 glass relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -123,7 +123,7 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-8 bg-card border-border">
+            <Card className="p-8 glass glass-hover">
               <h3 className="text-2xl font-bold mb-4">Visto B1/B2</h3>
               <p className="text-muted-foreground mb-6">
                 Visto de turismo e negócios. Ideal para viagens de até 6 meses.
@@ -138,7 +138,7 @@ const Index = () => {
               </ul>
             </Card>
 
-            <Card className="p-8 bg-primary/10 border-primary">
+            <Card className="p-8 glass ring-2 ring-primary hover-lift">
               <div className="inline-block px-3 py-1 bg-primary text-white text-sm rounded-full mb-4">
                 MAIS PROCURADO
               </div>
@@ -156,7 +156,7 @@ const Index = () => {
               </ul>
             </Card>
 
-            <Card className="p-8 bg-card border-border">
+            <Card className="p-8 glass glass-hover">
               <h3 className="text-2xl font-bold mb-4">Change of Status</h3>
               <p className="text-muted-foreground mb-6">
                 Mudança de status de turista para estudante dentro dos EUA.
@@ -175,7 +175,7 @@ const Index = () => {
       </section>
 
       {/* Processo Visual */}
-      <section className="py-24">
+      <section className="py-24 relative z-10">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -189,7 +189,7 @@ const Index = () => {
                   { number: "03", title: "Treino", desc: "Simulação e preparação para entrevista consular" },
                   { number: "04", title: "Aprovação", desc: "Acompanhamento até a obtenção do visto" }
                 ].map((step, index) => (
-                  <div key={index} className="flex gap-4">
+                  <div key={index} className="flex gap-4 hover-lift">
                     <div className="text-3xl font-bold text-primary">{step.number}</div>
                     <div>
                       <h3 className="text-xl font-bold mb-1">{step.title}</h3>
@@ -199,7 +199,7 @@ const Index = () => {
                 ))}
               </div>
             </div>
-            <div>
+            <div className="hover-scale">
               <img 
                 src={processVisual} 
                 alt="Processo" 
@@ -211,7 +211,7 @@ const Index = () => {
       </section>
 
       {/* Bônus */}
-      <section className="py-24 bg-secondary/30">
+      <section className="py-24 glass relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -229,7 +229,7 @@ const Index = () => {
               { icon: MessageCircle, title: "Grupo VIP", value: "R$ 297" },
               { icon: FileText, title: "Templates Prontos", value: "R$ 397" }
             ].map((bonus, index) => (
-              <Card key={index} className="p-6 bg-card border-border text-center">
+              <Card key={index} className="p-6 glass glass-hover text-center">
                 <bonus.icon className="w-10 h-10 text-primary mx-auto mb-4" />
                 <h3 className="font-bold mb-2">{bonus.title}</h3>
                 <div className="text-primary font-bold">{bonus.value}</div>
@@ -240,7 +240,7 @@ const Index = () => {
       </section>
 
       {/* Especialistas */}
-      <section className="py-24">
+      <section className="py-24 relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -252,7 +252,7 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            <Card className="overflow-hidden bg-card border-border">
+            <Card className="overflow-hidden glass glass-hover">
               <img src={consultant1} alt="Ceme Suaiden" className="w-full h-80 object-cover" />
               <div className="p-8">
                 <h3 className="text-2xl font-bold mb-2">Ceme Suaiden</h3>
@@ -264,7 +264,7 @@ const Index = () => {
               </div>
             </Card>
 
-            <Card className="overflow-hidden bg-card border-border">
+            <Card className="overflow-hidden glass glass-hover">
               <img src={consultant2} alt="Matheus Brant" className="w-full h-80 object-cover" />
               <div className="p-8">
                 <h3 className="text-2xl font-bold mb-2">Matheus Brant</h3>
@@ -280,7 +280,7 @@ const Index = () => {
       </section>
 
       {/* Depoimentos */}
-      <section className="py-24 bg-secondary/30">
+      <section className="py-24 glass relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -309,7 +309,7 @@ const Index = () => {
                 text: "Mudei meu status de turista para estudante com toda segurança e suporte da equipe."
               }
             ].map((testimonial, index) => (
-              <Card key={index} className="p-8 bg-card border-border">
+              <Card key={index} className="p-8 glass glass-hover">
                 <div className="flex items-center gap-1 mb-4">
                   {[...Array(5)].map((_, i) => (
                     <span key={i} className="text-primary">★</span>
@@ -327,7 +327,7 @@ const Index = () => {
       </section>
 
       {/* Investimento */}
-      <section className="py-24">
+      <section className="py-24 relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -339,7 +339,7 @@ const Index = () => {
           </div>
 
           <div className="max-w-5xl mx-auto">
-            <Card className="p-12 bg-card border-primary mb-8">
+            <Card className="p-12 glass ring-2 ring-primary mb-8 hover-lift">
               <div className="text-center mb-8">
                 <div className="inline-block px-4 py-2 bg-primary/20 text-primary rounded-full text-sm font-bold mb-6">
                   OFERTA LIMITADA
@@ -401,78 +401,74 @@ const Index = () => {
                     </li>
                   </ul>
 
-                  <div className="bg-secondary/50 p-4 rounded-lg">
+                  <div className="glass p-4 rounded-lg">
                     <div className="font-bold mb-2">Cronograma:</div>
                     <ul className="text-sm space-y-1 text-muted-foreground">
                       <li>• Início imediato após confirmação</li>
                       <li>• Processo: 30-90 dias em média</li>
-                      <li>• Suporte até aprovação do visto</li>
+                      <li>• Suporte contínuo até aprovação</li>
                     </ul>
                   </div>
                 </div>
               </div>
 
-              <Button size="lg" className="w-full text-xl py-8 bg-primary hover:bg-primary/90">
-                Quero Garantir Minha Vaga Agora
+              <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-lg py-6 hover-lift">
+                Garantir Minha Vaga Agora
               </Button>
             </Card>
 
-            <Card className="p-8 bg-secondary border-primary/30">
-              <div className="flex items-start gap-4">
-                <Shield className="w-12 h-12 text-primary flex-shrink-0" />
-                <div>
-                  <h3 className="text-2xl font-bold mb-3">Garantia American Dream</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Caso seu visto seja negado por falha nossa na preparação, você recebe 
-                    uma nova consultoria completa sem custo adicional. Sua tranquilidade é 
-                    nossa prioridade.
-                  </p>
-                  <div className="flex items-center gap-2 text-primary font-bold">
-                    <Award className="w-5 h-5" />
-                    <span>100% de Confiança</span>
-                  </div>
-                </div>
+            <Card className="glass ring-2 ring-primary/50 hover-lift">
+              <div className="p-8 text-center space-y-4">
+                <Shield className="w-16 h-16 text-primary mx-auto" />
+                <h3 className="text-2xl font-bold">Garantia 100% Satisfação</h3>
+                <p className="text-muted-foreground">
+                  Se você não ficar satisfeito com nossa consultoria nos primeiros 7 dias, 
+                  devolvemos 100% do seu investimento. Sem perguntas, sem burocracia.
+                </p>
               </div>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-24 bg-secondary/30">
+      {/* Perguntas Frequentes */}
+      <section className="py-24 glass relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Perguntas Frequentes
             </h2>
+            <p className="text-xl text-muted-foreground">
+              Tire suas dúvidas sobre o processo
+            </p>
           </div>
 
           <div className="max-w-3xl mx-auto">
             <Accordion type="single" collapsible className="space-y-4">
               {[
                 {
-                  q: "Qual a taxa de aprovação de vistos?",
-                  a: "Nossa taxa de aprovação é de 98% nos últimos 3 anos. Trabalhamos com uma metodologia comprovada e acompanhamento personalizado de cada caso."
+                  q: "Qual é a taxa de aprovação da consultoria?",
+                  a: "Nossa taxa de aprovação é de 98%, muito acima da média do mercado. Isso se deve à nossa metodologia comprovada e análise cuidadosa de cada perfil."
                 },
                 {
-                  q: "Quanto tempo demora o processo?",
+                  q: "Quanto tempo leva o processo completo?",
                   a: "O processo completo leva em média de 30 a 90 dias, dependendo do tipo de visto e da disponibilidade de agendamento no consulado."
                 },
                 {
-                  q: "Quais documentos preciso ter?",
-                  a: "Os documentos variam conforme o tipo de visto. Na consulta inicial, faremos uma análise completa e listaremos todos os documentos necessários para seu caso específico."
-                },
-                {
-                  q: "O que acontece se meu visto for negado?",
-                  a: "Temos a Garantia American Dream: se houver negação por falha nossa na preparação, você recebe uma nova consultoria completa sem custo adicional."
+                  q: "A consultoria garante a aprovação do visto?",
+                  a: "Nenhuma consultoria pode garantir 100% de aprovação, pois a decisão final é do consulado. Porém, nossa metodologia maximiza suas chances de sucesso."
                 },
                 {
                   q: "Posso parcelar o investimento?",
                   a: "Sim! Oferecemos parcelamento em até 12x sem juros no cartão de crédito, além de desconto de 5% para pagamento via Pix."
+                },
+                {
+                  q: "O que acontece se meu visto for negado?",
+                  a: "Oferecemos suporte completo para entender os motivos da negativa e elaborar uma nova estratégia para uma segunda tentativa, sem custos adicionais."
                 }
               ].map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`} className="bg-card border-border px-6">
-                  <AccordionTrigger className="text-left font-bold">
+                <AccordionItem key={index} value={`item-${index}`} className="glass border border-border rounded-lg px-6">
+                  <AccordionTrigger className="text-left font-semibold">
                     {faq.q}
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
@@ -485,31 +481,31 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA Final */}
-      <section className="py-24">
+      {/* Chamada Final */}
+      <section className="py-24 glass border-y border-primary/20 relative z-10">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6">
-              Pronto para realizar seu{" "}
-              <span className="text-primary">American Dream?</span>
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <h2 className="text-4xl md:text-6xl font-bold">
+              Pronto para realizar o <span className="text-primary">American Dream?</span>
             </h2>
-            <p className="text-xl text-muted-foreground mb-8">
-              Não deixe seu sonho para depois. Comece agora sua jornada rumo aos Estados Unidos.
+            <p className="text-xl text-muted-foreground">
+              Comece sua jornada hoje e tenha o suporte completo de especialistas em vistos americanos.
             </p>
-            <Button size="lg" className="text-xl px-12 py-8 bg-primary hover:bg-primary/90">
-              Começar Minha Jornada Agora
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-lg px-12 py-6 hover-lift">
+              Garantir Minha Vaga
             </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-border">
-        <div className="container mx-auto px-6 text-center">
-          <div className="text-2xl font-bold mb-4">American Dream Visa</div>
-          <p className="text-muted-foreground">
-            © 2024 American Dream Visa. Todos os direitos reservados.
-          </p>
+      <footer className="py-12 border-t border-border relative z-10">
+        <div className="container mx-auto px-6">
+          <div className="text-center text-muted-foreground">
+            <p className="mb-4 text-2xl font-bold text-white">American Dream Consultoria</p>
+            <p>© 2024 American Dream. Todos os direitos reservados.</p>
+            <p className="mt-2 text-sm">Especialistas em vistos americanos B1/B2, F1 e Change of Status</p>
+          </div>
         </div>
       </footer>
     </div>
