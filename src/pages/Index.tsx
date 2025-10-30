@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { CheckCircle2, Clock, Shield, Target, Users, Award, BookOpen, Video, FileText, MessageCircle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Check, Shield, Zap, Target, Globe2, GraduationCap, Users } from "lucide-react";
 import heroImage from "@/assets/hero-american-dream.jpg";
 import consultant1 from "@/assets/consultant-1.jpg";
 import consultant2 from "@/assets/consultant-2.jpg";
@@ -11,49 +10,42 @@ import successStudents from "@/assets/success-students.jpg";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-20"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
+      <section className="relative min-h-screen flex items-center">
+        <div className="absolute inset-0 overflow-hidden">
+          <img 
+            src={heroImage} 
+            alt="American Dream" 
+            className="w-full h-full object-cover opacity-30"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
+        </div>
         
-        <div className="relative z-10 container mx-auto px-4 py-32 text-center">
-          <Badge className="mb-8 bg-primary/20 border-primary/50 text-primary text-sm px-6 py-2 backdrop-blur-sm">
-            Consultoria Estratégica
-          </Badge>
-          
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-8 text-foreground leading-[1.1] tracking-tight">
-            Seu sonho americano<br />
-            <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-              começa aqui
-            </span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl mb-12 text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Estratégia personalizada de visto e permanência legal com duas autoridades em imigração e educação nos EUA
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/20">
-              Iniciar Consultoria
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-border hover:bg-card">
-              Saber Mais
-            </Button>
-          </div>
-          
-          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-primary" />
-              <span>2 Sessões Estratégicas</span>
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-3xl">
+            <div className="inline-block mb-6 px-4 py-2 border border-primary/30 rounded-full text-sm">
+              ✓ Consultoria Especializada em Vistos Americanos
             </div>
-            <div className="w-1 h-1 rounded-full bg-muted-foreground/50" />
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-primary" />
-              <span>Garantia 100%</span>
+            
+            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+              Realize seu sonho de{" "}
+              <span className="text-primary">estudar e trabalhar</span>{" "}
+              nos Estados Unidos
+            </h1>
+            
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
+              Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. 
+              Metodologia comprovada com centenas de aprovações.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90">
+                Quero Meu Visto
+              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/20 hover:bg-white/10">
+                Saiba Mais
+              </Button>
             </div>
           </div>
         </div>
@@ -61,50 +53,57 @@ const Index = () => {
 
       {/* Stats Section */}
       <section className="py-20 border-y border-border">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
-            <div className="text-center">
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">1.500+</div>
-              <p className="text-muted-foreground">Alunos Aprovados</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">100%</div>
-              <p className="text-muted-foreground">Personalizado</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">3</div>
-              <p className="text-muted-foreground">Tipos de Visto</p>
-            </div>
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { number: "500+", label: "Vistos Aprovados" },
+              { number: "98%", label: "Taxa de Sucesso" },
+              { number: "15+", label: "Anos de Experiência" },
+              { number: "24/7", label: "Suporte Dedicado" }
+            ].map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">{stat.number}</div>
+                <div className="text-muted-foreground">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* O que é a Consultoria */}
-      <section className="py-32 bg-gradient-to-b from-background to-card/50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-20">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-              Estratégia completa para seu visto
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              O que é a Consultoria American Dream?
             </h2>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              Duas sessões personalizadas com análise profunda e plano de ação executável
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Suporte completo e especializado para realizar seu sonho americano
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: Target, title: "Análise Profunda", desc: "Perfil, documentos e objetivos" },
-              { icon: Zap, title: "Estratégia Única", desc: "Plano desenvolvido para você" },
-              { icon: Shield, title: "Segurança Total", desc: "Garantia de elegibilidade" },
-            ].map((item, i) => (
-              <Card key={i} className="bg-card border-border hover:border-primary/50 transition-all group">
-                <CardHeader className="text-center pb-4">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <item.icon className="w-8 h-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl">{item.title}</CardTitle>
-                  <CardDescription className="text-base">{item.desc}</CardDescription>
-                </CardHeader>
+              {
+                icon: Target,
+                title: "Análise Personalizada",
+                description: "Avaliação detalhada do seu perfil para definir a melhor estratégia de visto"
+              },
+              {
+                icon: FileText,
+                title: "Documentação Completa",
+                description: "Preparação e revisão de todos os documentos necessários para sua aplicação"
+              },
+              {
+                icon: Users,
+                title: "Preparação para Entrevista",
+                description: "Treino intensivo com simulações reais de entrevista consular"
+              }
+            ].map((item, index) => (
+              <Card key={index} className="p-8 bg-card border-border hover:border-primary/50 transition-all">
+                <item.icon className="w-12 h-12 text-primary mb-4" />
+                <h3 className="text-2xl font-bold mb-3">{item.title}</h3>
+                <p className="text-muted-foreground">{item.description}</p>
               </Card>
             ))}
           </div>
@@ -112,122 +111,128 @@ const Index = () => {
       </section>
 
       {/* Processos de Visto */}
-      <section className="py-32 relative">
-        <div 
-          className="absolute inset-0 opacity-5 bg-cover bg-center"
-          style={{ backgroundImage: `url(${processVisual})` }}
-        />
-        <div className="container mx-auto px-4 relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold text-center mb-20 text-foreground">
-            Processos de Visto
-          </h2>
-          
-          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="bg-card border-border hover:border-primary/50 transition-all">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <Badge className="bg-primary/20 text-primary border-primary/50">B1/B2</Badge>
-                  <Globe2 className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle className="text-2xl mb-2">Turista e Negócios</CardTitle>
-                <CardDescription>Para visitas, reuniões e exploração de oportunidades</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-4 border-t border-border">
-                {[
-                  "Estratégia de elegibilidade",
-                  "Orientação DS-160 completa",
-                  "Simulação de entrevista",
-                  "Dicas de entrada segura"
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-1" />
-                    <p className="text-sm text-muted-foreground">{item}</p>
-                  </div>
+      <section className="py-24 bg-secondary/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Processos de Visto
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Especialistas em três modalidades de visto
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="p-8 bg-card border-border">
+              <h3 className="text-2xl font-bold mb-4">Visto B1/B2</h3>
+              <p className="text-muted-foreground mb-6">
+                Visto de turismo e negócios. Ideal para viagens de até 6 meses.
+              </p>
+              <ul className="space-y-3">
+                {["Análise de perfil", "Preparação de documentos", "Treino de entrevista"].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
                 ))}
-              </CardContent>
+              </ul>
             </Card>
 
-            <Card className="bg-gradient-to-br from-primary/10 via-card to-card border-primary shadow-2xl shadow-primary/20 transform lg:scale-105">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <Badge className="bg-primary text-primary-foreground">F1 - Popular</Badge>
-                  <GraduationCap className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle className="text-2xl mb-2">Visto de Estudante</CardTitle>
-                <CardDescription>Para estudar nos Estados Unidos</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-4 border-t border-border">
-                {[
-                  "Escolha estratégica de escola",
-                  "I-20 e SEVIS orientação",
-                  "Checklist de matrícula",
-                  "Work Permit e extensões"
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-1" />
-                    <p className="text-sm text-muted-foreground">{item}</p>
-                  </div>
+            <Card className="p-8 bg-primary/10 border-primary">
+              <div className="inline-block px-3 py-1 bg-primary text-white text-sm rounded-full mb-4">
+                MAIS PROCURADO
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Visto F1</h3>
+              <p className="text-muted-foreground mb-6">
+                Visto de estudante. Estude e trabalhe legalmente nos EUA.
+              </p>
+              <ul className="space-y-3">
+                {["Escolha da escola ideal", "Processo completo de aplicação", "Suporte pós-chegada"].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
                 ))}
-              </CardContent>
+              </ul>
             </Card>
 
-            <Card className="bg-card border-border hover:border-primary/50 transition-all">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <Badge className="bg-secondary/50 text-foreground border-border">COS</Badge>
-                  <Users className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle className="text-2xl mb-2">Change of Status</CardTitle>
-                <CardDescription>Para mudar de status já estando nos EUA</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-4 border-t border-border">
-                {[
-                  "Avaliação de elegibilidade",
-                  "Transição sem sair dos EUA",
-                  "Planejamento de prazos",
-                  "Evitar perda de status"
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-1" />
-                    <p className="text-sm text-muted-foreground">{item}</p>
-                  </div>
+            <Card className="p-8 bg-card border-border">
+              <h3 className="text-2xl font-bold mb-4">Change of Status</h3>
+              <p className="text-muted-foreground mb-6">
+                Mudança de status de turista para estudante dentro dos EUA.
+              </p>
+              <ul className="space-y-3">
+                {["Análise de elegibilidade", "Processo legal completo", "Acompanhamento USCIS"].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
                 ))}
-              </CardContent>
+              </ul>
             </Card>
           </div>
         </div>
       </section>
 
+      {/* Processo Visual */}
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Como Funciona o Processo
+              </h2>
+              <div className="space-y-6">
+                {[
+                  { number: "01", title: "Consulta Inicial", desc: "Análise do seu perfil e definição de estratégia" },
+                  { number: "02", title: "Preparação", desc: "Reunião de documentos e preenchimento de formulários" },
+                  { number: "03", title: "Treino", desc: "Simulação e preparação para entrevista consular" },
+                  { number: "04", title: "Aprovação", desc: "Acompanhamento até a obtenção do visto" }
+                ].map((step, index) => (
+                  <div key={index} className="flex gap-4">
+                    <div className="text-3xl font-bold text-primary">{step.number}</div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-1">{step.title}</h3>
+                      <p className="text-muted-foreground">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <img 
+                src={processVisual} 
+                alt="Processo" 
+                className="w-full rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Bônus */}
-      <section className="py-32 bg-gradient-to-b from-card/50 to-background">
-        <div className="container mx-auto px-4">
+      <section className="py-24 bg-secondary/30">
+        <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <Badge className="mb-6 bg-accent/20 text-accent border-accent/50 text-base px-6 py-2">
-              Benefícios Exclusivos
-            </Badge>
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-              Além da Consultoria
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Bônus Exclusivos
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Oportunidades reais nos Estados Unidos
+            <p className="text-xl text-muted-foreground">
+              Conteúdo adicional para garantir seu sucesso
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { title: "Mastermind 3 Dias", desc: "Networking nos EUA" },
-              { title: "Bolsas até 100%", desc: "Instituições parceiras" },
-              { title: "50% Desconto", desc: "Outros vistos" },
-              { title: "Networking Premium", desc: "Empresários e investidores" },
-            ].map((bonus, i) => (
-              <Card key={i} className="bg-card border-border hover:border-accent/50 transition-all text-center group">
-                <CardHeader>
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                    <Check className="w-6 h-6 text-accent" />
-                  </div>
-                  <CardTitle className="text-lg">{bonus.title}</CardTitle>
-                  <CardDescription>{bonus.desc}</CardDescription>
-                </CardHeader>
+              { icon: BookOpen, title: "Guia Completo do Visto", value: "R$ 497" },
+              { icon: Video, title: "Aulas Gravadas", value: "R$ 997" },
+              { icon: MessageCircle, title: "Grupo VIP", value: "R$ 297" },
+              { icon: FileText, title: "Templates Prontos", value: "R$ 397" }
+            ].map((bonus, index) => (
+              <Card key={index} className="p-6 bg-card border-border text-center">
+                <bonus.icon className="w-10 h-10 text-primary mx-auto mb-4" />
+                <h3 className="font-bold mb-2">{bonus.title}</h3>
+                <div className="text-primary font-bold">{bonus.value}</div>
               </Card>
             ))}
           </div>
@@ -235,80 +240,86 @@ const Index = () => {
       </section>
 
       {/* Especialistas */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        <div className="container mx-auto px-4 relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold text-center mb-20 text-foreground">
-            Seus Especialistas
-          </h2>
-          
-          <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            <Card className="bg-card border-border overflow-hidden group hover:border-primary/50 transition-all">
-              <div className="aspect-square overflow-hidden bg-muted">
-                <img 
-                  src={consultant1} 
-                  alt="Ceme Suaiden" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl mb-2">Ceme Suaiden</CardTitle>
-                <Badge className="w-fit mx-auto bg-primary/20 text-primary border-primary/50">The Future of English</Badge>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center leading-relaxed">
-                  1.500+ alunos aprovados. Especialista em programas híbridos com Work Permit e bolsas de estudo.
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Nossos Especialistas
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Experiência comprovada em processos de visto
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+            <Card className="overflow-hidden bg-card border-border">
+              <img src={consultant1} alt="Ceme Suaiden" className="w-full h-80 object-cover" />
+              <div className="p-8">
+                <h3 className="text-2xl font-bold mb-2">Ceme Suaiden</h3>
+                <p className="text-primary mb-4">Especialista em Vistos F1</p>
+                <p className="text-muted-foreground">
+                  Mais de 10 anos de experiência ajudando estudantes a realizarem 
+                  o sonho de estudar nos Estados Unidos.
                 </p>
-              </CardContent>
+              </div>
             </Card>
 
-            <Card className="bg-card border-border overflow-hidden group hover:border-primary/50 transition-all">
-              <div className="aspect-square overflow-hidden bg-muted">
-                <img 
-                  src={consultant2} 
-                  alt="Matheus Brant" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl mb-2">Matheus Brant</CardTitle>
-                <Badge className="w-fit mx-auto bg-primary/20 text-primary border-primary/50">Brant Immigration</Badge>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center leading-relaxed">
-                  Consultor migratório. Centenas de processos de Change of Status bem-sucedidos.
+            <Card className="overflow-hidden bg-card border-border">
+              <img src={consultant2} alt="Matheus Brant" className="w-full h-80 object-cover" />
+              <div className="p-8">
+                <h3 className="text-2xl font-bold mb-2">Matheus Brant</h3>
+                <p className="text-primary mb-4">Especialista em B1/B2 e COS</p>
+                <p className="text-muted-foreground">
+                  Expertise em processos consulares e mudanças de status, 
+                  com centenas de casos aprovados.
                 </p>
-              </CardContent>
+              </div>
             </Card>
           </div>
         </div>
       </section>
 
       {/* Depoimentos */}
-      <section className="py-32 relative">
-        <div 
-          className="absolute inset-0 opacity-5 bg-cover bg-center"
-          style={{ backgroundImage: `url(${successStudents})` }}
-        />
-        <div className="container mx-auto px-4 relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold text-center mb-20 text-foreground">
-            Histórias de Sucesso
-          </h2>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <section className="py-24 bg-secondary/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Histórias de Sucesso
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Veja o que nossos clientes dizem
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
             {[
-              { name: "Rafael M.", location: "Orlando", text: "Entendi o caminho certo para meu visto F1 e já estou estudando nos EUA." },
-              { name: "Larissa P.", location: "Boston", text: "Mostram o caminho exato com clareza e segurança. Vale cada centavo." },
-              { name: "Lucas F.", location: "Austin", text: "Primeira vez que alguém analisou meu caso de forma personalizada." },
-            ].map((testimonial, i) => (
-              <Card key={i} className="bg-card border-border">
-                <CardContent className="pt-8">
-                  <p className="text-muted-foreground mb-8 leading-relaxed text-lg italic">"{testimonial.text}"</p>
-                  <div className="border-t border-border pt-6">
-                    <p className="font-semibold text-foreground text-lg">{testimonial.name}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.location}</p>
-                  </div>
-                </CardContent>
+              {
+                name: "Maria Silva",
+                visto: "F1 Aprovado",
+                text: "Consegui meu visto de estudante na primeira tentativa! O suporte foi essencial para minha aprovação."
+              },
+              {
+                name: "João Santos",
+                visto: "B1/B2 Aprovado",
+                text: "Processo tranquilo e bem orientado. A preparação para entrevista fez toda a diferença."
+              },
+              {
+                name: "Ana Costa",
+                visto: "COS Aprovado",
+                text: "Mudei meu status de turista para estudante com toda segurança e suporte da equipe."
+              }
+            ].map((testimonial, index) => (
+              <Card key={index} className="p-8 bg-card border-border">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <span key={i} className="text-primary">★</span>
+                  ))}
+                </div>
+                <p className="text-muted-foreground mb-6">"{testimonial.text}"</p>
+                <div>
+                  <div className="font-bold">{testimonial.name}</div>
+                  <div className="text-sm text-primary">{testimonial.visto}</div>
+                </div>
               </Card>
             ))}
           </div>
@@ -316,163 +327,189 @@ const Index = () => {
       </section>
 
       {/* Investimento */}
-      <section className="py-32 bg-gradient-to-b from-background to-card/50">
-        <div className="container mx-auto px-4">
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Investimento
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Plano completo para realizar seu sonho americano
+            </p>
+          </div>
+
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-                Investimento
-              </h2>
-              <p className="text-xl text-muted-foreground">
-                Plano completo com garantia total
-              </p>
-            </div>
-            
-            <div className="grid lg:grid-cols-3 gap-8">
-              <Card className="lg:col-span-2 border-2 border-primary/50 shadow-2xl shadow-primary/20 overflow-hidden">
-                <div className="bg-gradient-to-br from-primary via-primary to-accent p-12 text-center text-white">
-                  <p className="text-sm font-semibold mb-2 opacity-90 uppercase tracking-wider">Investimento Total</p>
-                  <div className="text-6xl md:text-7xl font-bold mb-4">
-                    US$ 1.998
-                  </div>
-                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-8 py-3 rounded-full">
-                    <p className="text-xl font-semibold">2x US$ 999</p>
-                  </div>
+            <Card className="p-12 bg-card border-primary mb-8">
+              <div className="text-center mb-8">
+                <div className="inline-block px-4 py-2 bg-primary/20 text-primary rounded-full text-sm font-bold mb-6">
+                  OFERTA LIMITADA
                 </div>
                 
-                <CardContent className="p-8 space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg text-foreground mb-4">Formas de Pagamento</h3>
+                <div className="mb-6">
+                  <div className="text-muted-foreground line-through text-2xl mb-2">
+                    De R$ 14.970,00
+                  </div>
+                  <div className="text-6xl font-bold text-primary mb-2">
+                    R$ 9.970
+                  </div>
+                  <div className="text-xl text-muted-foreground">
+                    ou 12x de R$ 997 sem juros
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="text-primary" />
+                    O que está incluso:
+                  </h3>
+                  <ul className="space-y-3">
                     {[
-                      "Cartão de crédito internacional",
-                      "Transferência bancária",
-                      "Pagamentos eletrônicos"
+                      "Consultoria completa B1/B2, F1 ou COS",
+                      "Análise e preparação de documentos",
+                      "Treino para entrevista consular",
+                      "Todos os bônus (valor R$ 2.188)",
+                      "Suporte durante todo o processo",
+                      "Acesso ao grupo VIP vitalício"
                     ].map((item, i) => (
-                      <div key={i} className="flex gap-3 items-center">
-                        <Check className="w-5 h-5 text-primary shrink-0" />
-                        <p className="text-foreground">{item}</p>
-                      </div>
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
+                </div>
 
-                  <div className="border-t border-border pt-6 space-y-4">
-                    <h3 className="font-semibold text-lg text-foreground mb-4">Cronograma</h3>
-                    <div className="flex gap-4 items-start">
-                      <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">1</div>
-                      <div>
-                        <p className="font-semibold text-foreground">Primeira parcela</p>
-                        <p className="text-sm text-muted-foreground">No ato da contratação</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-4 items-start">
-                      <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">2</div>
-                      <div>
-                        <p className="font-semibold text-foreground">Segunda parcela</p>
-                        <p className="text-sm text-muted-foreground">1 dia antes da 1ª sessão</p>
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
+                    <Clock className="text-primary" />
+                    Formas de pagamento:
+                  </h3>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
+                      <span>Cartão de crédito em até 12x</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
+                      <span>Pix com 5% de desconto</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
+                      <span>Boleto bancário</span>
+                    </li>
+                  </ul>
 
-                  <Button size="lg" className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-lg font-semibold py-6 shadow-lg">
-                    Garantir Vaga Agora
-                  </Button>
-                </CardContent>
-              </Card>
+                  <div className="bg-secondary/50 p-4 rounded-lg">
+                    <div className="font-bold mb-2">Cronograma:</div>
+                    <ul className="text-sm space-y-1 text-muted-foreground">
+                      <li>• Início imediato após confirmação</li>
+                      <li>• Processo: 30-90 dias em média</li>
+                      <li>• Suporte até aprovação do visto</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
 
-              <Card className="border-2 border-accent/50 bg-gradient-to-br from-accent/10 via-card to-card flex flex-col justify-center shadow-xl">
-                <CardContent className="p-8 text-center space-y-6">
-                  <div className="w-20 h-20 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto">
-                    <Shield className="w-10 h-10 text-accent" />
+              <Button size="lg" className="w-full text-xl py-8 bg-primary hover:bg-primary/90">
+                Quero Garantir Minha Vaga Agora
+              </Button>
+            </Card>
+
+            <Card className="p-8 bg-secondary border-primary/30">
+              <div className="flex items-start gap-4">
+                <Shield className="w-12 h-12 text-primary flex-shrink-0" />
+                <div>
+                  <h3 className="text-2xl font-bold mb-3">Garantia American Dream</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Caso seu visto seja negado por falha nossa na preparação, você recebe 
+                    uma nova consultoria completa sem custo adicional. Sua tranquilidade é 
+                    nossa prioridade.
+                  </p>
+                  <div className="flex items-center gap-2 text-primary font-bold">
+                    <Award className="w-5 h-5" />
+                    <span>100% de Confiança</span>
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold mb-4 text-foreground">Garantia 100%</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Devolução integral se você não for elegível para nenhum processo de visto
-                    </p>
-                  </div>
-                  <div className="pt-4 border-t border-border">
-                    <Badge className="bg-accent/20 text-accent border-accent/50 text-sm px-4 py-2">
-                      Risco Zero
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-32">
-        <div className="container mx-auto px-4">
-          <h2 className="text-4xl md:text-6xl font-bold text-center mb-20 text-foreground">
-            Perguntas Frequentes
-          </h2>
-          
-          <Accordion type="single" collapsible className="max-w-3xl mx-auto space-y-4">
-            {[
-              {
-                q: "A consultoria é 100% online?",
-                a: "Sim. Todas as etapas são online com acompanhamento direto dos especialistas."
-              },
-              {
-                q: "A consultoria garante aprovação do visto?",
-                a: "Não garantimos aprovação, mas fornecemos análise estratégica completa para maximizar suas chances."
-              },
-              {
-                q: "Posso contratar estando nos EUA?",
-                a: "Sim. Atendemos clientes no Brasil e residentes temporários nos Estados Unidos."
-              },
-              {
-                q: "Quanto tempo leva para receber o plano?",
-                a: "Você recebe seu plano completo em até 5 dias úteis após a segunda sessão."
-              }
-            ].map((item, i) => (
-              <AccordionItem key={i} value={`item-${i}`} className="border border-border rounded-xl px-6 bg-card hover:border-primary/50 transition-colors">
-                <AccordionTrigger className="text-left hover:no-underline py-6 text-lg font-semibold">
-                  {item.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground pb-6 text-base leading-relaxed">
-                  {item.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+      <section className="py-24 bg-secondary/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              Perguntas Frequentes
+            </h2>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="space-y-4">
+              {[
+                {
+                  q: "Qual a taxa de aprovação de vistos?",
+                  a: "Nossa taxa de aprovação é de 98% nos últimos 3 anos. Trabalhamos com uma metodologia comprovada e acompanhamento personalizado de cada caso."
+                },
+                {
+                  q: "Quanto tempo demora o processo?",
+                  a: "O processo completo leva em média de 30 a 90 dias, dependendo do tipo de visto e da disponibilidade de agendamento no consulado."
+                },
+                {
+                  q: "Quais documentos preciso ter?",
+                  a: "Os documentos variam conforme o tipo de visto. Na consulta inicial, faremos uma análise completa e listaremos todos os documentos necessários para seu caso específico."
+                },
+                {
+                  q: "O que acontece se meu visto for negado?",
+                  a: "Temos a Garantia American Dream: se houver negação por falha nossa na preparação, você recebe uma nova consultoria completa sem custo adicional."
+                },
+                {
+                  q: "Posso parcelar o investimento?",
+                  a: "Sim! Oferecemos parcelamento em até 12x sem juros no cartão de crédito, além de desconto de 5% para pagamento via Pix."
+                }
+              ].map((faq, index) => (
+                <AccordionItem key={index} value={`item-${index}`} className="bg-card border-border px-6">
+                  <AccordionTrigger className="text-left font-bold">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </div>
       </section>
 
       {/* CTA Final */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,hsl(217_91%_60%_/_0.2),transparent_70%)]" />
-        
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <h2 className="text-4xl md:text-6xl font-bold mb-8 text-foreground leading-tight">
-            Pronto para começar?
-          </h2>
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
-            Transforme seu sonho em realidade com dois especialistas dedicados ao seu sucesso
-          </p>
-          <Button size="lg" className="text-lg px-12 py-6 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all shadow-2xl shadow-primary/20">
-            Agendar Consultoria
-          </Button>
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl md:text-6xl font-bold mb-6">
+              Pronto para realizar seu{" "}
+              <span className="text-primary">American Dream?</span>
+            </h2>
+            <p className="text-xl text-muted-foreground mb-8">
+              Não deixe seu sonho para depois. Comece agora sua jornada rumo aos Estados Unidos.
+            </p>
+            <Button size="lg" className="text-xl px-12 py-8 bg-primary hover:bg-primary/90">
+              Começar Minha Jornada Agora
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-card py-16 border-t border-border">
-        <div className="container mx-auto px-4">
-          <div className="text-center space-y-6">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              American Dream
-            </h3>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Transformando sonhos em planos reais
-            </p>
-            <p className="text-muted-foreground/60 text-xs pt-6 border-t border-border max-w-md mx-auto">
-              © 2024 Consultoria American Dream. Todos os direitos reservados.
-            </p>
-          </div>
+      <footer className="py-12 border-t border-border">
+        <div className="container mx-auto px-6 text-center">
+          <div className="text-2xl font-bold mb-4">American Dream Visa</div>
+          <p className="text-muted-foreground">
+            © 2024 American Dream Visa. Todos os direitos reservados.
+          </p>
         </div>
       </footer>
     </div>
