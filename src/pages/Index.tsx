@@ -1,14 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Clock, Shield, Target, Users, Award, BookOpen, Video, FileText, MessageCircle } from "lucide-react";
+import { CheckCircle2, Clock, Shield } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
+import { Gallery4 } from "@/components/ui/gallery4";
+import { FeatureCard } from "@/components/ui/feature-card";
 import heroImage from "@/assets/hero-american-dream.jpg";
 import consultant1 from "@/assets/consultant-1.jpg";
 import consultant2 from "@/assets/consultant-2.jpg";
-import processVisual from "@/assets/process-visual.jpg";
+// Imagem do processo removida - usando URL externa
 import successStudents from "@/assets/success-students.jpg";
+import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-black text-white relative">
       {/* Hero Section */}
@@ -25,25 +32,46 @@ const Index = () => {
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-3xl">
             <div className="inline-block mb-6 px-4 py-2 glass border border-primary/30 rounded-full text-sm opacity-0 animate-fade-in-up hover-scale">
-              ✓ Consultoria Especializada em Vistos Americanos
+              Consultoria American Dream
             </div>
             
             <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight opacity-0 animate-fade-in-up delay-100">
-              Realize seu sonho de{" "}
-              <span className="text-primary">estudar e trabalhar</span>{" "}
+              O Caminho Seguro e Estratégico para{" "}
+              <span className="text-primary">Viver Legalmente</span>{" "}
               nos Estados Unidos
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl opacity-0 animate-fade-in-up delay-200">
-              Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. 
-              Metodologia comprovada com centenas de aprovações.
+            <p className="text-xl text-muted-foreground mb-4 max-w-2xl opacity-0 animate-fade-in-up delay-200">
+              Descubra o plano personalizado que vai transformar o seu sonho americano em um projeto real.
+            </p>
+            
+            <p className="text-lg text-muted-foreground mb-6 max-w-2xl opacity-0 animate-fade-in-up delay-250">
+              Conquiste seu visto, estude, invista ou viva nos EUA com orientação direta de especialistas americanos, baseados na Califórnia e no Arizona.
+            </p>
+            
+            <p className="text-md text-primary mb-8 max-w-2xl opacity-0 animate-fade-in-up delay-275 font-semibold">
+              Mais de 1.500 brasileiros já orientados com sucesso.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 opacity-0 animate-fade-in-up delay-300">
-              <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 hover-lift">
-                Quero Meu Visto
+              <Button 
+                size="lg" 
+                className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 hover-lift"
+                onClick={() => navigate("/lead-form")}
+              >
+                Quero descobrir meu caminho agora
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/20 hover:bg-white/10 hover-lift">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-lg px-8 py-6 border-white/20 hover:bg-white/10 hover-lift"
+                onClick={() => {
+                  const section = document.getElementById('sobre-consultoria');
+                  if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
                 Saiba Mais
               </Button>
             </div>
@@ -51,193 +79,134 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-20 border-y border-border glass relative z-10">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { number: "500+", label: "Vistos Aprovados" },
-              { number: "98%", label: "Taxa de Sucesso" },
-              { number: "15+", label: "Anos de Experiência" },
-              { number: "24/7", label: "Suporte Dedicado" }
-            ].map((stat, index) => (
-              <div key={index} className={`text-center opacity-0 animate-fade-in-up delay-${index + 1}00`}>
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">{stat.number}</div>
-                <div className="text-muted-foreground">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* O que é a Consultoria */}
-      <section className="py-24 relative z-10">
+      <section id="sobre-consultoria" className="py-24 relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              O que é a Consultoria American Dream?
+              O que é a Consultoria American Dream
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Suporte completo e especializado para realizar seu sonho americano
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Target,
-                title: "Análise Personalizada",
-                description: "Avaliação detalhada do seu perfil para definir a melhor estratégia de visto"
-              },
-              {
-                icon: FileText,
-                title: "Documentação Completa",
-                description: "Preparação e revisão de todos os documentos necessários para sua aplicação"
-              },
-              {
-                icon: Users,
-                title: "Preparação para Entrevista",
-                description: "Treino intensivo com simulações reais de entrevista consular"
-              }
-            ].map((item, index) => (
-              <Card key={index} className="p-8 glass glass-hover">
-                <item.icon className="w-12 h-12 text-primary mb-4" />
-                <h3 className="text-2xl font-bold mb-3">{item.title}</h3>
-                <p className="text-muted-foreground">{item.description}</p>
-              </Card>
-            ))}
+          <div className="max-w-4xl mx-auto space-y-8">
+            <p className="text-xl text-muted-foreground leading-relaxed">
+              A Consultoria American Dream nasceu nos Estados Unidos com um propósito claro: ajudar brasileiros a viver o sonho americano com inteligência, planejamento e segurança jurídica.
+            </p>
+            
+            <p className="text-xl text-muted-foreground leading-relaxed">
+              Mais do que um atendimento, você recebe um plano estratégico completo — desde a análise de perfil e elegibilidade, até a definição do visto ideal para o seu objetivo de vida: estudar, trabalhar, investir ou simplesmente começar uma nova fase.
+            </p>
+            
+            <div className="glass p-8 rounded-lg border border-primary/30">
+              <p className="text-2xl font-bold text-primary mb-4">
+                Não é um curso. Não é uma agência.
+              </p>
+              <p className="text-xl text-muted-foreground mb-6">
+                É uma consultoria personalizada, conduzida por empresas americanas licenciadas, com atuação direta em imigração, educação e negócios.
+              </p>
+              <p className="text-xl font-semibold text-white">
+                Transformamos o desejo de mudar de país em uma estratégia legal e concreta.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Processos de Visto */}
+      {/* O que está incluso */}
       <section className="py-24 glass relative z-10">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Processos de Visto
+              O que está incluso no seu plano American Dream
             </h2>
-            <p className="text-xl text-muted-foreground">
-              Especialistas em três modalidades de visto
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Cada consultoria é 100% personalizada e executada por especialistas em planejamento migratório.
+            </p>
+            <p className="text-lg text-primary mt-4 font-semibold">
+              Você terá acesso a:
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-8 glass glass-hover">
-              <h3 className="text-2xl font-bold mb-4">Visto B1/B2</h3>
-              <p className="text-muted-foreground mb-6">
-                Visto de turismo e negócios. Ideal para viagens de até 6 meses.
-              </p>
-              <ul className="space-y-3">
-                {["Análise de perfil", "Preparação de documentos", "Treino de entrevista"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            <Card className="p-8 glass ring-2 ring-primary hover-lift">
-              <div className="inline-block px-3 py-1 bg-primary text-white text-sm rounded-full mb-4">
-                MAIS PROCURADO
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Visto F1</h3>
-              <p className="text-muted-foreground mb-6">
-                Visto de estudante. Estude e trabalhe legalmente nos EUA.
-              </p>
-              <ul className="space-y-3">
-                {["Escolha da escola ideal", "Processo completo de aplicação", "Suporte pós-chegada"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            <Card className="p-8 glass glass-hover">
-              <h3 className="text-2xl font-bold mb-4">Change of Status</h3>
-              <p className="text-muted-foreground mb-6">
-                Mudança de status de turista para estudante dentro dos EUA.
-              </p>
-              <ul className="space-y-3">
-                {["Análise de elegibilidade", "Processo legal completo", "Acompanhamento USCIS"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Processo Visual */}
-      <section className="py-24 relative z-10">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                Como Funciona o Processo
-              </h2>
-              <div className="space-y-6">
-                {[
-                  { number: "01", title: "Consulta Inicial", desc: "Análise do seu perfil e definição de estratégia" },
-                  { number: "02", title: "Preparação", desc: "Reunião de documentos e preenchimento de formulários" },
-                  { number: "03", title: "Treino", desc: "Simulação e preparação para entrevista consular" },
-                  { number: "04", title: "Aprovação", desc: "Acompanhamento até a obtenção do visto" }
-                ].map((step, index) => (
-                  <div key={index} className="flex gap-4 hover-lift">
-                    <div className="text-3xl font-bold text-primary">{step.number}</div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">{step.title}</h3>
-                      <p className="text-muted-foreground">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="hover-scale">
-              <img 
-                src={processVisual} 
-                alt="Processo" 
-                className="w-full rounded-lg"
+          <div className="max-w-5xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {[
+              {
+                title: "2 sessões estratégicas personalizadas",
+                description: "Conduzidas por consultores americanos"
+              },
+              {
+                title: "Análise completa do seu perfil",
+                description: "Objetivos pessoais e profissionais"
+              },
+              {
+                title: "Preparação e revisão detalhada",
+                description: "Dos seus documentos"
+              },
+              {
+                title: "Definição do visto ideal",
+                description: "Turista (B1/B2), Estudante (F1) ou Troca de Status (COS)"
+              },
+              {
+                title: "Atendimento remoto, seguro e confidencial",
+                description: "Via videoconferência"
+              },
+              {
+                title: "Acompanhamento direto",
+                description: "Por Matheus Brant e Ceme Suaiden, especialistas sediados nos EUA"
+              }
+            ].map((item, index) => (
+              <FeatureCard
+                key={index}
+                title={item.title}
+                description={item.description}
               />
-            </div>
+            ))}
+          </div>
+          
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-xl text-muted-foreground">
+              Tudo que você precisa para construir o seu plano com segurança, sem riscos e com base em dados reais.
+            </p>
           </div>
         </div>
       </section>
 
       {/* Bônus */}
-      <section className="py-24 glass relative z-10">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Bônus Exclusivos
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Conteúdo adicional para garantir seu sucesso
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: BookOpen, title: "Guia Completo do Visto", value: "R$ 497" },
-              { icon: Video, title: "Aulas Gravadas", value: "R$ 997" },
-              { icon: MessageCircle, title: "Grupo VIP", value: "R$ 297" },
-              { icon: FileText, title: "Templates Prontos", value: "R$ 397" }
-            ].map((bonus, index) => (
-              <Card key={index} className="p-6 glass glass-hover text-center">
-                <bonus.icon className="w-10 h-10 text-primary mx-auto mb-4" />
-                <h3 className="font-bold mb-2">{bonus.title}</h3>
-                <div className="text-primary font-bold">{bonus.value}</div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Gallery4
+        title="Bônus Exclusivos American Dream"
+        description="Ao garantir sua vaga, você desbloqueia benefícios que ampliam sua rede e suas oportunidades nos EUA:"
+        items={[
+          {
+            id: "mastermind",
+            title: "Mastermind Presencial",
+            description: "3 dias nos Estados Unidos com encontro exclusivo de networking internacional com empresários e investidores.",
+            image: "/mastermind.jpg"
+          },
+          {
+            id: "bolsas",
+            title: "Bolsas de até 100%",
+            description: "Condições especiais em escolas e universidades americanas parceiras, reservadas exclusivamente para nossos clientes.",
+            image: "/bolsa100.jpg"
+          },
+          {
+            id: "desconto",
+            title: "50% de desconto",
+            description: "Tarifas exclusivas para novos processos de visto. Expanda suas possibilidades com condições especiais.",
+            image: "/50desconto.jpg"
+          },
+          {
+            id: "networking",
+            title: "Networking",
+            description: "Conexões diretas com empresários e investidores americanos para quem deseja empreender, estudar ou investir.",
+            image: "/networking.jpg"
+          },
+          {
+            id: "participacao",
+            title: "Participação Societária",
+            description: "Clientes aprovados podem ser convidados a participar de empresas nos Estados Unidos.",
+            image: "/participacao.jpg"
+          }
+        ]}
+      />
 
       {/* Especialistas */}
       <section className="py-24 relative z-10">
@@ -291,38 +260,39 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
+          <AnimatedTestimonials
+            testimonials={[
               {
+                quote:
+                  "Consegui meu visto de estudante na primeira tentativa! O suporte foi essencial para minha aprovação.",
                 name: "Maria Silva",
-                visto: "F1 Aprovado",
-                text: "Consegui meu visto de estudante na primeira tentativa! O suporte foi essencial para minha aprovação."
+                designation: "F1 Aprovado",
+                src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
               },
               {
+                quote:
+                  "Processo tranquilo e bem orientado. A preparação para entrevista fez toda a diferença.",
                 name: "João Santos",
-                visto: "B1/B2 Aprovado",
-                text: "Processo tranquilo e bem orientado. A preparação para entrevista fez toda a diferença."
+                designation: "B1/B2 Aprovado",
+                src: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=3560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
               },
               {
+                quote:
+                  "Mudei meu status de turista para estudante com toda segurança e suporte da equipe.",
                 name: "Ana Costa",
-                visto: "COS Aprovado",
-                text: "Mudei meu status de turista para estudante com toda segurança e suporte da equipe."
-              }
-            ].map((testimonial, index) => (
-              <Card key={index} className="p-8 glass glass-hover">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-primary">★</span>
-                  ))}
-                </div>
-                <p className="text-muted-foreground mb-6">"{testimonial.text}"</p>
-                <div>
-                  <div className="font-bold">{testimonial.name}</div>
-                  <div className="text-sm text-primary">{testimonial.visto}</div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                designation: "COS Aprovado",
+                src: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+              },
+              {
+                quote:
+                  "A consultoria superou minhas expectativas. Consegui meu visto B1/B2 em tempo recorde e com total segurança.",
+                name: "Carlos Oliveira",
+                designation: "B1/B2 Aprovado",
+                src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=3387&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+              },
+            ]}
+            autoplay={true}
+          />
         </div>
       </section>
 
@@ -347,13 +317,13 @@ const Index = () => {
                 
                 <div className="mb-6">
                   <div className="text-muted-foreground line-through text-2xl mb-2">
-                    De R$ 14.970,00
+                    De US$ 2.997,00
                   </div>
                   <div className="text-6xl font-bold text-primary mb-2">
-                    R$ 9.970
+                    US$ 1.998
                   </div>
                   <div className="text-xl text-muted-foreground">
-                    ou 12x de R$ 997 sem juros
+                    Economize US$ 999 na sua consultoria completa
                   </div>
                 </div>
               </div>
@@ -369,7 +339,7 @@ const Index = () => {
                       "Consultoria completa B1/B2, F1 ou COS",
                       "Análise e preparação de documentos",
                       "Treino para entrevista consular",
-                      "Todos os bônus (valor R$ 2.188)",
+                      "Todos os bônus exclusivos incluídos",
                       "Suporte durante todo o processo",
                       "Acesso ao grupo VIP vitalício"
                     ].map((item, i) => (
@@ -389,15 +359,11 @@ const Index = () => {
                   <ul className="space-y-3 mb-6">
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
-                      <span>Cartão de crédito em até 12x</span>
+                      <span>Pagamento único seguro via Stripe</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
-                      <span>Pix com 5% de desconto</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-primary mt-0.5" />
-                      <span>Boleto bancário</span>
+                      <span>Processamento instantâneo</span>
                     </li>
                   </ul>
 
@@ -412,7 +378,11 @@ const Index = () => {
                 </div>
               </div>
 
-              <Button size="lg" className="w-full bg-primary hover:bg-primary/90 text-lg py-6 hover-lift">
+              <Button 
+                size="lg" 
+                className="w-full bg-primary hover:bg-primary/90 text-lg py-6 hover-lift"
+                onClick={() => navigate("/lead-form")}
+              >
                 Garantir Minha Vaga Agora
               </Button>
             </Card>
@@ -420,10 +390,21 @@ const Index = () => {
             <Card className="glass ring-2 ring-primary/50 hover-lift">
               <div className="p-8 text-center space-y-4">
                 <Shield className="w-16 h-16 text-primary mx-auto" />
-                <h3 className="text-2xl font-bold">Garantia 100% Satisfação</h3>
+                <h3 className="text-2xl font-bold">Garantia American Dream — Risco Zero</h3>
+                <p className="text-lg text-white font-semibold mb-4">
+                  A sua tranquilidade é prioridade.
+                </p>
                 <p className="text-muted-foreground">
-                  Se você não ficar satisfeito com nossa consultoria nos primeiros 7 dias, 
-                  devolvemos 100% do seu investimento. Sem perguntas, sem burocracia.
+                  Se, após a análise do seu perfil e documentação, não for identificada nenhuma possibilidade real de visto ou estratégia legal, você receberá 100% do seu dinheiro de volta, sem burocracia.
+                </p>
+                <div className="mt-6 space-y-2">
+                  <p className="text-white font-semibold">Sem letras miúdas. Sem enrolação.</p>
+                  <p className="text-primary">
+                    Apenas transparência e compromisso real com o seu resultado.
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4 italic">
+                  Essa é a Garantia American Dream — porque o seu futuro merece respeito.
                 </p>
               </div>
             </Card>
@@ -447,24 +428,24 @@ const Index = () => {
             <Accordion type="single" collapsible className="space-y-4">
               {[
                 {
-                  q: "Qual é a taxa de aprovação da consultoria?",
-                  a: "Nossa taxa de aprovação é de 98%, muito acima da média do mercado. Isso se deve à nossa metodologia comprovada e análise cuidadosa de cada perfil."
+                  q: "O que está incluso na consultoria?",
+                  a: "Duas sessões estratégicas personalizadas, análise de perfil e documentos, plano de ação e orientação sobre o visto ideal para você (B1/B2, F1 ou COS)."
                 },
                 {
-                  q: "Quanto tempo leva o processo completo?",
-                  a: "O processo completo leva em média de 30 a 90 dias, dependendo do tipo de visto e da disponibilidade de agendamento no consulado."
+                  q: "Posso fazer tudo online?",
+                  a: "Sim! Todo o atendimento é 100% remoto e seguro — você pode participar de qualquer lugar do mundo."
                 },
                 {
-                  q: "A consultoria garante a aprovação do visto?",
-                  a: "Nenhuma consultoria pode garantir 100% de aprovação, pois a decisão final é do consulado. Porém, nossa metodologia maximiza suas chances de sucesso."
+                  q: "Vocês fazem o processo jurídico do visto?",
+                  a: "Não. A consultoria é estratégica e analítica. Caso precise de advogado, indicamos parceiros de confiança nos EUA."
                 },
                 {
-                  q: "Posso parcelar o investimento?",
-                  a: "Sim! Oferecemos parcelamento em até 12x sem juros no cartão de crédito, além de desconto de 5% para pagamento via Pix."
+                  q: "E se eu não for elegível a nenhum tipo de visto?",
+                  a: "Você recebe 100% do seu dinheiro de volta — é nossa Garantia American Dream."
                 },
                 {
-                  q: "O que acontece se meu visto for negado?",
-                  a: "Oferecemos suporte completo para entender os motivos da negativa e elaborar uma nova estratégia para uma segunda tentativa, sem custos adicionais."
+                  q: "O que é o Mastermind Presencial?",
+                  a: "Um evento exclusivo de 3 dias nos EUA com empresários, mentores e investidores. Uma experiência única de conexão e crescimento."
                 }
               ].map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`} className="glass border border-border rounded-lg px-6">
@@ -491,7 +472,11 @@ const Index = () => {
             <p className="text-xl text-muted-foreground">
               Comece sua jornada hoje e tenha o suporte completo de especialistas em vistos americanos.
             </p>
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-lg px-12 py-6 hover-lift">
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-lg px-12 py-6 hover-lift"
+              onClick={() => navigate("/lead-form")}
+            >
               Garantir Minha Vaga
             </Button>
           </div>
@@ -503,7 +488,7 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="text-center text-muted-foreground">
             <p className="mb-4 text-2xl font-bold text-white">American Dream Consultoria</p>
-            <p>© 2024 American Dream. Todos os direitos reservados.</p>
+            <p>© 2025 American Dream. Todos os direitos reservados.</p>
             <p className="mt-2 text-sm">Especialistas em vistos americanos B1/B2, F1 e Change of Status</p>
           </div>
         </div>
