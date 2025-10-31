@@ -5,11 +5,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 import { Gallery4 } from "@/components/ui/gallery4";
 import { FeatureCard } from "@/components/ui/feature-card";
-import heroImage from "@/assets/hero-american-dream.jpg";
-import consultant1 from "@/assets/consultant-1.jpg";
-import consultant2 from "@/assets/consultant-2.jpg";
+import heroImage from "@/assets/hero-american-dream.webp";
+import consultant1 from "@/assets/consultant-1.webp";
+import consultant2 from "@/assets/consultant-2.webp";
 // Imagem do processo removida - usando URL externa
-import successStudents from "@/assets/success-students.jpg";
+import successStudents from "@/assets/success-students.webp";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 
@@ -179,31 +179,31 @@ const Index = () => {
             id: "mastermind",
             title: "Mastermind Presencial",
             description: "3 dias nos Estados Unidos com encontro exclusivo de networking internacional com empresários e investidores.",
-            image: "/mastermind.jpg"
+            image: "/mastermind.webp"
           },
           {
             id: "bolsas",
             title: "Bolsas de até 100%",
             description: "Condições especiais em escolas e universidades americanas parceiras, reservadas exclusivamente para nossos clientes.",
-            image: "/bolsa100.jpg"
+            image: "/bolsa100.webp"
           },
           {
             id: "desconto",
             title: "50% de desconto",
             description: "Tarifas exclusivas para novos processos de visto. Expanda suas possibilidades com condições especiais.",
-            image: "/50desconto.jpg"
+            image: "/50desconto.webp"
           },
           {
             id: "networking",
             title: "Networking",
             description: "Conexões diretas com empresários e investidores americanos para quem deseja empreender, estudar ou investir.",
-            image: "/networking.jpg"
+            image: "/networking.webp"
           },
           {
             id: "participacao",
             title: "Participação Societária",
             description: "Clientes aprovados podem ser convidados a participar de empresas nos Estados Unidos.",
-            image: "/participacao.jpg"
+            image: "/participacao.webp"
           }
         ]}
       />
