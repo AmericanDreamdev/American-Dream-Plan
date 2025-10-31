@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 import { Gallery4 } from "@/components/ui/gallery4";
 import { FeatureCard } from "@/components/ui/feature-card";
+import { Header } from "@/components/Header";
 import heroImage from "@/assets/hero-american-dream.webp";
 import consultant1 from "@/assets/consultant-1.webp";
 import consultant2 from "@/assets/consultant-2.webp";
@@ -18,8 +19,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-black text-white relative">
+      <Header />
+      
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center z-10">
+      <section className="relative min-h-screen flex items-center z-10 pt-20">
         <div className="absolute inset-0 overflow-hidden">
           <img 
             src={heroImage} 
