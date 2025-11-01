@@ -75,6 +75,28 @@ Deno.serve(async (req: Request) => {
     const amount = 199800; // US$ 1.998,00 (promoção - de US$ 2.997,00)
     const currency = "usd";
 
+    // Detectar URL do site automaticamente se SITE_URL não estiver configurada
+    // Tenta pegar do header Referer ou Origin da requisição
+    const referer = req.headers.get("referer") || req.headers.get("origin");
+    let siteUrl = Deno.env.get("SITE_URL");
+    
+    if (!siteUrl && referer) {
+      try {
+        const url = new URL(referer);
+        siteUrl = `${url.protocol}//${url.host}`;
+      } catch {
+        // Se falhar, usar fallback
+        siteUrl = "http://localhost:8081";
+      }
+    }
+    
+    if (!siteUrl) {
+      siteUrl = "http://localhost:8081";
+    }
+
+    // Garantir que não tenha barra no final
+    siteUrl = siteUrl.replace(/\/$/, "");
+
     // Criar sessão de checkout
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -92,8 +114,8 @@ Deno.serve(async (req: Request) => {
         },
       ],
       mode: "payment",
-      success_url: `${Deno.env.get("SITE_URL") || "http://localhost:8081"}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${Deno.env.get("SITE_URL") || "http://localhost:8081"}/payment/cancel?lead_id=${lead_id}&term_acceptance_id=${term_acceptance_id}`,
+      success_url: `${siteUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/payment/cancel?lead_id=${lead_id}&term_acceptance_id=${term_acceptance_id}`,
       customer_email: lead.email,
       metadata: {
         lead_id: lead_id,
