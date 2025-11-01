@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Valor do contrato em centavos (US$ 1.998 = 199800 centavos)
-    const amount = 199800; // US$ 1.998,00 (promoção - de US$ 2.997,00)
+    const amount = 199800; // US$ 1.998,00
     const currency = "usd";
 
     // Detectar URL do site automaticamente se SITE_URL não estiver configurada
@@ -94,8 +94,14 @@ Deno.serve(async (req: Request) => {
       siteUrl = "http://localhost:8081";
     }
 
-    // Garantir que não tenha barra no final
-    siteUrl = siteUrl.replace(/\/$/, "");
+    // Garantir que não tenha barra no final e normalize a URL
+    siteUrl = siteUrl.trim().replace(/\/+$/, "");
+
+    // Função auxiliar para construir URLs sem barras duplas
+    const buildUrl = (path: string) => {
+      const cleanPath = path.startsWith("/") ? path : `/${path}`;
+      return `${siteUrl}${cleanPath}`;
+    };
 
     // Criar sessão de checkout
     const session = await stripe.checkout.sessions.create({
@@ -114,8 +120,8 @@ Deno.serve(async (req: Request) => {
         },
       ],
       mode: "payment",
-      success_url: `${siteUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/payment/cancel?lead_id=${lead_id}&term_acceptance_id=${term_acceptance_id}`,
+      success_url: buildUrl(`payment/success?session_id={CHECKOUT_SESSION_ID}`),
+      cancel_url: buildUrl(`payment/cancel?lead_id=${lead_id}&term_acceptance_id=${term_acceptance_id}`),
       customer_email: lead.email,
       metadata: {
         lead_id: lead_id,

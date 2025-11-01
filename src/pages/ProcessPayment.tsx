@@ -118,71 +118,73 @@ const ProcessPayment = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-      <Card className="glass p-8 max-w-2xl w-full">
-        <div className="text-center space-y-6">
-          <CheckCircle2 className="w-20 h-20 text-primary mx-auto" />
-          <h1 className="text-4xl font-bold">Termos Aceitos!</h1>
-          <p className="text-xl text-muted-foreground">
-            Seus termos foram aceitos com sucesso. Agora é hora de finalizar o pagamento para continuar com o processo.
-          </p>
+    <div className="fixed inset-0 bg-white z-0">
+      <div className="min-h-screen bg-white flex items-center justify-center p-6 relative z-10">
+        <Card className="bg-white p-8 max-w-2xl w-full shadow-2xl border border-gray-200">
+          <div className="text-center space-y-6">
+            <CheckCircle2 className="w-20 h-20 text-[#0575E6] mx-auto" />
+            <h1 className="text-4xl font-bold text-gray-900">Termos Aceitos!</h1>
+            <p className="text-xl text-gray-700">
+              Seus termos foram aceitos com sucesso. Agora é hora de finalizar o pagamento para continuar com o processo.
+            </p>
 
-          <div className="mt-8 space-y-4">
-            <div className="bg-background/50 p-6 rounded-lg border border-border">
-              <h3 className="text-lg font-semibold mb-4">Próximos Passos</h3>
-              <ul className="text-left space-y-3 text-muted-foreground">
-                <li className="flex items-start">
-                  <span className="mr-2">✓</span>
-                  <span>Termos e condições aceitos</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">→</span>
-                  <span>Clique no botão abaixo para acessar o checkout seguro</span>
-                </li>
-              </ul>
-            </div>
-
-            {error && (
-              <div className="p-4 bg-destructive/20 border border-destructive rounded-md text-sm text-destructive">
-                {error}
+            <div className="mt-8 space-y-4">
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">Próximos Passos</h3>
+                <ul className="text-left space-y-3 text-gray-700">
+                  <li className="flex items-start">
+                    <span className="mr-2 text-[#0575E6]">✓</span>
+                    <span>Termos e condições aceitos</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 text-[#0575E6]">→</span>
+                    <span>Clique no botão abaixo para acessar o checkout seguro</span>
+                  </li>
+                </ul>
               </div>
-            )}
 
-            <Button
-              onClick={handleCreateCheckout}
-              disabled={loading || paymentCreated}
-              className="bg-primary hover:bg-primary/90 w-full"
-              size="lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Processando...
-                </>
-              ) : paymentCreated ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Redirecionando para pagamento...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="mr-2 h-5 w-5" />
-                  Ir para Pagamento
-                </>
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
+                  {error}
+                </div>
               )}
-            </Button>
 
-            <Button
-              onClick={() => navigate("/")}
-              variant="outline"
-              className="w-full"
-              disabled={loading || paymentCreated}
-            >
-              Voltar para o Início
-            </Button>
+              <Button
+                onClick={handleCreateCheckout}
+                disabled={loading || paymentCreated}
+                className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processando...
+                  </>
+                ) : paymentCreated ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Redirecionando para pagamento...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Ir para Pagamento
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={() => navigate("/")}
+                variant="outline"
+                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                disabled={loading || paymentCreated}
+              >
+                Voltar para o Início
+              </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };

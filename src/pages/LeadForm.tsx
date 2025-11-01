@@ -197,18 +197,18 @@ const LeadForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-r from-[#0575E6] to-[#021B79] flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
             Comece sua Jornada
           </h1>
-          <p className="text-xl text-muted-foreground">
+          <p className="text-xl text-white/80">
             Preencha seus dados para dar início ao processo de visto
           </p>
         </div>
 
-        <div className="glass p-8 rounded-lg border border-border">
+        <div className="bg-white rounded-xl p-8 md:p-10 shadow-2xl border border-white/20">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -216,12 +216,12 @@ const LeadForm = () => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome Completo</FormLabel>
+                    <FormLabel className="text-gray-700 font-semibold">Nome Completo</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Seu nome completo"
                         {...field}
-                        className="bg-background/50"
+                        className="bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-[#0575E6] focus:ring-[#0575E6]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -234,13 +234,13 @@ const LeadForm = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-gray-700 font-semibold">Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
                         placeholder="seu@email.com"
                         {...field}
-                        className="bg-background/50"
+                        className="bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-[#0575E6] focus:ring-[#0575E6]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -253,7 +253,7 @@ const LeadForm = () => {
                 name="phoneCountryCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Código do País do Telefone</FormLabel>
+                    <FormLabel className="text-gray-700 font-semibold">Código do País do Telefone</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={(value) => {
@@ -274,11 +274,11 @@ const LeadForm = () => {
                       }}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-background/50">
+                        <SelectTrigger className="bg-gray-50 border-gray-300 text-gray-900 focus:border-[#0575E6] focus:ring-[#0575E6]">
                           <SelectValue placeholder="Selecione o país" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="max-h-[400px] overflow-y-auto">
+                      <SelectContent className="max-h-[400px] overflow-y-auto bg-white border-gray-200 text-gray-900">
                         {countries.map((country) => (
                           <SelectItem key={country.code} value={country.code}>
                             <span className="font-medium">{country.dialCode}</span>{" "}
@@ -305,10 +305,10 @@ const LeadForm = () => {
                   
                   return (
                     <FormItem>
-                      <FormLabel>
+                      <FormLabel className="text-gray-700 font-semibold">
                         Telefone 
                         {selectedPhoneCountry && (
-                          <span className="text-muted-foreground text-sm font-normal ml-2">
+                          <span className="text-gray-500 text-sm font-normal ml-2">
                             ({selectedPhoneCountry.dialCode})
                           </span>
                         )}
@@ -333,14 +333,14 @@ const LeadForm = () => {
                             // Forçar validação completa ao sair do campo
                             form.trigger("phone");
                           }}
-                          className="bg-background/50"
+                          className="bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-[#0575E6] focus:ring-[#0575E6]"
                           type="tel"
                           maxLength={15} // Máximo de dígitos (padrão E.164 permite até 15, mas sem código)
                         />
                       </FormControl>
                       <FormMessage />
                       {selectedPhoneCountry && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-gray-500">
                           Número completo: {dialCode} {displayValue || "..."}
                         </p>
                       )}
@@ -350,16 +350,16 @@ const LeadForm = () => {
               />
 
               {error && (
-                <div className="p-4 bg-destructive/20 border border-destructive rounded-md">
-                  <p className="text-sm font-medium text-destructive mb-1">Ops! Algo deu errado</p>
-                  <p className="text-sm text-destructive">{error}</p>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm font-medium text-red-800 mb-1">Ops! Algo deu errado</p>
+                  <p className="text-sm text-red-700">{error}</p>
                 </div>
               )}
 
               <Button
                 type="submit"
                 size="lg"
-                className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={
                   isSubmitting || 
                   !!form.formState.errors.name ||

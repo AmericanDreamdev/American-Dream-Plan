@@ -9,13 +9,13 @@ export const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20 backdrop-blur-lg">
+    <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/20 backdrop-blur-lg bg-gradient-to-r from-[#0575E6]/95 to-[#021B79]/95 shadow-lg">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg p-2 -ml-2"
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg p-2 -ml-2"
             aria-label="Ir para o início"
           >
             <img 
@@ -37,13 +37,13 @@ export const Header = () => {
                   section.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }}
-              className="text-muted-foreground hover:text-white transition-colors"
+              className="text-white/90 hover:text-white transition-colors font-medium"
             >
               Sobre
             </button>
             <button
               onClick={() => navigate('/lead-form')}
-              className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-semibold transition-colors hover-lift"
+              className="px-6 py-2 bg-white text-[#0575E6] rounded-lg font-semibold transition-all hover:bg-white/90 hover:shadow-lg hover:scale-105"
             >
               Começar Agora
             </button>
@@ -52,7 +52,7 @@ export const Header = () => {
           {/* Mobile CTA Button */}
           <button
             onClick={() => navigate('/lead-form')}
-            className="md:hidden px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-semibold text-sm transition-colors"
+            className="md:hidden px-4 py-2 bg-white text-[#0575E6] rounded-lg font-semibold text-sm transition-all hover:bg-white/90"
           >
             Começar
           </button>

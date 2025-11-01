@@ -97,14 +97,14 @@ const Gallery4 = ({
   );
 
   return (
-    <section className="py-24 relative z-10">
+    <section className="py-24 relative z-10 bg-gray-50">
       <div className="container mx-auto px-6">
         <div className="mb-8 flex items-end justify-between md:mb-14 lg:mb-16">
           <div className="flex flex-col gap-4">
-            <h2 className="text-3xl font-bold md:text-4xl lg:text-5xl">
+            <h2 className="text-3xl font-bold md:text-4xl lg:text-5xl text-gray-900">
               {title}
             </h2>
-            <p className="max-w-lg text-muted-foreground">{description}</p>
+            <p className="max-w-lg text-gray-600">{description}</p>
           </div>
           <div className="hidden shrink-0 gap-2 md:flex">
             <Button
@@ -114,7 +114,7 @@ const Gallery4 = ({
                 carouselApi?.scrollPrev();
               }}
               disabled={!canScrollPrev}
-              className="disabled:pointer-events-auto"
+              className="disabled:pointer-events-auto border border-gray-300 hover:bg-gray-100 text-gray-700 hover:text-gray-900"
             >
               <ArrowLeft className="size-5" />
             </Button>
@@ -125,7 +125,7 @@ const Gallery4 = ({
                 carouselApi?.scrollNext();
               }}
               disabled={!canScrollNext}
-              className="disabled:pointer-events-auto"
+              className="disabled:pointer-events-auto border border-gray-300 hover:bg-gray-100 text-gray-700 hover:text-gray-900"
             >
               <ArrowRight className="size-5" />
             </Button>

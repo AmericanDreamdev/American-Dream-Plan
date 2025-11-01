@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronDown } from "lucide-react";
 
 interface Term {
   id: string;
@@ -109,6 +109,8 @@ const AcceptTerms = () => {
   useEffect(() => {
     if (!activeTerm) return;
 
+    let timeoutId: NodeJS.Timeout;
+
     const handleScroll = () => {
       const scrollArea = scrollAreaRef.current;
       if (!scrollArea) return;
@@ -117,29 +119,30 @@ const AcceptTerms = () => {
       if (!viewport) return;
 
       const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 20; // 20px tolerance
+      // Aumentar a tolerância para evitar mudanças rápidas de estado
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 30; // 30px tolerance
+      
+      // Usar debounce para evitar piscar
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
       setHasScrolledToBottom(isAtBottom);
+      }, 100);
     };
-
-    // Check on mount and after content loads
-    const checkInterval = setInterval(() => {
-      handleScroll();
-    }, 200);
 
     const viewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
     if (viewport) {
-      viewport.addEventListener("scroll", handleScroll);
+      viewport.addEventListener("scroll", handleScroll, { passive: true });
       // Initial check
       setTimeout(handleScroll, 300);
       
       return () => {
-        clearInterval(checkInterval);
+        clearTimeout(timeoutId);
         viewport.removeEventListener("scroll", handleScroll);
       };
     }
 
     return () => {
-      clearInterval(checkInterval);
+      clearTimeout(timeoutId);
     };
   }, [activeTerm]);
 
@@ -177,11 +180,25 @@ const AcceptTerms = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <style>{`
+        [data-radix-dialog-overlay] {
+          background: white !important;
+          background-color: white !important;
+        }
+        .fixed.inset-0.z-50.bg-black\\/80 {
+          background: white !important;
+          background-color: white !important;
+        }
+        [class*="bg-black/80"] {
+          background: white !important;
+          background-color: white !important;
+        }
+      `}</style>
       <Dialog open={true} onOpenChange={() => {}}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+        <DialogContent noOverlay className="max-w-4xl max-h-[90vh] flex flex-col p-0 bg-white border-gray-200 shadow-2xl [&>button]:text-gray-700 [&>button]:hover:text-gray-900 [&>button]:hover:bg-gray-100">
               <DialogHeader className="px-6 pt-6 pb-4">
-                <DialogTitle className="text-2xl">
+                <DialogTitle className="text-2xl text-gray-900">
                   {activeTerm?.title || "Termos e Condições"}
                 </DialogTitle>
                 <DialogDescription className="sr-only">
@@ -191,22 +208,93 @@ const AcceptTerms = () => {
 
           {loading ? (
             <div className="flex items-center justify-center py-12 px-6">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#0575E6]" />
             </div>
           ) : error ? (
-            <div className="p-4 mx-6 bg-destructive/20 border border-destructive rounded-md text-sm text-destructive">
+            <div className="p-4 mx-6 bg-red-50 border border-red-200 rounded-md text-sm text-red-800">
               {error}
             </div>
           ) : activeTerm ? (
             <>
-              <ScrollArea className="flex-1 min-h-0 max-h-[60vh] px-6" ref={scrollAreaRef}>
+              <ScrollArea className="flex-1 min-h-0 max-h-[60vh] px-6 relative" ref={scrollAreaRef}>
+                <style>{`
+                  .terms-content * {
+                    color: #1f2937 !important;
+                    color: rgb(31, 41, 55) !important;
+                  }
+                  .terms-content h1,
+                  .terms-content h2,
+                  .terms-content h3,
+                  .terms-content h4,
+                  .terms-content h5,
+                  .terms-content h6 {
+                    color: #111827 !important;
+                    color: rgb(17, 24, 39) !important;
+                  }
+                  .terms-content p,
+                  .terms-content li,
+                  .terms-content span,
+                  .terms-content div {
+                    color: #1f2937 !important;
+                    color: rgb(31, 41, 55) !important;
+                  }
+                  .terms-content a {
+                    color: #0575E6 !important;
+                  }
+                  .terms-content a:hover {
+                    color: #021B79 !important;
+                  }
+                  @keyframes scroll-hint {
+                    0%, 100% {
+                      transform: translateY(0) scale(1);
+                      opacity: 0.6;
+                    }
+                    50% {
+                      transform: translateY(8px) scale(1.1);
+                      opacity: 1;
+                    }
+                  }
+                  @keyframes fade-in-out {
+                    0%, 100% {
+                      opacity: 0.3;
+                    }
+                    50% {
+                      opacity: 0.8;
+                    }
+                  }
+                  .scroll-hint {
+                    animation: scroll-hint 2s ease-in-out infinite;
+                  }
+                  .scroll-fade {
+                    animation: fade-in-out 2s ease-in-out infinite;
+                  }
+                `}</style>
+                
+                {/* Gradiente inferior indicando mais conteúdo */}
+                {!hasScrolledToBottom && (
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none z-10 flex items-end justify-center pb-2 transition-opacity duration-300">
+                    <div className="flex flex-col items-center gap-2 scroll-hint">
+                      <ChevronDown className="h-6 w-6 text-[#0575E6] drop-shadow-sm" />
+                      <div className="text-xs text-gray-600 font-medium scroll-fade">Continue rolando</div>
+                    </div>
+                  </div>
+                )}
+
                 <div
-                  className="prose prose-invert max-w-none p-4 pb-8 text-white [&_h1]:text-white [&_h2]:text-white [&_h3]:text-white [&_p]:text-gray-300 [&_li]:text-gray-300 [&_strong]:text-white"
+                  className="prose max-w-none p-4 pb-8 terms-content text-gray-900 [&_*]:!text-gray-900 [&_h1]:!text-gray-900 [&_h2]:!text-gray-900 [&_h3]:!text-gray-900 [&_h4]:!text-gray-900 [&_h5]:!text-gray-900 [&_h6]:!text-gray-900 [&_p]:!text-gray-900 [&_li]:!text-gray-900 [&_span]:!text-gray-900 [&_div]:!text-gray-900 [&_strong]:!text-gray-900 [&_em]:!text-gray-900 [&_a]:!text-[#0575E6] [&_a:hover]:!text-[#021B79]"
                   dangerouslySetInnerHTML={{ __html: activeTerm.content }}
                 />
+
+                {/* Indicador no final do conteúdo */}
+                {hasScrolledToBottom && (
+                  <div className="flex items-center justify-center gap-2 py-4 text-[#0575E6]">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span className="text-sm font-medium">Você leu todos os termos</span>
+                  </div>
+                )}
               </ScrollArea>
 
-              <div className="mt-4 space-y-4 border-t border-border pt-4 px-6 pb-6">
+              <div className="mt-4 space-y-4 border-t border-gray-200 pt-4 px-6 pb-6">
                 <div className="flex items-start space-x-3">
                   <Checkbox
                     id="accept-terms"
@@ -220,28 +308,28 @@ const AcceptTerms = () => {
                   />
                   <Label
                     htmlFor="accept-terms"
-                    className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="text-sm leading-none text-gray-700 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    Li e concordo com os termos e condições acima.{" "}
-                    {!hasScrolledToBottom && (
-                      <span className="text-muted-foreground text-xs">
-                        (Role até o final para aceitar)
-                      </span>
-                    )}
+                    Li e concordo com os termos e condições acima.
                   </Label>
                 </div>
 
+
                 {termsAccepted && (
-                  <div className="flex items-center gap-2 text-primary">
+                  <div className="flex items-center gap-2 text-[#0575E6]">
                     <CheckCircle2 className="h-5 w-5" />
-                    <span>Termos aceitos com sucesso!</span>
+                    <span className="font-medium">Termos aceitos com sucesso!</span>
                   </div>
                 )}
 
                 <Button
                   onClick={handleAcceptTerms}
                   disabled={!hasScrolledToBottom || termsAccepted || acceptingTerms}
-                  className="w-full bg-primary hover:bg-primary/90"
+                  className={`w-full font-semibold shadow-lg transition-all ${
+                    !hasScrolledToBottom
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white hover:shadow-xl"
+                  }`}
                   size="lg"
                 >
                   {acceptingTerms ? (
@@ -265,4 +353,5 @@ const AcceptTerms = () => {
 };
 
 export default AcceptTerms;
+
 
