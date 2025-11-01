@@ -98,9 +98,9 @@ const PaymentOptions = () => {
   const [userCountry, setUserCountry] = useState<string>(countryParam.toUpperCase());
   const [returnedFromInfinitePay, setReturnedFromInfinitePay] = useState(false);
   
-  // Determinar se é Brasil ou EUA
+  // Determinar se é Brasil
+  // Qualquer país que NÃO seja Brasil recebe: Zelle, Stripe Card e Stripe PIX
   const isBrazil = userCountry === "BR";
-  const isUSA = userCountry === "US";
 
   useEffect(() => {
     if (!leadId || !termAcceptanceId) {
@@ -362,7 +362,7 @@ const PaymentOptions = () => {
         </div>
       );
     } else {
-      // EUA: Zelle, Stripe Card e Stripe PIX
+      // Qualquer país que NÃO seja Brasil: Zelle, Stripe Card e Stripe PIX
       return (
         <div className="grid md:grid-cols-3 gap-4">
           {/* Zelle */}
