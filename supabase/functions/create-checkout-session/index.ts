@@ -100,13 +100,32 @@ Deno.serve(async (req: Request) => {
       siteUrl = "http://localhost:8081";
     }
 
-    // Garantir que não tenha barra no final e normalize a URL
+    // Garantir que sempre tenha esquema (http:// ou https://)
     siteUrl = siteUrl.trim().replace(/\/+$/, "");
+    
+    // Se não tiver esquema, adicionar https:// (ou http:// se for localhost)
+    if (!siteUrl.match(/^https?:\/\//i)) {
+      if (siteUrl.includes("localhost") || siteUrl.includes("127.0.0.1")) {
+        siteUrl = `http://${siteUrl}`;
+      } else {
+        siteUrl = `https://${siteUrl}`;
+      }
+    }
 
     // Função auxiliar para construir URLs sem barras duplas
     const buildUrl = (path: string) => {
       const cleanPath = path.startsWith("/") ? path : `/${path}`;
-      return `${siteUrl}${cleanPath}`;
+      const finalUrl = `${siteUrl}${cleanPath}`;
+      
+      // Validar que a URL está correta
+      try {
+        new URL(finalUrl);
+        return finalUrl;
+      } catch (error) {
+        console.error("Invalid URL constructed:", finalUrl, error);
+        // Fallback para URL válida
+        return `https://americandream.323network.com${cleanPath}`;
+      }
     };
 
     // Determinar método de pagamento e moeda baseado no parâmetro recebido
