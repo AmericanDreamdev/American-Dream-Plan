@@ -7,7 +7,6 @@ import { Gallery4 } from "@/components/ui/gallery4";
 import { FeatureCard } from "@/components/ui/feature-card";
 import { Header } from "@/components/Header";
 import heroImage from "@/assets/hero-american-dream.webp";
-import consultant1 from "@/assets/consultant-1.webp";
 import consultant2 from "@/assets/consultant-2.webp";
 // Imagem do processo removida - usando URL externa
 import successStudents from "@/assets/success-students.webp";
@@ -38,7 +37,7 @@ const Index = () => {
               Consultoria American Dream
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight opacity-0 animate-fade-in-up delay-100">
+            <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight opacity-0 animate-fade-in-up delay-100">
               O Caminho Seguro e Estratégico para{" "}
               <span className="text-primary">Viver Legalmente</span>{" "}
               nos Estados Unidos
@@ -212,8 +211,14 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            <Card className="overflow-hidden glass glass-hover">
-              <img src={consultant1} alt="Ceme Suaiden" className="w-full h-80 object-cover" />
+            <Card className="overflow-hidden glass glass-hover flex flex-col">
+              <div className="w-full h-96 relative overflow-hidden bg-gradient-to-b from-primary/10 to-black/20">
+                <img 
+                  src="/cemesuaiden.webp" 
+                  alt="Ceme Suaiden" 
+                  className="w-full h-full object-cover object-top scale-100 hover:scale-105 transition-transform duration-500" 
+                />
+              </div>
               <div className="p-8">
                 <h3 className="text-2xl font-bold mb-2">Ceme Suaiden</h3>
                 <p className="text-primary mb-4">Especialista em Vistos F1</p>
@@ -224,8 +229,14 @@ const Index = () => {
               </div>
             </Card>
 
-            <Card className="overflow-hidden glass glass-hover">
-              <img src={consultant2} alt="Matheus Brant" className="w-full h-80 object-cover" />
+            <Card className="overflow-hidden glass glass-hover flex flex-col">
+              <div className="w-full h-96 relative overflow-hidden bg-gradient-to-b from-primary/10 to-black/20">
+                <img 
+                  src={consultant2} 
+                  alt="Matheus Brant" 
+                  className="w-full h-full object-cover object-center scale-100 hover:scale-105 transition-transform duration-500" 
+                />
+              </div>
               <div className="p-8">
                 <h3 className="text-2xl font-bold mb-2">Matheus Brant</h3>
                 <p className="text-primary mb-4">Especialista em B1/B2 e COS</p>
