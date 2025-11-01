@@ -120,8 +120,7 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground relative overflow-x-hidden;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: #0575E6;
-    background: linear-gradient(to right, #0575E6, #021B79);
+    background: #ffffff;
     min-height: 100vh;
   }
 
@@ -130,8 +129,8 @@ All colors MUST be HSL.
     font-weight: 700; /* Bold */
   }
 
-  /* Background lighting effects - tema patriótico (azul e branco) */
-  body::before {
+  /* Background lighting effects - apenas para páginas que não são dashboard */
+  body:not(.dashboard-page)::before {
     content: '';
     position: fixed;
     top: -50%;
@@ -151,8 +150,8 @@ All colors MUST be HSL.
     animation: floating 20s ease-in-out infinite;
   }
 
-  /* Segunda camada de luzes para mais profundidade */
-  body::after {
+  /* Segunda camada de luzes para mais profundidade - apenas para páginas que não são dashboard */
+  body:not(.dashboard-page)::after {
     content: '';
     position: fixed;
     top: -50%;
@@ -166,6 +165,16 @@ All colors MUST be HSL.
     pointer-events: none;
     z-index: 0;
     animation: floating 25s ease-in-out infinite reverse;
+  }
+
+  /* Fundo branco para dashboard */
+  body.dashboard-page {
+    background: #ffffff !important;
+  }
+
+  body.dashboard-page::before,
+  body.dashboard-page::after {
+    display: none;
   }
 
   @keyframes floating {

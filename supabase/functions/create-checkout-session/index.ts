@@ -227,6 +227,8 @@ Deno.serve(async (req: Request) => {
         currency: currency.toUpperCase(), // Moeda base (BRL para PIX, USD para card)
         status: "pending",
         metadata: {
+          payment_method: payment_method, // Salvar o método escolhido (card ou pix)
+          requested_payment_method: payment_method, // Manter compatibilidade
           original_usd_amount: (usdAmount / 100).toString(),
           brl_amount: (brlAmount / 100).toString(),
           exchange_rate: exchangeRate.toFixed(3),
