@@ -99,18 +99,6 @@ const Index = () => {
             <p className="text-xl text-muted-foreground leading-relaxed">
               Mais do que um atendimento, você recebe um plano estratégico completo — desde a análise de perfil e elegibilidade, até a definição do visto ideal para o seu objetivo de vida: estudar, trabalhar, investir ou simplesmente começar uma nova fase.
             </p>
-            
-            <div className="glass p-8 rounded-lg border border-primary/30">
-              <p className="text-2xl font-bold text-primary mb-4">
-                Não é um curso. Não é uma agência.
-              </p>
-              <p className="text-xl text-muted-foreground mb-6">
-                É uma consultoria personalizada, conduzida por empresas americanas licenciadas, com atuação direta em imigração, educação e negócios.
-              </p>
-              <p className="text-xl font-semibold text-white">
-                Transformamos o desejo de mudar de país em uma estratégia legal e concreta.
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -194,7 +182,7 @@ const Index = () => {
             id: "desconto",
             title: "50% de desconto",
             description: "Tarifas exclusivas para novos processos de visto. Expanda suas possibilidades com condições especiais.",
-            image: "/50desconto.webp"
+            image: "/50desconto 2.webp"
           },
           {
             id: "networking",
