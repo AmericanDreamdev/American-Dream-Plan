@@ -11,7 +11,6 @@ import heroImage from "@/assets/hero-american-dream.webp";
 import consultant2 from "@/assets/consultant-2.webp";
 // Imagem do processo removida - usando URL externa
 import successStudents from "@/assets/success-students.webp";
-import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -145,7 +144,7 @@ const Index = () => {
               },
               {
                 title: "Qual o visto já está incluso",
-                description: "Turista (B1/B2), Estudante (F1) ou Troca de Status (COS)"
+                description: "Turista (B1/B2), Estudante (F1) ou Troca de Status (COS). Também incluímos consultoria para trabalhar no Canadá"
               },
               {
                 title: "Acompanhamento direto",
@@ -390,7 +389,7 @@ const Index = () => {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-[#0575E6] mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">Qual o visto já está incluso: Turista (B1/B2), Estudante (F1) ou Troca de Status (COS)</span>
+                      <span className="text-gray-700">Qual o visto já está incluso: Turista (B1/B2), Estudante (F1) ou Troca de Status (COS). Também incluímos consultoria para trabalhar no Canadá</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckCircle2 className="w-5 h-5 text-[#0575E6] mt-0.5 flex-shrink-0" />
@@ -462,13 +461,24 @@ const Index = () => {
                 </div>
               </div>
 
-              <Button 
-                size="lg" 
-                className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-lg py-6 font-semibold shadow-lg hover:shadow-xl transition-all"
-                onClick={() => navigate("/lead-form")}
-              >
-                Garantir Minha Vaga Agora
-              </Button>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="inline-flex items-center gap-2 bg-red-500 border-4 border-red-600 rounded-xl px-8 py-4 mb-4 shadow-lg">
+                    <span className="text-white font-black text-2xl md:text-3xl">50% DE DESCONTO</span>
+                  </div>
+                  <div className="text-xl md:text-2xl text-gray-700 mb-4">
+                    <span className="line-through text-gray-400 mr-3">De US$ 1.998</span>
+                    <span className="text-gray-900 font-bold">por apenas US$ 999</span>
+                  </div>
+                </div>
+                <Button 
+                  size="lg" 
+                  className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-2xl md:text-3xl py-8 md:py-10 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
+                  onClick={() => navigate("/lead-form")}
+                >
+                  Garantir Minha Vaga Agora por US$ 999
+                </Button>
+              </div>
             </Card>
 
             <Card className="bg-white border-2 border-[#0575E6]/30 shadow-2xl hover:shadow-3xl transition-shadow">
@@ -576,11 +586,19 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-border relative z-10">
+      <footer className="py-12 border-t border-border relative z-10 bg-black">
         <div className="container mx-auto px-6">
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground mb-4">
             <p className="mb-4 text-2xl font-bold text-white">American Dream Consultoria</p>
             <p>© 2025 American Dream. Todos os direitos reservados.</p>
+          </div>
+          <div className="text-center mt-6">
+            <button
+              onClick={() => navigate("/terms")}
+              className="text-[#0575E6] hover:text-[#0685F6] underline text-sm transition-colors"
+            >
+              Termos e Condições
+            </button>
           </div>
         </div>
       </footer>

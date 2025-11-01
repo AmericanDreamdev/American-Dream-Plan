@@ -298,6 +298,8 @@ Deno.serve(async (req: Request) => {
     // Normalizar nome para criar nome de arquivo seguro
     // Remove acentos e caracteres especiais
     const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
+    // Adicionar timestamp para garantir unicidade
+    const timestamp = Date.now();
     
     const normalizedName = lead.name
       .toLowerCase()
@@ -314,23 +316,69 @@ Deno.serve(async (req: Request) => {
       .replace(/^-|-$/g, "") // Remove hífens no início/fim
       .substring(0, 50); // Limita o tamanho
     
-    const fileName = `${normalizedName}_${dateStr}.pdf`;
+    const fileName = `${normalizedName}_${dateStr}_${timestamp}.pdf`;
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("contracts")
       .upload(fileName, pdfBuffer, {
         contentType: "application/pdf",
-        upsert: false,
+        upsert: true, // Permite sobrescrever se o arquivo já existir
       });
 
     if (uploadError) {
       console.error("Error uploading PDF:", uploadError);
-      return new Response(
-        JSON.stringify({ error: "Failed to upload PDF" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      
+      // Se o arquivo já existe (409), tentar deletar e fazer upload novamente
+      if (uploadError.statusCode === "409" || uploadError.status === 409) {
+        console.log(`File ${fileName} already exists, attempting to delete and re-upload...`);
+        
+        // Tentar deletar o arquivo existente
+        const { error: deleteError } = await supabase.storage
+          .from("contracts")
+          .remove([fileName]);
+        
+        if (!deleteError) {
+          // Tentar fazer upload novamente
+          const { data: retryUploadData, error: retryUploadError } = await supabase.storage
+            .from("contracts")
+            .upload(fileName, pdfBuffer, {
+              contentType: "application/pdf",
+              upsert: true,
+            });
+          
+          if (retryUploadError) {
+            console.error("Error uploading PDF after retry:", retryUploadError);
+            return new Response(
+              JSON.stringify({ error: "Failed to upload PDF after retry" }),
+              {
+                status: 500,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          }
+          
+          // Se chegou aqui, o retry funcionou
+          console.log("PDF uploaded successfully after retry");
+        } else {
+          // Se não conseguiu deletar, usar upsert diretamente (já está em upsert: true, então não deveria entrar aqui)
+          console.error("Error deleting existing file:", deleteError);
+          return new Response(
+            JSON.stringify({ error: "Failed to handle existing PDF file" }),
+            {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
         }
-      );
+      } else {
+        // Outro tipo de erro
+        return new Response(
+          JSON.stringify({ error: "Failed to upload PDF" }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     // Get public URL

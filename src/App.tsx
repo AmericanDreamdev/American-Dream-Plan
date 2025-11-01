@@ -6,13 +6,15 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LeadForm from "./pages/LeadForm";
-import AcceptTerms from "./pages/AcceptTerms";
-import ProcessPayment from "./pages/ProcessPayment";
+import TermsAndConditions from "./pages/TermsAndConditions";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
+import PaymentOptions from "./pages/PaymentOptions";
+import ZelleCheckout from "./pages/ZelleCheckout";
 
 const queryClient = new QueryClient();
 
+// Rotas atualizadas - removidas AcceptTerms e ProcessPayment
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -27,8 +29,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/lead-form" element={<LeadForm />} />
-          <Route path="/accept-terms" element={<AcceptTerms />} />
-          <Route path="/process-payment" element={<ProcessPayment />} />
+          <Route path="/terms" element={<TermsAndConditions />} />
+          <Route path="/payment-options" element={<PaymentOptions />} />
+          <Route path="/zelle-checkout" element={<ZelleCheckout />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

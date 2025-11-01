@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Download } from "lucide-react";
+import { CheckCircle2, Download, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const PaymentSuccess = () => {
@@ -14,19 +14,43 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     const fetchPaymentInfo = async () => {
-      if (!sessionId) {
-        setLoading(false);
-        return;
-      }
+      const leadId = searchParams.get("lead_id");
+      const termAcceptanceId = searchParams.get("term_acceptance_id");
 
       try {
-        // Buscar payment pelo session_id
-        const { data: payment, error } = await supabase
-          .from("payments")
-          .select("*")
-          .eq("stripe_session_id", sessionId)
-          .single();
+        let payment = null;
 
+        // Se tiver session_id, buscar por session_id (Stripe card/PIX direto)
+        if (sessionId) {
+          const { data, error } = await supabase
+            .from("payments")
+            .select("*")
+            .eq("stripe_session_id", sessionId)
+            .single();
+
+          if (!error && data) {
+            payment = data;
+          }
+        }
+
+        // Se não encontrou por session_id e tem lead_id/term_acceptance_id, buscar pagamento completed
+        if (!payment && leadId && termAcceptanceId) {
+          const { data, error } = await supabase
+            .from("payments")
+            .select("*")
+            .eq("lead_id", leadId)
+            .eq("term_acceptance_id", termAcceptanceId)
+            .in("status", ["completed", "zelle_confirmed", "redirected_to_infinitepay"])
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (!error && data) {
+            payment = data;
+          }
+        }
+
+        // Se encontrou pagamento, buscar PDF se tiver term_acceptance_id
         if (payment?.term_acceptance_id) {
           // Buscar term_acceptance para pegar o pdf_url
           const { data: termAcceptance } = await supabase
@@ -47,7 +71,7 @@ const PaymentSuccess = () => {
     };
 
     fetchPaymentInfo();
-  }, [sessionId]);
+  }, [sessionId, searchParams]);
 
   return (
     <div className="fixed inset-0 bg-white z-0">
@@ -75,6 +99,20 @@ const PaymentSuccess = () => {
               </Button>
             </div>
           )}
+
+          <div className="mt-8 space-y-4 p-6 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-gray-700 font-medium mb-2">
+              Para mais informações, entre em contato conosco:
+            </p>
+            <Button
+              onClick={() => window.open("https://wa.me/13234041292", "_blank")}
+              className="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+              size="lg"
+            >
+              <MessageCircle className="mr-2 h-5 w-5" />
+              Entrar em contato via WhatsApp
+            </Button>
+          </div>
 
           <div className="mt-8 space-y-4">
             <Button

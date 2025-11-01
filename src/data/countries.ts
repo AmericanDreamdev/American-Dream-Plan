@@ -6,8 +6,11 @@ export interface Country {
 }
 
 export const countries: Country[] = [
-  // América do Norte
+  // Países mais utilizados (aparecem primeiro)
+  { code: "BR", name: "Brasil", dialCode: "+55" },
   { code: "US", name: "Estados Unidos", dialCode: "+1" },
+  
+  // América do Norte
   { code: "CA", name: "Canadá", dialCode: "+1" },
   { code: "MX", name: "México", dialCode: "+52" },
   
@@ -29,7 +32,6 @@ export const countries: Country[] = [
   { code: "TT", name: "Trinidad e Tobago", dialCode: "+1" },
   
   // América do Sul
-  { code: "BR", name: "Brasil", dialCode: "+55" },
   { code: "AR", name: "Argentina", dialCode: "+54" },
   { code: "CL", name: "Chile", dialCode: "+56" },
   { code: "CO", name: "Colômbia", dialCode: "+57" },
@@ -107,6 +109,24 @@ export const countries: Country[] = [
   { code: "HK", name: "Hong Kong", dialCode: "+852" },
 ];
 
-// Ordenar países alfabeticamente por nome
-countries.sort((a, b) => a.name.localeCompare(b.name, "pt"));
+// Ordenar países: Brasil e EUA primeiro, depois o resto alfabeticamente
+const priorityCountries = ["BR", "US"];
+countries.sort((a, b) => {
+  const aIsPriority = priorityCountries.includes(a.code);
+  const bIsPriority = priorityCountries.includes(b.code);
+  
+  // Se ambos são prioritários, Brasil vem antes de EUA
+  if (aIsPriority && bIsPriority) {
+    if (a.code === "BR") return -1;
+    if (b.code === "BR") return 1;
+    return 0;
+  }
+  
+  // Países prioritários sempre primeiro
+  if (aIsPriority) return -1;
+  if (bIsPriority) return 1;
+  
+  // Resto ordenado alfabeticamente
+  return a.name.localeCompare(b.name, "pt");
+});
 

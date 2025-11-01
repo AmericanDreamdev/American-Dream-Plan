@@ -25,17 +25,20 @@ const PaymentCancel = () => {
         return;
       }
 
-      // Tentar buscar do sessionId se não tiver os IDs
+      // Tentar buscar do sessionId se não tiver os IDs na URL
       if (!urlLeadId || !urlTermAcceptanceId) {
         if (sessionId) {
           try {
+            // Tentar buscar do payment pelo session_id
             const { data: payment } = await supabase
               .from("payments")
               .select("lead_id, term_acceptance_id")
               .eq("stripe_session_id", sessionId)
+              .order("created_at", { ascending: false })
+              .limit(1)
               .maybeSingle();
 
-            if (payment) {
+            if (payment?.lead_id && payment?.term_acceptance_id) {
               setLeadId(payment.lead_id);
               setTermAcceptanceId(payment.term_acceptance_id);
               setLoading(false);
@@ -45,10 +48,6 @@ const PaymentCancel = () => {
             console.error("Error fetching payment info:", err);
           }
         }
-
-        // Se ainda não encontrou, tentar buscar o term_acceptance mais recente do lead
-        // através dos metadados da última sessão do Stripe ou buscar diretamente
-        // Por enquanto, se não encontrar nada, não há muito o que fazer
       }
 
       setLoading(false);
@@ -58,11 +57,12 @@ const PaymentCancel = () => {
   }, [sessionId, urlLeadId, urlTermAcceptanceId]);
 
   const handleTryAgain = () => {
+    // Sempre tentar redirecionar para página de opções de pagamento
+    // Se tiver os IDs, usar eles; senão, redirecionar para o formulário para gerar novos IDs
     if (leadId && termAcceptanceId) {
-      navigate("/process-payment", {
-        state: { leadId, termAcceptanceId },
-      });
+      navigate(`/payment-options?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
     } else {
+      // Se não tiver os IDs, voltar para o formulário para criar um novo lead/aceitação
       navigate("/lead-form");
     }
   };

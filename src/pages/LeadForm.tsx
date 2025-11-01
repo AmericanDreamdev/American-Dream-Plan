@@ -21,10 +21,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 import { countries } from "@/data/countries";
 import { parsePhoneNumber, isValidPhoneNumber, AsYouType } from "libphonenumber-js";
+import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
+
+interface Term {
+  id: string;
+  title: string;
+  content: string;
+  term_type: string;
+}
 
 // Schema de validação dinâmico baseado no país
 const createLeadFormSchema = (phoneCountryCode: string) => {
@@ -67,6 +76,9 @@ const createLeadFormSchema = (phoneCountryCode: string) => {
         }
       ),
     phoneCountryCode: z.string().min(1, "Por favor, selecione o país do seu telefone"),
+    termsAccepted: z.boolean().refine((val) => val === true, {
+      message: "Você precisa aceitar os termos e condições para continuar",
+    }),
   });
 };
 
@@ -75,6 +87,7 @@ type LeadFormValues = {
   email: string;
   phone: string;
   phoneCountryCode: string;
+  termsAccepted: boolean;
 };
 
 const LeadForm = () => {
@@ -82,6 +95,9 @@ const LeadForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phoneCountryCode, setPhoneCountryCode] = useState<string>("BR");
+  const [activeTerm, setActiveTerm] = useState<Term | null>(null);
+  const [loadingTerms, setLoadingTerms] = useState(false);
+  const { recordTermAcceptance } = useTermsAcceptance();
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(createLeadFormSchema("BR")),
@@ -92,8 +108,43 @@ const LeadForm = () => {
       email: "",
       phone: "",
       phoneCountryCode: "BR", // Default phone country code
+      termsAccepted: false,
     },
   });
+
+  // Carregar termos na montagem do componente (necessário para validar e registrar aceitação)
+  useEffect(() => {
+    const loadActiveTerm = async () => {
+      setLoadingTerms(true);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("application_terms")
+          .select("*")
+          .eq("term_type", "lead_contract")
+          .eq("is_active", true)
+          .order("version", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        if (data) {
+          setActiveTerm(data);
+        } else {
+          console.warn("Nenhum termo ativo encontrado.");
+        }
+      } catch (err: any) {
+        console.error("Error loading term:", err);
+        // Não mostrar erro aqui para não bloquear o formulário
+        // O erro será mostrado apenas se tentar submeter sem termos
+      } finally {
+        setLoadingTerms(false);
+      }
+    };
+
+    loadActiveTerm();
+  }, []);
 
   // Atualizar resolver quando país muda
   useEffect(() => {
@@ -169,13 +220,7 @@ const LeadForm = () => {
 
       if (insertError) {
         console.error("Erro ao inserir lead:", insertError);
-        if (insertError.code === "23505") {
-          // Violação de constraint unique (email duplicado)
-          form.setError("email", {
-            type: "manual",
-            message: "Este email já está cadastrado. Por favor, use outro endereço de email.",
-          });
-        } else if (insertError.code === "PGRST301" || insertError.message?.includes("JWT")) {
+        if (insertError.code === "PGRST301" || insertError.message?.includes("JWT")) {
           setError("Ocorreu um problema de conexão. Por favor, verifique sua internet e tente novamente.");
         } else {
           setError("Não foi possível processar seus dados. Por favor, verifique as informações e tente novamente.");
@@ -184,10 +229,71 @@ const LeadForm = () => {
         return;
       }
 
-      // Se sucesso, redirecionar para página de aceitação de termos
-      // Passaremos o lead_id via state
-      if (data) {
-        navigate("/accept-terms", { state: { leadId: data.id } });
+      // Verificar se os termos foram aceitos e se estão disponíveis
+      if (!values.termsAccepted) {
+        setError("Por favor, aceite os termos e condições para continuar.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!activeTerm) {
+        setError("Termos não disponíveis. Por favor, recarregue a página e tente novamente.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Detectar país do usuário por IP antes de redirecionar
+      let userCountry = "US"; // Padrão: EUA
+      try {
+        const ipResponse = await fetch("https://ipapi.co/json/");
+        if (ipResponse.ok) {
+          const ipData = await ipResponse.json();
+          userCountry = ipData.country_code || "US"; // BR para Brasil, US para outros
+          console.log("User country detected:", userCountry);
+        }
+      } catch (ipError) {
+        console.warn("Could not detect user country by IP:", ipError);
+        // Usar padrão (US) se falhar
+      }
+
+      // Registrar aceitação de termos e gerar PDF antes de redirecionar
+      try {
+        const acceptanceId = await recordTermAcceptance(
+          data.id,
+          activeTerm.id,
+          "lead_contract"
+        );
+
+        if (acceptanceId) {
+          // Gerar PDF no momento (aguardar a geração)
+          try {
+            const { error: pdfError } = await supabase.functions.invoke("generate-contract-pdf", {
+              body: {
+                lead_id: data.id,
+                term_acceptance_id: acceptanceId,
+              },
+            });
+
+            if (pdfError) {
+              console.error("Error generating PDF:", pdfError);
+              // Continuar mesmo se falhar a geração do PDF
+              // O PDF pode ser gerado depois se necessário
+            }
+          } catch (pdfErr) {
+            console.error("Error calling PDF generation:", pdfErr);
+            // Continuar mesmo se falhar
+          }
+
+          // Redirecionar para página de opções de pagamento com país detectado
+          navigate(`/payment-options?lead_id=${data.id}&term_acceptance_id=${acceptanceId}&country=${userCountry}`);
+        } else {
+          setError("Erro ao registrar aceitação dos termos. Tente novamente.");
+          setIsSubmitting(false);
+        }
+      } catch (termsError) {
+        console.error("Error accepting terms:", termsError);
+        setError("Erro ao processar aceitação dos termos. Tente novamente.");
+        setIsSubmitting(false);
       }
     } catch (err) {
       console.error("Erro ao salvar lead:", err);
@@ -349,6 +455,38 @@ const LeadForm = () => {
                 }}
               />
 
+              {/* Checkbox de aceitação de termos */}
+              <FormField
+                control={form.control}
+                name="termsAccepted"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-gray-50">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm font-normal text-gray-700 cursor-pointer">
+                        Li e concordo com os{" "}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate("/terms", { state: { returnTo: "/lead-form" } });
+                          }}
+                          className="text-[#0575E6] hover:text-[#021B79] underline font-medium"
+                        >
+                          termos e condições
+                        </button>
+                      </FormLabel>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+
               {error && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-md">
                   <p className="text-sm font-medium text-red-800 mb-1">Ops! Algo deu errado</p>
@@ -366,10 +504,12 @@ const LeadForm = () => {
                   !!form.formState.errors.email ||
                   !!form.formState.errors.phone ||
                   !!form.formState.errors.phoneCountryCode ||
+                  !!form.formState.errors.termsAccepted ||
                   !form.getValues("name")?.trim() ||
                   !form.getValues("email")?.trim() ||
                   !form.getValues("phone")?.trim() ||
-                  !form.getValues("phoneCountryCode")
+                  !form.getValues("phoneCountryCode") ||
+                  !form.getValues("termsAccepted")
                 }
               >
                 {isSubmitting ? (

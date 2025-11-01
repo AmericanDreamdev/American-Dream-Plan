@@ -72,28 +72,88 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Função auxiliar para obter método de pagamento do PaymentIntent
+    const getPaymentMethod = async (paymentIntentId: string | null): Promise<string | null> => {
+      if (!paymentIntentId) return null;
+      
+      try {
+        // Expandir charges para obter payment_method_details
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+          expand: ['charges.data.payment_method'],
+        });
+        
+        // O método de pagamento está nos charges (quando o pagamento já foi processado)
+        if (paymentIntent.charges?.data?.length > 0) {
+          const charge = paymentIntent.charges.data[0];
+          if (charge.payment_method_details?.type) {
+            const methodType = charge.payment_method_details.type;
+            return methodType === "pix" ? "pix" : methodType === "card" ? "card" : methodType;
+          }
+        }
+        
+        // Fallback: verificar payment_method_types (disponível antes do pagamento ser processado)
+        if (paymentIntent.payment_method_types?.length > 0) {
+          const methodType = paymentIntent.payment_method_types[0];
+          return methodType === "pix" ? "pix" : methodType === "card" ? "card" : methodType;
+        }
+      } catch (err) {
+        console.error("Error retrieving payment intent:", err);
+      }
+      return null;
+    };
+
     // Processar eventos
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
+        // Obter método de pagamento (geralmente cartão para pagamentos síncronos)
+        const paymentMethod = await getPaymentMethod(session.payment_intent as string);
+
+        // Preparar update com informações adicionais
+        const updateData: any = {
+          status: "completed",
+          stripe_payment_intent_id: session.payment_intent as string,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Se for PIX ou outra moeda diferente de USD, atualizar amount e currency
+        if (session.currency && session.currency.toLowerCase() !== "usd") {
+          updateData.amount = session.amount_total ? session.amount_total / 100 : null;
+          updateData.currency = session.currency.toUpperCase();
+        } else if (session.amount_total) {
+          // Atualizar amount mesmo para USD para garantir consistência
+          updateData.amount = session.amount_total / 100;
+          updateData.currency = (session.currency || "USD").toUpperCase();
+        }
+
+        // Adicionar método de pagamento ao metadata se existir
+        if (paymentMethod) {
+          const { data: currentPayment } = await supabase
+            .from("payments")
+            .select("metadata")
+            .eq("stripe_session_id", session.id)
+            .single();
+
+          const metadata = currentPayment?.metadata || {};
+          updateData.metadata = {
+            ...metadata,
+            payment_method: paymentMethod,
+            amount_total: session.amount_total ? session.amount_total / 100 : null,
+            currency: session.currency,
+          };
+        }
+
         // Atualizar payment status
         const { error: updateError } = await supabase
           .from("payments")
-          .update({
-            status: "completed",
-            stripe_payment_intent_id: session.payment_intent as string,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq("stripe_session_id", session.id);
 
         if (updateError) {
           console.error("Error updating payment:", updateError);
-        }
-
-        // Se tiver metadata com lead_id, pode fazer outras ações aqui
-        if (session.metadata?.lead_id) {
-          console.log(`Payment completed for lead: ${session.metadata.lead_id}`);
+        } else {
+          console.log(`Payment completed (${paymentMethod || "unknown"}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
         }
 
         break;
@@ -102,17 +162,47 @@ Deno.serve(async (req: Request) => {
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
 
+        // Para pagamentos assíncronos, geralmente é PIX
+        const paymentMethod = await getPaymentMethod(session.payment_intent as string) || "pix";
+
+        // Preparar update com informações adicionais
+        const updateData: any = {
+          status: "completed",
+          stripe_payment_intent_id: session.payment_intent as string,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Para PIX, sempre atualizar amount e currency (será BRL)
+        if (session.amount_total && session.currency) {
+          updateData.amount = session.amount_total / 100;
+          updateData.currency = session.currency.toUpperCase();
+        }
+
+        // Adicionar método de pagamento ao metadata
+        const { data: currentPayment } = await supabase
+          .from("payments")
+          .select("metadata")
+          .eq("stripe_session_id", session.id)
+          .single();
+
+        const metadata = currentPayment?.metadata || {};
+        updateData.metadata = {
+          ...metadata,
+          payment_method: paymentMethod,
+          amount_total: session.amount_total ? session.amount_total / 100 : null,
+          currency: session.currency,
+          async_payment: true,
+        };
+
         const { error: updateError } = await supabase
           .from("payments")
-          .update({
-            status: "completed",
-            stripe_payment_intent_id: session.payment_intent as string,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq("stripe_session_id", session.id);
 
         if (updateError) {
           console.error("Error updating payment:", updateError);
+        } else {
+          console.log(`Async payment completed (${paymentMethod}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
         }
 
         break;
