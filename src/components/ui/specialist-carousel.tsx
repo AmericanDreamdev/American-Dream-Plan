@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SpecialistCarouselProps {
@@ -15,58 +15,114 @@ export const SpecialistCarousel = ({
   interval = 3000,
 }: SpecialistCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]));
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer para carregar apenas quando visível
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!autoplay || images.length <= 1) return;
+    if (!autoplay || images.length <= 1 || !isVisible) return;
 
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
+      setCurrentIndex((prev) => {
+        const next = (prev + 1) % images.length;
+        // Preload próxima imagem antes de mudar
+        setLoadedImages((prev) => {
+          if (!prev.has(next)) {
+            return new Set([...prev, next]);
+          }
+          return prev;
+        });
+        return next;
+      });
     }, interval);
 
     return () => clearInterval(timer);
-  }, [autoplay, interval, images.length]);
+  }, [autoplay, interval, images.length, isVisible]);
 
   const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+    setCurrentIndex((prev) => {
+      const newIndex = (prev - 1 + images.length) % images.length;
+      if (!loadedImages.has(newIndex)) {
+        setLoadedImages((prev) => new Set([...prev, newIndex]));
+      }
+      return newIndex;
+    });
   };
 
   const goToNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
+    setCurrentIndex((prev) => {
+      const newIndex = (prev + 1) % images.length;
+      if (!loadedImages.has(newIndex)) {
+        setLoadedImages((prev) => new Set([...prev, newIndex]));
+      }
+      return newIndex;
+    });
   };
 
   const goToSlide = (index: number) => {
+    if (!loadedImages.has(index)) {
+      setLoadedImages((prev) => new Set([...prev, index]));
+    }
     setCurrentIndex(index);
   };
 
   if (images.length === 0) return null;
 
   return (
-    <div className="relative w-full h-96 overflow-hidden rounded-lg group">
-      {/* Imagens do carrossel */}
+    <div ref={containerRef} className="relative w-full h-96 overflow-hidden rounded-lg group">
+      {/* Imagens do carrossel - renderizar apenas as que já foram carregadas ou estão visíveis */}
       <div className="relative w-full h-full">
-        {images.map((image, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
-          >
-            <img
-              src={image}
-              alt={`${name} - Foto ${index + 1}`}
-              className="w-full h-full object-cover"
-              style={{ 
-                objectPosition: 
-                  image.includes('foto 5') && image.includes('brat')
-                    ? '50% 15%' 
-                    : image.includes('foto 6') && image.includes('brant')
-                    ? '50% 25%'
-                    : 'center center'
-              }}
-              loading={index === 0 ? "eager" : "lazy"}
-            />
-          </div>
-        ))}
+        {images.map((image, index) => {
+          // Só renderizar se já foi carregada ou é a atual
+          if (!loadedImages.has(index) && index !== currentIndex) {
+            return null;
+          }
+          
+          return (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-500 ${
+                index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
+              }`}
+            >
+              <img
+                src={image}
+                alt={`${name} - Foto ${index + 1}`}
+                className="w-full h-full object-cover"
+                style={{ 
+                  objectPosition: 
+                    image.includes('foto 5') && image.includes('brat')
+                      ? '50% 15%' 
+                      : image.includes('foto 6') && image.includes('brant')
+                      ? '50% 25%'
+                      : 'center center'
+                }}
+                loading={index === 0 && isVisible ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={index === 0 && isVisible ? "high" : "low"}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Botões de navegação */}

@@ -30,6 +30,9 @@ const Index = () => {
             alt="American Dream" 
             className="w-full h-full object-cover opacity-30"
             id="hero-background-hat"
+            loading="eager"
+            fetchPriority="high"
+            decoding="sync"
           />
           {/* Gradiente patriótico azul/branco/vermelho como overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
@@ -220,21 +223,21 @@ const Index = () => {
               <div className="w-full relative overflow-hidden bg-gradient-to-b from-primary/10 to-primary/20">
                 <SpecialistCarousel
                   images={[
-                    "/foto 1 ceme.jpg",
-                    "/foto 2 ceme.jpg",
-                    "/foto 3 ceme.jpg",
-                    "/foto 4 ceme.jpg",
-                    "/foto 5 ceme.jpg",
-                    "/foto 7 ceme.jpg",
-                    "/foto 8 ceme.jpg",
-                    "/foto 9 ceme.jpg",
-                    "/foto 10 ceme.jpg",
-                    "/foto 11 ceme.jpg",
-                    "/foto 12 ceme.jpg",
-                    "/foto 13 ceme.jpg",
-                    "/foto 14 ceme.jpg",
-                    "/foto ceme 15.jpg",
-                    "/foto 16 ceme.jpg",
+                    "/foto 1 ceme.webp",
+                    "/foto 2 ceme.webp",
+                    "/foto 3 ceme.webp",
+                    "/foto 4 ceme.webp",
+                    "/foto 5 ceme.webp",
+                    "/foto 7 ceme.webp",
+                    "/foto 8 ceme.webp",
+                    "/foto 9 ceme.webp",
+                    "/foto 10 ceme.webp",
+                    "/foto 11 ceme.webp",
+                    "/foto 12 ceme.webp",
+                    "/foto 13 ceme.webp",
+                    "/foto 14 ceme.webp",
+                    "/foto ceme 15.webp",
+                    "/foto 16 ceme.webp",
                   ]}
                   name="Ceme Suaiden"
                   autoplay={true}
@@ -254,12 +257,12 @@ const Index = () => {
               <div className="w-full relative overflow-hidden bg-gradient-to-b from-primary/10 to-primary/20">
                 <SpecialistCarousel
                   images={[
-                    "/foto 1 brant.jpg",
-                    "/foto 2 brant.jpg",
+                    "/foto 1 brant.webp",
+                    "/foto 2 brant.webp",
                     "/foto 2.webp",
-                    "/foto 3 bramt.jpg",
-                    "/foto 5 brat.jpg",
-                    "/foto 6 brant.jpg",
+                    "/foto 3 bramt.webp",
+                    "/foto 5 brat.webp",
+                    "/foto 6 brant.webp",
                   ]}
                   name="Matheus Brant"
                   autoplay={true}
@@ -548,7 +551,10 @@ const Index = () => {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <img 
-              src="/foto bone american dream.jpg" 
+              src="/foto bone american dream.webp"
+              loading="lazy"
+              fetchPriority="low"
+              decoding="async" 
               alt="American Dream - Boné" 
               className="w-full max-w-md mx-auto mb-8"
             />

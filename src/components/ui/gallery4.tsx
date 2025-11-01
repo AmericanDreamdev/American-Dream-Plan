@@ -32,21 +32,22 @@ const Gallery4 = ({
   const [canScrollNext, setCanScrollNext] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Preload images for better performance
+  // Preload apenas as primeiras imagens visíveis (primeira e segunda)
   useEffect(() => {
     if (items.length > 0 && typeof window !== 'undefined') {
-      const imageUrls = items.map(item => item.image);
+      // Preload apenas as primeiras 2-3 imagens do carrossel
+      const imagesToPreload = items.slice(0, 3).map(item => item.image);
       // Use requestIdleCallback for non-blocking image preload
       if ('requestIdleCallback' in window) {
         requestIdleCallback(() => {
-          imageUrls.forEach((url) => {
+          imagesToPreload.forEach((url) => {
             const img = new Image();
             img.src = url;
           });
         }, { timeout: 2000 });
       } else {
         setTimeout(() => {
-          imageUrls.forEach((url) => {
+          imagesToPreload.forEach((url) => {
             const img = new Image();
             img.src = url;
           });
@@ -83,6 +84,10 @@ const Gallery4 = ({
         decoding="async"
         className="absolute h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
         fetchpriority="low"
+        onError={(e) => {
+          // Fallback para placeholder se imagem falhar
+          e.currentTarget.src = '/placeholder.svg';
+        }}
       />
       <div className="absolute inset-0 h-full bg-[linear-gradient(hsl(var(--primary)/0),hsl(var(--primary)/0.4),hsl(var(--primary)/0.8)_100%)] mix-blend-multiply" />
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-start justify-end p-4 text-primary-foreground md:p-6">

@@ -21,10 +21,18 @@ async function compressImage(filePath) {
     const basename = path.basename(filePath, ext);
     const dir = path.dirname(filePath);
     
-    // Pular se já for .webp
+    // Se já for .webp, verificar tamanho e recomprimir se necessário
     if (ext === '.webp') {
-      console.log(`✓ Pulando ${basename}${ext} (já é WebP)`);
-      return;
+      const stats = fs.statSync(filePath);
+      const size = stats.size;
+      // Se maior que 250KB, recomprimir com mais agressividade
+      if (size > 250 * 1024) {
+        console.log(`⚠️  ${basename}${ext} é grande (${(size / 1024).toFixed(2)} KB), recomprimindo...`);
+        // Continuar processamento
+      } else {
+        console.log(`✓ Pulando ${basename}${ext} (já otimizado: ${(size / 1024).toFixed(2)} KB)`);
+        return;
+      }
     }
     
     const stats = fs.statSync(filePath);
@@ -41,18 +49,46 @@ async function compressImage(filePath) {
     
     let image = sharp(filePath);
     
-    // Redimensionar se muito grande (máximo 1920px de largura)
+    // Obter metadados da imagem
     const metadata = await image.metadata();
-    if (metadata.width > 1920) {
-      image = image.resize(1920, null, {
+    
+    // Redimensionar se muito grande - máximo 1600px de largura OU altura
+    // Para web, não precisamos de imagens gigantes
+    let width = metadata.width;
+    let height = metadata.height;
+    const maxDimension = 1600;
+    
+    if (width > maxDimension || height > maxDimension) {
+      if (width > height) {
+        width = maxDimension;
+        height = null; // manter aspect ratio
+      } else {
+        height = maxDimension;
+        width = null; // manter aspect ratio
+      }
+      
+      image = image.resize(width, height, {
         withoutEnlargement: true,
         fit: 'inside'
       });
     }
     
+    // Ajustar qualidade baseado no tamanho original
+    // Imagens maiores precisam de mais compressão
+    let quality = 80;
+    if (originalSize > 200 * 1024) { // > 200KB
+      quality = 75;
+    }
+    if (originalSize > 300 * 1024) { // > 300KB
+      quality = 70;
+    }
+    if (originalSize > 500 * 1024) { // > 500KB
+      quality = 65;
+    }
+    
     // Comprimir para WebP
     await image
-      .webp({ quality: 85 })
+      .webp({ quality, effort: 6 }) // effort 6 = melhor compressão (mais lento mas menor arquivo)
       .toFile(outputPath);
     
     const newStats = fs.statSync(outputPath);
