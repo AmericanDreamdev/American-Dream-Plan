@@ -131,9 +131,9 @@ const PaymentOptions = () => {
       // Marcar no sessionStorage ANTES de redirecionar
       sessionStorage.setItem(redirectKey, "true");
       
-      const registerInfinitePayRedirect = async () => {
+      const registerAndRedirect = async () => {
         try {
-          await supabase.from("payments").insert({
+          const { error } = await supabase.from("payments").insert({
             lead_id: leadId,
             term_acceptance_id: termAcceptanceId,
             amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
@@ -145,14 +145,20 @@ const PaymentOptions = () => {
               redirected_at: new Date().toISOString(),
             },
           });
+          
+          if (error) {
+            console.error("Error registering InfinitePay redirect:", error);
+          }
         } catch (err) {
           console.error("Error registering InfinitePay redirect:", err);
-          // Não bloqueia o redirecionamento mesmo se houver erro (pode ser problema de RLS)
+        } finally {
+          // Redirecionar mesmo se houver erro
+          window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
         }
       };
       
-      registerInfinitePayRedirect();
-      window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
+      // Aguardar o registro antes de redirecionar
+      registerAndRedirect();
     }
   }, [leadId, termAcceptanceId, navigate, isBrazil]);
 
@@ -258,7 +264,7 @@ const PaymentOptions = () => {
     
     // Registrar redirecionamento para InfinitePay
     try {
-      await supabase.from("payments").insert({
+      const { error } = await supabase.from("payments").insert({
         lead_id: leadId,
         term_acceptance_id: termAcceptanceId,
         amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
@@ -270,9 +276,12 @@ const PaymentOptions = () => {
           redirected_at: new Date().toISOString(),
         },
       });
+      
+      if (error) {
+        console.error("Error registering InfinitePay redirect:", error);
+      }
     } catch (err) {
       console.error("Error registering InfinitePay redirect:", err);
-      // Não bloqueia o redirecionamento mesmo se houver erro (pode ser problema de RLS)
     }
     
     // Redirecionar diretamente para o link da InfinitePay
