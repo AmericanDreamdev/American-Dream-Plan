@@ -96,6 +96,7 @@ const PaymentOptions = () => {
   const [loadingPix, setLoadingPix] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userCountry, setUserCountry] = useState<string>(countryParam.toUpperCase());
+  const [returnedFromInfinitePay, setReturnedFromInfinitePay] = useState(false);
   
   // Determinar se é Brasil ou EUA
   const isBrazil = userCountry === "BR";
@@ -107,8 +108,29 @@ const PaymentOptions = () => {
       return;
     }
 
-    // Se for Brasil, registrar e redirecionar diretamente para InfinitePay sem mostrar a página
-    if (isBrazil) {
+    // Verificar se o usuário voltou do InfinitePay
+    const referrer = document.referrer;
+    const isFromInfinitePay = referrer.includes("infinitepay.io");
+    
+    // Verificar também no sessionStorage se já foi redirecionado
+    const redirectKey = `infinitePay_redirect_${leadId}`;
+    const wasRedirected = sessionStorage.getItem(redirectKey);
+    
+    if (isFromInfinitePay || wasRedirected) {
+      // Usuário voltou do InfinitePay, não redirecionar novamente automaticamente
+      setReturnedFromInfinitePay(true);
+      // Limpar o sessionStorage para permitir novo redirecionamento se o usuário clicar em "Tentar novamente"
+      if (wasRedirected) {
+        sessionStorage.removeItem(redirectKey);
+      }
+      return;
+    }
+
+    // Se for Brasil e não voltou do InfinitePay, registrar e redirecionar diretamente
+    if (isBrazil && !returnedFromInfinitePay) {
+      // Marcar no sessionStorage ANTES de redirecionar
+      sessionStorage.setItem(redirectKey, "true");
+      
       const registerInfinitePayRedirect = async () => {
         try {
           await supabase.from("payments").insert({
@@ -125,7 +147,7 @@ const PaymentOptions = () => {
           });
         } catch (err) {
           console.error("Error registering InfinitePay redirect:", err);
-          // Não bloqueia o redirecionamento mesmo se houver erro
+          // Não bloqueia o redirecionamento mesmo se houver erro (pode ser problema de RLS)
         }
       };
       
@@ -231,6 +253,9 @@ const PaymentOptions = () => {
   const handleInfinitePayCheckout = async () => {
     if (!leadId || !termAcceptanceId) return;
     
+    // Marcar no sessionStorage que está sendo redirecionado
+    sessionStorage.setItem(`infinitePay_redirect_${leadId}`, "true");
+    
     // Registrar redirecionamento para InfinitePay
     try {
       await supabase.from("payments").insert({
@@ -247,7 +272,7 @@ const PaymentOptions = () => {
       });
     } catch (err) {
       console.error("Error registering InfinitePay redirect:", err);
-      // Não bloqueia o redirecionamento mesmo se houver erro
+      // Não bloqueia o redirecionamento mesmo se houver erro (pode ser problema de RLS)
     }
     
     // Redirecionar diretamente para o link da InfinitePay
@@ -258,8 +283,47 @@ const PaymentOptions = () => {
     return null;
   }
 
-  // Se for Brasil, não renderizar a página (será redirecionado automaticamente)
-  if (isBrazil) {
+  // Se for Brasil e voltou do InfinitePay, mostrar página com opções
+  if (isBrazil && returnedFromInfinitePay) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl">
+          <Card className="shadow-xl bg-white border border-gray-200">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+                Voltar ao Pagamento
+              </CardTitle>
+              <CardDescription className="text-base">
+                Você voltou da página de pagamento. O que deseja fazer?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 p-6">
+              <div className="flex flex-col gap-4">
+                <Button
+                  onClick={handleInfinitePayCheckout}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  size="lg"
+                >
+                  Tentar Pagamento Novamente
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/lead-form")}
+                  className="w-full"
+                  size="lg"
+                >
+                  Voltar ao Formulário
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Se for Brasil e ainda não voltou, não renderizar (será redirecionado automaticamente)
+  if (isBrazil && !returnedFromInfinitePay) {
     return null;
   }
 
