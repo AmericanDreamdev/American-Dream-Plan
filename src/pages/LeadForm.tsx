@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -27,6 +27,8 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { countries } from "@/data/countries";
 import { parsePhoneNumber, isValidPhoneNumber, AsYouType } from "libphonenumber-js";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
+
+const FORM_CACHE_KEY = "lead_form_cache";
 
 interface Term {
   id: string;
@@ -94,21 +96,61 @@ const LeadForm = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [phoneCountryCode, setPhoneCountryCode] = useState<string>("BR");
   const [activeTerm, setActiveTerm] = useState<Term | null>(null);
   const [loadingTerms, setLoadingTerms] = useState(false);
   const { recordTermAcceptance } = useTermsAcceptance();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Função para carregar dados do cache
+  const loadCachedData = (): Partial<LeadFormValues> => {
+    try {
+      const cached = localStorage.getItem(FORM_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed;
+      }
+    } catch (err) {
+      console.error("Error loading cached form data:", err);
+    }
+    return {};
+  };
+
+  // Função para salvar dados no cache
+  const saveToCache = (values: Partial<LeadFormValues>) => {
+    try {
+      // Salvar todos os dados incluindo termsAccepted
+      localStorage.setItem(FORM_CACHE_KEY, JSON.stringify(values));
+    } catch (err) {
+      console.error("Error saving form data to cache:", err);
+    }
+  };
+
+  // Função para limpar cache
+  const clearCache = () => {
+    try {
+      localStorage.removeItem(FORM_CACHE_KEY);
+    } catch (err) {
+      console.error("Error clearing cache:", err);
+    }
+  };
+
+  // Carregar dados do cache na inicialização
+  const cachedData = loadCachedData();
+  const initialPhoneCountryCode = cachedData.phoneCountryCode || "BR";
+  
+  // Inicializar phoneCountryCode state com valor do cache
+  const [phoneCountryCode, setPhoneCountryCode] = useState<string>(initialPhoneCountryCode);
+  
   const form = useForm<LeadFormValues>({
-    resolver: zodResolver(createLeadFormSchema("BR")),
+    resolver: zodResolver(createLeadFormSchema(initialPhoneCountryCode)),
     mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      phoneCountryCode: "BR", // Default phone country code
-      termsAccepted: false,
+      name: cachedData.name || "",
+      email: cachedData.email || "",
+      phone: cachedData.phone || "",
+      phoneCountryCode: initialPhoneCountryCode, // Default phone country code
+      termsAccepted: cachedData.termsAccepted || false, // Carregar do cache
     },
   });
 
@@ -148,12 +190,41 @@ const LeadForm = () => {
 
   // Atualizar resolver quando país muda
   useEffect(() => {
+    // Atualizar o resolver do formulário com o novo schema
     form.clearErrors("phone");
     // Re-validar telefone se tiver valor quando país muda
     if (form.getValues("phone")) {
       form.trigger("phone");
     }
   }, [phoneCountryCode, form]);
+
+  // Salvar dados no cache quando o formulário muda (com debounce)
+  // e atualizar phoneCountryCode state quando necessário
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      // Atualizar phoneCountryCode state se mudou
+      if (values.phoneCountryCode && values.phoneCountryCode !== phoneCountryCode) {
+        setPhoneCountryCode(values.phoneCountryCode);
+      }
+
+      // Limpar timeout anterior
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Salvar após 500ms de inatividade (debounce)
+      saveTimeoutRef.current = setTimeout(() => {
+        saveToCache(values as Partial<LeadFormValues>);
+      }, 500);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [form, phoneCountryCode]);
 
   const onSubmit = async (values: LeadFormValues) => {
     // Validar formulário antes de submeter
@@ -265,26 +336,22 @@ const LeadForm = () => {
         );
 
         if (acceptanceId) {
-          // Gerar PDF no momento (aguardar a geração)
-          try {
-            const { error: pdfError } = await supabase.functions.invoke("generate-contract-pdf", {
-              body: {
-                lead_id: data.id,
-                term_acceptance_id: acceptanceId,
-              },
-            });
+          // Limpar cache após submit bem-sucedido
+          clearCache();
 
-            if (pdfError) {
-              console.error("Error generating PDF:", pdfError);
-              // Continuar mesmo se falhar a geração do PDF
-              // O PDF pode ser gerado depois se necessário
-            }
-          } catch (pdfErr) {
-            console.error("Error calling PDF generation:", pdfErr);
-            // Continuar mesmo se falhar
-          }
+          // Gerar PDF em segundo plano (não aguardar a geração)
+          // Isso permite que o usuário seja redirecionado imediatamente
+          supabase.functions.invoke("generate-contract-pdf", {
+            body: {
+              lead_id: data.id,
+              term_acceptance_id: acceptanceId,
+            },
+          }).catch((pdfErr) => {
+            // Log do erro mas não bloquear o fluxo
+            console.error("Error calling PDF generation (background):", pdfErr);
+          });
 
-          // Redirecionar para página de opções de pagamento com país detectado
+          // Redirecionar imediatamente para página de opções de pagamento com país detectado
           navigate(`/payment-options?lead_id=${data.id}&term_acceptance_id=${acceptanceId}&country=${userCountry}`);
         } else {
           setError("Erro ao registrar aceitação dos termos. Tente novamente.");
@@ -483,6 +550,9 @@ const LeadForm = () => {
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
+                            // Salvar dados atuais no cache antes de navegar
+                            const currentValues = form.getValues();
+                            saveToCache(currentValues);
                             navigate("/terms", { state: { returnTo: "/lead-form" } });
                           }}
                           className="text-[#0575E6] hover:text-[#021B79] underline font-medium"

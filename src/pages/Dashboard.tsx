@@ -27,6 +27,17 @@ interface DashboardUser {
   status_geral: string;
   minutos_formulario_para_contrato: number | null;
   minutos_contrato_para_pagamento: number | null;
+  // Informações adicionais mais concretas
+  data_pagamento_formatada: string | null;
+  stripe_session_id: string | null;
+  stripe_payment_intent_id: string | null;
+  infinitepay_url: string | null;
+  payment_metadata: any;
+  payment_created_at: string | null;
+  payment_updated_at: string | null;
+  is_confirmado_pago: boolean;
+  pdf_generated_at_formatted: string | null;
+  is_brazilian: boolean;
 }
 
 const Dashboard = () => {
@@ -60,7 +71,7 @@ const Dashboard = () => {
     try {
       // Buscar TODOS os dados separadamente para garantir que todos sejam retornados
       
-        // 1. Buscar todos os leads (incluindo country_code para detectar brasileiros)
+        // 1. Buscar todos os leads (incluindo country_code e status_geral do banco)
         const { data: leadsData, error: leadsError } = await supabase
           .from("leads")
           .select(`
@@ -69,7 +80,8 @@ const Dashboard = () => {
             email,
             phone,
             country_code,
-            created_at
+            created_at,
+            status_geral
           `)
           .order("created_at", { ascending: false });
 
@@ -257,7 +269,7 @@ const Dashboard = () => {
               return 'Não pagou';
             }
             
-            // Pagamentos CONFIRMADOS (pagos de fato)
+            // Pagamentos CONFIRMADOS (pagos de fato) - esses são 100% confirmados
             if (status === 'completed') {
               const method = payment?.metadata?.payment_method || payment?.metadata?.requested_payment_method;
               const result = method === 'pix' ? 'Pago (PIX)' : method === 'card' ? 'Pago (Cartão)' : 'Pago (Stripe)';
@@ -266,12 +278,30 @@ const Dashboard = () => {
             if (status === 'zelle_confirmed') {
               return 'Pago (Zelle)';
             }
+            
+            // IMPORTANTE: redirected_to_infinitepay significa APENAS que foi redirecionado
+            // NÃO significa que foi pago. Precisa ser confirmado via webhook do InfinitePay
             if (status === 'redirected_to_infinitepay') {
+              // Verificar se tem confirmação no metadata (pode vir de webhook)
+              const metadata = payment?.metadata || {};
+              if (metadata.infinitepay_confirmed === true || metadata.infinitepay_paid === true) {
+                return 'Pago (InfinitePay)';
+              }
+              // Se não tem confirmação, é apenas redirecionado
               return 'Redirecionado (InfinitePay)';
             }
             
             // Pagamentos PENDENTES (ainda não confirmados)
             if (status === 'pending') {
+              // Verificar se tem checkout_url do Stripe (foi redirecionado mas não confirmado)
+              const metadata = payment?.metadata || {};
+              if (metadata.checkout_url || metadata.stripe_session_id) {
+                return 'Pendente (Stripe)';
+              }
+              // Verificar se tem infinitepay_url (foi redirecionado mas não confirmado)
+              if (metadata.infinitepay_url) {
+                return 'Pendente (InfinitePay)';
+              }
               return 'Pendente';
             }
             
@@ -279,18 +309,44 @@ const Dashboard = () => {
           };
 
           const getStatusGeral = () => {
-            // Verificar se PAGOU (tem status de pagamento confirmado)
-            const pagou = latestPayment && ['completed', 'zelle_confirmed', 'redirected_to_infinitepay'].includes(latestPayment.status);
+            // Usar status_geral do banco de dados (calculado via triggers/funções)
+            // Se não tiver no banco, calcular como fallback
+            if (lead.status_geral) {
+              return lead.status_geral;
+            }
             
-            if (termAcceptance && pagou) {
+            // Fallback: calcular se não tiver no banco (para compatibilidade)
+            const isConfirmadoPago = latestPayment && (
+              latestPayment.status === 'completed' || 
+              latestPayment.status === 'zelle_confirmed' ||
+              (latestPayment.status === 'redirected_to_infinitepay' && 
+               (latestPayment.metadata?.infinitepay_confirmed === true || 
+                latestPayment.metadata?.infinitepay_paid === true))
+            );
+            
+            if (termAcceptance && isConfirmadoPago) {
               return 'Completo (Contrato + Pagamento)';
             }
+            
             if (termAcceptance && latestPayment?.status === 'pending') {
-              return 'Contrato Aceito (Pagamento Pendente)';
+              const metadata = latestPayment.metadata || {};
+              if (metadata.infinitepay_url) {
+                return 'Contrato Aceito (Iniciou Pagamento InfinitePay - Aguardando)';
+              }
+              if (metadata.checkout_url || latestPayment.stripe_session_id) {
+                return 'Contrato Aceito (Iniciou Pagamento Stripe - Aguardando)';
+              }
+              return 'Contrato Aceito (Iniciou Pagamento - Aguardando)';
             }
+            
+            if (termAcceptance && latestPayment?.status === 'redirected_to_infinitepay' && !isConfirmadoPago) {
+              return 'Contrato Aceito (Foi para InfinitePay - Aguardando Confirmação)';
+            }
+            
             if (termAcceptance && !latestPayment) {
-              return 'Contrato Aceito (Sem Pagamento)';
+              return 'Contrato Aceito (Não iniciou pagamento)';
             }
+            
             if (!termAcceptance) {
               return 'Apenas Formulário (Sem Contrato)';
             }
@@ -302,6 +358,52 @@ const Dashboard = () => {
             const diff = new Date(date1).getTime() - new Date(date2).getTime();
             return Math.round((diff / 1000 / 60) * 100) / 100;
           };
+
+          // Extrair timestamp do PDF URL (formato: nome_YYYYMMDD_timestamp.pdf)
+          const getPdfTimestamp = (pdfUrl: string | null): Date | null => {
+            if (!pdfUrl) return null;
+            try {
+              // O URL tem formato: .../nome_YYYYMMDD_timestamp.pdf
+              // Extrair o timestamp (número de 13 dígitos antes do .pdf)
+              // Procurar por padrão: _YYYYMMDD_timestamp.pdf onde timestamp é 13 dígitos
+              const match = pdfUrl.match(/_(\d{8})_(\d{13})\.pdf/);
+              if (match && match[2]) {
+                const timestamp = parseInt(match[2], 10);
+                // Verificar se é um timestamp válido (entre 2000 e 2100)
+                if (timestamp > 946684800000 && timestamp < 4102444800000) {
+                  return new Date(timestamp);
+                }
+              }
+            } catch (err) {
+              console.error("Error extracting PDF timestamp:", err);
+            }
+            return null;
+          };
+
+          // Verificar se é telefone brasileiro
+          const isBrazilianPhone = (phone: string | null): boolean => {
+            if (!phone) return false;
+            // Verificar se começa com +55 ou 55 (com ou sem espaço após)
+            const normalizedPhone = phone.trim();
+            return normalizedPhone.startsWith('+55') || normalizedPhone.startsWith('55 ');
+          };
+
+          // Determinar se é confirmado como pago
+          const isConfirmadoPago = latestPayment && (
+            latestPayment.status === 'completed' || 
+            latestPayment.status === 'zelle_confirmed' ||
+            (latestPayment.status === 'redirected_to_infinitepay' && 
+             (latestPayment.metadata?.infinitepay_confirmed === true || 
+              latestPayment.metadata?.infinitepay_paid === true))
+          );
+
+          // Data de geração do PDF (para brasileiros)
+          const pdfGeneratedAt = termAcceptance?.pdf_url && isBrazilianPhone(lead.phone)
+            ? getPdfTimestamp(termAcceptance.pdf_url)
+            : null;
+          const pdfGeneratedAtFormatted = pdfGeneratedAt 
+            ? formatDate(pdfGeneratedAt.toISOString())
+            : null;
 
           return {
             lead_id: lead.id,
@@ -324,6 +426,17 @@ const Dashboard = () => {
             minutos_contrato_para_pagamento: latestPayment && termAcceptance
               ? calcMinutes(latestPayment.created_at, termAcceptance.accepted_at)
               : null,
+            // Informações adicionais mais concretas
+            data_pagamento_formatada: latestPayment ? formatDate(latestPayment.created_at) : null,
+            stripe_session_id: latestPayment?.stripe_session_id || null,
+            stripe_payment_intent_id: latestPayment?.stripe_payment_intent_id || null,
+            infinitepay_url: latestPayment?.metadata?.infinitepay_url || null,
+            payment_metadata: latestPayment?.metadata || null,
+            payment_created_at: latestPayment?.created_at || null,
+            payment_updated_at: latestPayment?.updated_at || null,
+            is_confirmado_pago: isConfirmadoPago || false,
+            pdf_generated_at_formatted: pdfGeneratedAtFormatted,
+            is_brazilian: isBrazilianPhone(lead.phone),
           };
         });
 
@@ -333,22 +446,30 @@ const Dashboard = () => {
         const totalLeads = transformedData.length;
         const totalContracts = transformedData.filter(u => u.aceitou_contrato === 'Sim').length;
         
-        // PAGOS: status que contém "Pago" ou "Redirecionado" (esses são confirmados)
-        const paidUsers = transformedData.filter(u => {
-          const status = u.status_pagamento_formatado || '';
-          return status.includes('Pago') || status.includes('Redirecionado');
-        });
+        // PAGOS: apenas os que estão CONFIRMADOS como pagos (is_confirmado_pago = true)
+        // Não incluir "Redirecionado" sem confirmação
+        const paidUsers = transformedData.filter(u => u.is_confirmado_pago === true);
         const totalPaid = paidUsers.length;
         
         // PENDENTES: apenas "Pendente" (sem outros status)
         const totalPending = transformedData.filter(u => 
-          u.status_pagamento_formatado === 'Pendente'
+          u.status_pagamento_formatado === 'Pendente' || 
+          u.status_pagamento_formatado === 'Pendente (Stripe)' ||
+          u.status_pagamento_formatado === 'Pendente (InfinitePay)'
         ).length;
         
-        // NÃO PAGARAM: "Não pagou" OU não tem status
+        // NÃO PAGARAM: "Não pagou", "Redirecionado (InfinitePay)" sem confirmação, OU não tem status
+        // IMPORTANTE: Redirecionado sem confirmação NÃO é considerado pago
         const totalNotPaid = transformedData.filter(u => {
           const status = u.status_pagamento_formatado || '';
-          return status === 'Não pagou' || status === '';
+          // Se não está confirmado como pago, conta como não pagou
+          if (!u.is_confirmado_pago) {
+            return status === 'Não pagou' || 
+                   status === 'Redirecionado (InfinitePay)' || 
+                   status === '' ||
+                   status === null;
+          }
+          return false;
         }).length;
 
         setStats({
@@ -395,14 +516,20 @@ const Dashboard = () => {
 
     // Filtro por tab
     if (activeTab === "paid") {
-      filtered = filtered.filter((user) => 
-        user.status_pagamento_formatado.includes("Pago") || 
-        user.status_pagamento_formatado.includes("Redirecionado")
-      );
+      // Apenas os que estão confirmados como pagos
+      filtered = filtered.filter((user) => user.is_confirmado_pago === true);
     } else if (activeTab === "pending") {
       filtered = filtered.filter((user) => user.status_pagamento_formatado === "Pendente");
     } else if (activeTab === "not-paid") {
-      filtered = filtered.filter((user) => user.status_pagamento_formatado === "Não pagou");
+      // Não pagaram: não pagou OU redirecionado sem confirmação
+      filtered = filtered.filter((user) => {
+        const status = user.status_pagamento_formatado || '';
+        return !user.is_confirmado_pago && (
+          status === "Não pagou" || 
+          status === "Redirecionado (InfinitePay)" ||
+          status === ''
+        );
+      });
     }
 
     return filtered;
@@ -410,14 +537,22 @@ const Dashboard = () => {
 
   // Calcular estatísticas filtradas
   const filteredStats = useMemo(() => {
-    return {
-      total: filteredUsers.length,
-      paid: filteredUsers.filter((u) => 
-        u.status_pagamento_formatado.includes("Pago") || 
-        u.status_pagamento_formatado.includes("Redirecionado")
+      return {
+        total: filteredUsers.length,
+        paid: filteredUsers.filter((u) => u.is_confirmado_pago === true).length,
+      pending: filteredUsers.filter((u) => 
+        u.status_pagamento_formatado === "Pendente" ||
+        u.status_pagamento_formatado === "Pendente (Stripe)" ||
+        u.status_pagamento_formatado === "Pendente (InfinitePay)"
       ).length,
-      pending: filteredUsers.filter((u) => u.status_pagamento_formatado === "Pendente").length,
-      notPaid: filteredUsers.filter((u) => u.status_pagamento_formatado === "Não pagou").length,
+      notPaid: filteredUsers.filter((u) => {
+        const status = u.status_pagamento_formatado || '';
+        return !u.is_confirmado_pago && (
+          status === "Não pagou" || 
+          status === "Redirecionado (InfinitePay)" ||
+          status === ''
+        );
+      }).length,
     };
   }, [filteredUsers]);
 
@@ -632,6 +767,7 @@ const Dashboard = () => {
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Status Pagamento</TableHead>
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Valor</TableHead>
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Método</TableHead>
+                          <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Data Pagamento</TableHead>
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Status Geral</TableHead>
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">PDF</TableHead>
                         </TableRow>
@@ -639,7 +775,7 @@ const Dashboard = () => {
                       <TableBody>
                         {filteredUsers.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={11} className="text-center py-12 text-gray-600 bg-white">
+                            <TableCell colSpan={12} className="text-center py-12 text-gray-600 bg-white">
                               <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                               <p className="text-base font-medium text-gray-900">Nenhum usuário encontrado</p>
                               <p className="text-sm text-gray-500 mt-1">
@@ -659,16 +795,43 @@ const Dashboard = () => {
                                   {user.aceitou_contrato}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-gray-600 py-3 px-4 text-sm">{user.data_aceitacao_formatada || '-'}</TableCell>
+                              <TableCell className="text-gray-600 py-3 px-4 text-sm">
+                                {user.data_aceitacao_formatada || '-'}
+                                {user.is_brazilian && user.pdf_generated_at_formatted && (
+                                  <div className="text-xs text-blue-600 mt-1">
+                                    PDF: {user.pdf_generated_at_formatted}
+                                  </div>
+                                )}
+                              </TableCell>
                               <TableCell className="py-3 px-4">{getStatusBadge(user.status_pagamento_formatado)}</TableCell>
                               <TableCell className="font-semibold text-gray-900 py-3 px-4">
                                 {user.valor_formatado || '-'}
                               </TableCell>
                               <TableCell className="text-gray-700 py-3 px-4 text-sm">{user.metodo_pagamento_formatado || '-'}</TableCell>
+                              <TableCell className="text-gray-600 py-3 px-4 text-sm">
+                                {user.data_pagamento_formatada || '-'}
+                                {user.stripe_session_id && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    Stripe: {user.stripe_session_id.substring(0, 20)}...
+                                  </div>
+                                )}
+                                {user.infinitepay_url && (
+                                  <div className="text-xs text-blue-600 mt-1">
+                                    <a href={user.infinitepay_url} target="_blank" rel="noopener noreferrer" className="underline">
+                                      InfinitePay URL
+                                    </a>
+                                  </div>
+                                )}
+                              </TableCell>
                               <TableCell className="py-3 px-4">
                                 <Badge variant="outline" className="text-xs bg-white border-gray-300 text-gray-700">
                                   {user.status_geral}
                                 </Badge>
+                                {user.is_confirmado_pago && (
+                                  <Badge className="ml-2 bg-green-100 text-green-700 text-xs border-0">
+                                    ✓ Confirmado
+                                  </Badge>
+                                )}
                               </TableCell>
                               <TableCell className="py-3 px-4">
                                 {user.url_contrato_pdf ? (
@@ -704,28 +867,41 @@ const Dashboard = () => {
                         <TableRow className="border-gray-200 bg-gray-50">
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Nome</TableHead>
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Email</TableHead>
-                          <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Status Pagamento</TableHead>
+                              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Status Pagamento</TableHead>
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Valor</TableHead>
                           <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Método</TableHead>
-                          <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Data</TableHead>
+                          <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Data Pagamento</TableHead>
+                          <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Confirmado</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredUsers.filter(u => u.status_pagamento_formatado.includes("Pago") || u.status_pagamento_formatado.includes("Redirecionado")).length === 0 ? (
+                        {filteredUsers.filter(u => u.is_confirmado_pago === true).length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={6} className="text-center py-12 text-gray-600 bg-white">
+                            <TableCell colSpan={7} className="text-center py-12 text-gray-600 bg-white">
                               Nenhum pagamento confirmado encontrado
                             </TableCell>
                           </TableRow>
                         ) : (
-                          filteredUsers.filter(u => u.status_pagamento_formatado.includes("Pago") || u.status_pagamento_formatado.includes("Redirecionado")).map((user) => (
+                          filteredUsers.filter(u => u.is_confirmado_pago === true).map((user) => (
                             <TableRow key={user.lead_id} className="border-gray-200 bg-white hover:bg-gray-50">
                               <TableCell className="font-semibold text-gray-900 py-3 px-4">{user.nome_completo}</TableCell>
                               <TableCell className="text-gray-700 py-3 px-4">{user.email}</TableCell>
                               <TableCell className="py-3 px-4">{getStatusBadge(user.status_pagamento_formatado)}</TableCell>
                               <TableCell className="font-semibold text-green-600 py-3 px-4">{user.valor_formatado || '-'}</TableCell>
                               <TableCell className="text-gray-700 py-3 px-4">{user.metodo_pagamento_formatado || '-'}</TableCell>
-                              <TableCell className="text-gray-600 py-3 px-4 text-sm">{user.data_formulario_formatada}</TableCell>
+                              <TableCell className="text-gray-600 py-3 px-4 text-sm">
+                                {user.data_pagamento_formatada || '-'}
+                                {user.stripe_session_id && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    Session: {user.stripe_session_id.substring(0, 15)}...
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="py-3 px-4">
+                                <Badge className="bg-green-600 text-white text-xs border-0">
+                                  ✓ Confirmado
+                                </Badge>
+                              </TableCell>
                             </TableRow>
                           ))
                         )}
@@ -787,14 +963,28 @@ const Dashboard = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredUsers.filter(u => u.status_pagamento_formatado === "Não pagou").length === 0 ? (
+                        {filteredUsers.filter(u => {
+                          const status = u.status_pagamento_formatado || '';
+                          return !u.is_confirmado_pago && (
+                            status === "Não pagou" || 
+                            status === "Redirecionado (InfinitePay)" ||
+                            status === ''
+                          );
+                        }).length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={4} className="text-center py-12 text-gray-600 bg-white">
                               Todos os usuários pagaram!
                             </TableCell>
                           </TableRow>
                         ) : (
-                          filteredUsers.filter(u => u.status_pagamento_formatado === "Não pagou").map((user) => (
+                          filteredUsers.filter(u => {
+                            const status = u.status_pagamento_formatado || '';
+                            return !u.is_confirmado_pago && (
+                              status === "Não pagou" || 
+                              status === "Redirecionado (InfinitePay)" ||
+                              status === ''
+                            );
+                          }).map((user) => (
                             <TableRow key={user.lead_id} className="border-gray-200 bg-white hover:bg-gray-50">
                               <TableCell className="font-semibold text-gray-900 py-3 px-4">{user.nome_completo}</TableCell>
                               <TableCell className="text-gray-700 py-3 px-4">{user.email}</TableCell>
