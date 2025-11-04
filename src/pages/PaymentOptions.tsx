@@ -96,7 +96,20 @@ const PaymentOptions = () => {
   const [loadingPix, setLoadingPix] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userCountry, setUserCountry] = useState<string>(countryParam.toUpperCase());
-  const [returnedFromInfinitePay, setReturnedFromInfinitePay] = useState(false);
+  
+  // Verificar estado inicial de retorno do InfinitePay
+  const getInitialReturnState = () => {
+    if (!leadId || !termAcceptanceId) return false;
+    const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
+    const hasReturned = sessionStorage.getItem(returnKey) === "true";
+    const referrer = document.referrer;
+    const isFromInfinitePay = referrer && referrer.includes("infinitepay.io");
+    
+    // Só considerar retornado se realmente voltou (não apenas se foi redirecionado)
+    return hasReturned || isFromInfinitePay;
+  };
+  
+  const [returnedFromInfinitePay, setReturnedFromInfinitePay] = useState(getInitialReturnState());
   
   // Determinar se é Brasil
   // Qualquer país que NÃO seja Brasil recebe: Zelle, Stripe Card e Stripe PIX
@@ -134,8 +147,17 @@ const PaymentOptions = () => {
 
     // Se for Brasil e não voltou do InfinitePay, registrar e redirecionar diretamente
     // IMPORTANTE: Só executar se NÃO voltou do InfinitePay (verificação explícita)
-    if (isBrazil && !isFromInfinitePay && !hasReturned && !wasRedirected) {
-      // Marcar no sessionStorage ANTES de redirecionar
+    if (isBrazil && !isFromInfinitePay && !hasReturned) {
+      // Se já foi redirecionado antes, não redirecionar novamente automaticamente
+      // Mostrar página de retorno para o usuário decidir
+      if (wasRedirected) {
+        setReturnedFromInfinitePay(true);
+        // Limpar a flag de redirecionamento para permitir novo redirecionamento se o usuário clicar
+        sessionStorage.removeItem(redirectKey);
+        return;
+      }
+      
+      // Primeira vez - marcar no sessionStorage ANTES de redirecionar
       sessionStorage.setItem(redirectKey, "true");
       
       const registerAndRedirect = async () => {
@@ -171,10 +193,6 @@ const PaymentOptions = () => {
       
       // Aguardar o registro antes de redirecionar
       registerAndRedirect();
-    } else if (isBrazil && wasRedirected && !hasReturned) {
-      // Se já foi redirecionado mas ainda não voltou, pode estar no meio do processo
-      // Não fazer nada, apenas aguardar
-      return;
     }
   }, [leadId, termAcceptanceId, navigate, isBrazil]);
 
@@ -357,9 +375,16 @@ const PaymentOptions = () => {
     );
   }
 
-  // Se for Brasil e ainda não voltou, não renderizar (será redirecionado automaticamente)
+  // Se for Brasil e ainda não voltou, mostrar loading enquanto redireciona
   if (isBrazil && !returnedFromInfinitePay) {
-    return null;
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-gray-600 mb-4" />
+          <p className="text-gray-600">Redirecionando para o pagamento...</p>
+        </div>
+      </div>
+    );
   }
 
   // Renderizar métodos de pagamento baseado no país
