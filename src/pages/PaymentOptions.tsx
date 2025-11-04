@@ -116,6 +116,7 @@ const PaymentOptions = () => {
     const redirectKey = `infinitePay_redirect_${leadId}`;
     const wasRedirected = sessionStorage.getItem(redirectKey);
     
+    // Se voltou do InfinitePay, apenas mostrar a página de retorno
     if (isFromInfinitePay || wasRedirected) {
       // Usuário voltou do InfinitePay, não redirecionar novamente automaticamente
       setReturnedFromInfinitePay(true);
@@ -123,38 +124,53 @@ const PaymentOptions = () => {
       if (wasRedirected) {
         sessionStorage.removeItem(redirectKey);
       }
-      return;
+      return; // IMPORTANTE: retornar ANTES de qualquer tentativa de inserção
     }
 
     // Se for Brasil e não voltou do InfinitePay, registrar e redirecionar diretamente
-    if (isBrazil && !returnedFromInfinitePay) {
+    // IMPORTANTE: Só executar se NÃO voltou do InfinitePay (verificação explícita)
+    if (isBrazil && !isFromInfinitePay && !wasRedirected) {
       // Marcar no sessionStorage ANTES de redirecionar
       sessionStorage.setItem(redirectKey, "true");
       
       const registerAndRedirect = async () => {
         try {
-          const { error } = await supabase.from("payments").insert({
-            lead_id: leadId,
-            term_acceptance_id: termAcceptanceId,
-            amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
-            currency: "BRL",
-            status: "redirected_to_infinitepay",
-            metadata: {
-              payment_method: "infinitepay",
-              infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
-              redirected_at: new Date().toISOString(),
-            },
-          });
+          // Verificar se já existe um pagamento com esse status para evitar duplicatas
+          const { data: existingPayment } = await supabase
+            .from("payments")
+            .select("id")
+            .eq("lead_id", leadId)
+            .eq("term_acceptance_id", termAcceptanceId)
+            .eq("status", "redirected_to_infinitepay")
+            .maybeSingle();
           
-          if (error) {
-            console.error("Error registering InfinitePay redirect:", error);
+          // Só inserir se não existir
+          if (!existingPayment) {
+            const { error } = await supabase.from("payments").insert({
+              lead_id: leadId,
+              term_acceptance_id: termAcceptanceId,
+              amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
+              currency: "BRL",
+              status: "redirected_to_infinitepay",
+              metadata: {
+                payment_method: "infinitepay",
+                infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
+                redirected_at: new Date().toISOString(),
+              },
+            });
+            
+            if (error) {
+              console.error("Error registering InfinitePay redirect:", error);
+              // Não bloquear o redirecionamento mesmo se houver erro
+            }
           }
         } catch (err) {
           console.error("Error registering InfinitePay redirect:", err);
-        } finally {
-          // Redirecionar mesmo se houver erro
-          window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
+          // Não bloquear o redirecionamento mesmo se houver erro
         }
+        
+        // Redirecionar após tentar registrar (mesmo se houver erro)
+        window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
       };
       
       // Aguardar o registro antes de redirecionar
@@ -264,24 +280,38 @@ const PaymentOptions = () => {
     
     // Registrar redirecionamento para InfinitePay
     try {
-      const { error } = await supabase.from("payments").insert({
-        lead_id: leadId,
-        term_acceptance_id: termAcceptanceId,
-        amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
-        currency: "BRL",
-        status: "redirected_to_infinitepay",
-        metadata: {
-          payment_method: "infinitepay",
-          infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
-          redirected_at: new Date().toISOString(),
-        },
-      });
+      // Verificar se já existe um pagamento com esse status para evitar duplicatas
+      const { data: existingPayment } = await supabase
+        .from("payments")
+        .select("id")
+        .eq("lead_id", leadId)
+        .eq("term_acceptance_id", termAcceptanceId)
+        .eq("status", "redirected_to_infinitepay")
+        .maybeSingle();
       
-      if (error) {
-        console.error("Error registering InfinitePay redirect:", error);
+      // Só inserir se não existir
+      if (!existingPayment) {
+        const { error } = await supabase.from("payments").insert({
+          lead_id: leadId,
+          term_acceptance_id: termAcceptanceId,
+          amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
+          currency: "BRL",
+          status: "redirected_to_infinitepay",
+          metadata: {
+            payment_method: "infinitepay",
+            infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
+            redirected_at: new Date().toISOString(),
+          },
+        });
+        
+        if (error) {
+          console.error("Error registering InfinitePay redirect:", error);
+          // Não bloquear o redirecionamento mesmo se houver erro
+        }
       }
     } catch (err) {
       console.error("Error registering InfinitePay redirect:", err);
+      // Não bloquear o redirecionamento mesmo se houver erro
     }
     
     // Redirecionar diretamente para o link da InfinitePay
