@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,9 +97,16 @@ const PaymentOptions = () => {
   const [error, setError] = useState<string | null>(null);
   const [userCountry, setUserCountry] = useState<string>(countryParam.toUpperCase());
   
+  // Flag para evitar processamento múltiplo do retorno
+  const hasProcessedReturn = useRef(false);
+  
   // Verificar estado inicial de retorno do InfinitePay
   const getInitialReturnState = () => {
-    if (!leadId || !termAcceptanceId) return false;
+    if (!leadId || !termAcceptanceId) {
+      console.log("[PaymentOptions] Initial state: No leadId or termAcceptanceId");
+      return false;
+    }
+    
     const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
     const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
     const hasReturned = sessionStorage.getItem(returnKey) === "true";
@@ -107,13 +114,22 @@ const PaymentOptions = () => {
     const referrer = document.referrer;
     const isFromInfinitePay = referrer && referrer.includes("infinitepay.io");
     
+    console.log("[PaymentOptions] Initial state check:", {
+      hasReturned,
+      wasRedirected,
+      isFromInfinitePay,
+      referrer: referrer ? referrer.substring(0, 50) + "..." : "none"
+    });
+    
     // Se já tem flag de retorno, usar ela
     if (hasReturned) {
+      console.log("[PaymentOptions] Initial state: Already returned (hasReturned flag)");
       return true;
     }
     
-    // Se voltou do InfinitePay (referrer), marcar como retornado
+    // Se voltou do InfinitePay (referrer), marcar como retornado IMEDIATAMENTE
     if (isFromInfinitePay) {
+      console.log("[PaymentOptions] Initial state: Detected return from InfinitePay (referrer)");
       sessionStorage.setItem(returnKey, "true");
       if (wasRedirected) {
         sessionStorage.removeItem(redirectKey);
@@ -122,14 +138,17 @@ const PaymentOptions = () => {
     }
     
     // Se foi redirecionado e está de volta na página, provavelmente voltou
-    // (se estava no Infinite Pay e voltou, a flag de redirecionamento ainda estaria true)
-    if (wasRedirected) {
+    // IMPORTANTE: Só marcar como retornado se realmente voltou (não apenas se foi redirecionado)
+    // A lógica aqui é: se wasRedirected é true MAS não estamos mais no InfinitePay, significa que voltou
+    if (wasRedirected && !isFromInfinitePay) {
+      console.log("[PaymentOptions] Initial state: Detected return (wasRedirected but not on InfinitePay)");
       // Marcar como retornado e limpar flag de redirecionamento
       sessionStorage.setItem(returnKey, "true");
       sessionStorage.removeItem(redirectKey);
       return true;
     }
     
+    console.log("[PaymentOptions] Initial state: No return detected");
     return false;
   };
   
@@ -140,10 +159,23 @@ const PaymentOptions = () => {
   const isBrazil = userCountry === "BR";
 
   useEffect(() => {
+    // Evitar processamento múltiplo
+    if (hasProcessedReturn.current) {
+      console.log("[PaymentOptions] useEffect: Already processed, skipping");
+      return;
+    }
+
     if (!leadId || !termAcceptanceId) {
       navigate("/lead-form", { replace: true });
       return;
     }
+
+    console.log("[PaymentOptions] useEffect: Starting processing", {
+      leadId,
+      termAcceptanceId,
+      isBrazil,
+      returnedFromInfinitePay
+    });
 
     // Chave para rastrear redirecionamento - usar uma chave mais persistente
     const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
@@ -158,14 +190,26 @@ const PaymentOptions = () => {
     // Verificar se já foi redirecionado (mas ainda não voltou)
     const wasRedirected = sessionStorage.getItem(redirectKey) === "true";
     
+    console.log("[PaymentOptions] useEffect: State check", {
+      hasReturned,
+      wasRedirected,
+      isFromInfinitePay,
+      returnedFromInfinitePay
+    });
+    
     // Se voltou do InfinitePay OU já foi marcado como retornado, mostrar página de retorno
     if (isFromInfinitePay || hasReturned) {
+      console.log("[PaymentOptions] useEffect: Detected return, setting state");
+      // Marcar como processado ANTES de fazer qualquer alteração
+      hasProcessedReturn.current = true;
+      
       // Usuário voltou do InfinitePay
       setReturnedFromInfinitePay(true);
       // Marcar como retornado para persistir mesmo se o referrer não funcionar
       sessionStorage.setItem(returnKey, "true");
       // Limpar a flag de redirecionamento
       sessionStorage.removeItem(redirectKey);
+      console.log("[PaymentOptions] useEffect: Return processed, marked as returned");
       return; // IMPORTANTE: retornar ANTES de qualquer tentativa de inserção ou consulta
     }
 
@@ -175,12 +219,21 @@ const PaymentOptions = () => {
       // Se já foi redirecionado antes, significa que voltou (caso contrário estaria no Infinite Pay)
       // Mostrar página de retorno para o usuário decidir
       if (wasRedirected) {
+        console.log("[PaymentOptions] useEffect: Was redirected but returned, showing return page");
+        // Marcar como processado
+        hasProcessedReturn.current = true;
+        
         setReturnedFromInfinitePay(true);
         // Marcar como retornado e limpar flag de redirecionamento
         sessionStorage.setItem(returnKey, "true");
         sessionStorage.removeItem(redirectKey);
+        console.log("[PaymentOptions] useEffect: Return processed from wasRedirected");
         return;
       }
+      
+      console.log("[PaymentOptions] useEffect: First time, redirecting to InfinitePay");
+      // Marcar como processado ANTES de redirecionar
+      hasProcessedReturn.current = true;
       
       // Primeira vez - marcar no sessionStorage ANTES de redirecionar
       sessionStorage.setItem(redirectKey, "true");
@@ -204,20 +257,29 @@ const PaymentOptions = () => {
           
           // Se der erro (incluindo duplicata ou 403), apenas logar mas não bloquear
           if (error) {
-            console.error("Error registering InfinitePay redirect:", error);
+            console.error("[PaymentOptions] Error registering InfinitePay redirect:", error);
             // Não bloquear o redirecionamento mesmo se houver erro
+          } else {
+            console.log("[PaymentOptions] Successfully registered InfinitePay redirect");
           }
         } catch (err) {
-          console.error("Error registering InfinitePay redirect:", err);
+          console.error("[PaymentOptions] Error registering InfinitePay redirect:", err);
           // Não bloquear o redirecionamento mesmo se houver erro
         }
         
+        console.log("[PaymentOptions] Redirecting to InfinitePay");
         // Redirecionar após tentar registrar (mesmo se houver erro)
         window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
       };
       
       // Aguardar o registro antes de redirecionar
       registerAndRedirect();
+    } else {
+      console.log("[PaymentOptions] useEffect: No action needed", {
+        isBrazil,
+        isFromInfinitePay,
+        hasReturned
+      });
     }
   }, [leadId, termAcceptanceId, navigate, isBrazil]);
 
