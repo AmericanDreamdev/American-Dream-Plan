@@ -108,61 +108,57 @@ const PaymentOptions = () => {
       return;
     }
 
+    // Chave para rastrear redirecionamento - usar uma chave mais persistente
+    const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
+    const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
+    
     // Verificar se o usuário voltou do InfinitePay
     const referrer = document.referrer;
-    const isFromInfinitePay = referrer.includes("infinitepay.io");
+    const isFromInfinitePay = referrer && referrer.includes("infinitepay.io");
     
-    // Verificar também no sessionStorage se já foi redirecionado
-    const redirectKey = `infinitePay_redirect_${leadId}`;
-    const wasRedirected = sessionStorage.getItem(redirectKey);
+    // Verificar se já foi marcado como retornado
+    const hasReturned = sessionStorage.getItem(returnKey) === "true";
+    // Verificar se já foi redirecionado (mas ainda não voltou)
+    const wasRedirected = sessionStorage.getItem(redirectKey) === "true";
     
-    // Se voltou do InfinitePay, apenas mostrar a página de retorno
-    if (isFromInfinitePay || wasRedirected) {
-      // Usuário voltou do InfinitePay, não redirecionar novamente automaticamente
+    // Se voltou do InfinitePay OU já foi marcado como retornado, mostrar página de retorno
+    if (isFromInfinitePay || hasReturned) {
+      // Usuário voltou do InfinitePay
       setReturnedFromInfinitePay(true);
-      // Limpar o sessionStorage para permitir novo redirecionamento se o usuário clicar em "Tentar novamente"
-      if (wasRedirected) {
-        sessionStorage.removeItem(redirectKey);
-      }
-      return; // IMPORTANTE: retornar ANTES de qualquer tentativa de inserção
+      // Marcar como retornado para persistir mesmo se o referrer não funcionar
+      sessionStorage.setItem(returnKey, "true");
+      // Limpar a flag de redirecionamento
+      sessionStorage.removeItem(redirectKey);
+      return; // IMPORTANTE: retornar ANTES de qualquer tentativa de inserção ou consulta
     }
 
     // Se for Brasil e não voltou do InfinitePay, registrar e redirecionar diretamente
     // IMPORTANTE: Só executar se NÃO voltou do InfinitePay (verificação explícita)
-    if (isBrazil && !isFromInfinitePay && !wasRedirected) {
+    if (isBrazil && !isFromInfinitePay && !hasReturned && !wasRedirected) {
       // Marcar no sessionStorage ANTES de redirecionar
       sessionStorage.setItem(redirectKey, "true");
       
       const registerAndRedirect = async () => {
         try {
-          // Verificar se já existe um pagamento com esse status para evitar duplicatas
-          const { data: existingPayment } = await supabase
-            .from("payments")
-            .select("id")
-            .eq("lead_id", leadId)
-            .eq("term_acceptance_id", termAcceptanceId)
-            .eq("status", "redirected_to_infinitepay")
-            .maybeSingle();
+          // Tentar inserir - se der erro, não bloquear o redirecionamento
+          // Não fazer SELECT primeiro para evitar erro 403
+          const { error } = await supabase.from("payments").insert({
+            lead_id: leadId,
+            term_acceptance_id: termAcceptanceId,
+            amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
+            currency: "BRL",
+            status: "redirected_to_infinitepay",
+            metadata: {
+              payment_method: "infinitepay",
+              infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
+              redirected_at: new Date().toISOString(),
+            },
+          });
           
-          // Só inserir se não existir
-          if (!existingPayment) {
-            const { error } = await supabase.from("payments").insert({
-              lead_id: leadId,
-              term_acceptance_id: termAcceptanceId,
-              amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
-              currency: "BRL",
-              status: "redirected_to_infinitepay",
-              metadata: {
-                payment_method: "infinitepay",
-                infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
-                redirected_at: new Date().toISOString(),
-              },
-            });
-            
-            if (error) {
-              console.error("Error registering InfinitePay redirect:", error);
-              // Não bloquear o redirecionamento mesmo se houver erro
-            }
+          // Se der erro (incluindo duplicata ou 403), apenas logar mas não bloquear
+          if (error) {
+            console.error("Error registering InfinitePay redirect:", error);
+            // Não bloquear o redirecionamento mesmo se houver erro
           }
         } catch (err) {
           console.error("Error registering InfinitePay redirect:", err);
@@ -175,6 +171,10 @@ const PaymentOptions = () => {
       
       // Aguardar o registro antes de redirecionar
       registerAndRedirect();
+    } else if (isBrazil && wasRedirected && !hasReturned) {
+      // Se já foi redirecionado mas ainda não voltou, pode estar no meio do processo
+      // Não fazer nada, apenas aguardar
+      return;
     }
   }, [leadId, termAcceptanceId, navigate, isBrazil]);
 
@@ -275,39 +275,35 @@ const PaymentOptions = () => {
   const handleInfinitePayCheckout = async () => {
     if (!leadId || !termAcceptanceId) return;
     
-    // Marcar no sessionStorage que está sendo redirecionado
-    sessionStorage.setItem(`infinitePay_redirect_${leadId}`, "true");
+    // Chaves para rastrear redirecionamento
+    const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
+    const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
+    
+    // Limpar flag de retorno e marcar como redirecionado
+    sessionStorage.removeItem(returnKey);
+    sessionStorage.setItem(redirectKey, "true");
     
     // Registrar redirecionamento para InfinitePay
     try {
-      // Verificar se já existe um pagamento com esse status para evitar duplicatas
-      const { data: existingPayment } = await supabase
-        .from("payments")
-        .select("id")
-        .eq("lead_id", leadId)
-        .eq("term_acceptance_id", termAcceptanceId)
-        .eq("status", "redirected_to_infinitepay")
-        .maybeSingle();
+      // Tentar inserir diretamente - se der erro (duplicata ou 403), não bloquear
+      // Não fazer SELECT primeiro para evitar erro 403
+      const { error } = await supabase.from("payments").insert({
+        lead_id: leadId,
+        term_acceptance_id: termAcceptanceId,
+        amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
+        currency: "BRL",
+        status: "redirected_to_infinitepay",
+        metadata: {
+          payment_method: "infinitepay",
+          infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
+          redirected_at: new Date().toISOString(),
+        },
+      });
       
-      // Só inserir se não existir
-      if (!existingPayment) {
-        const { error } = await supabase.from("payments").insert({
-          lead_id: leadId,
-          term_acceptance_id: termAcceptanceId,
-          amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
-          currency: "BRL",
-          status: "redirected_to_infinitepay",
-          metadata: {
-            payment_method: "infinitepay",
-            infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
-            redirected_at: new Date().toISOString(),
-          },
-        });
-        
-        if (error) {
-          console.error("Error registering InfinitePay redirect:", error);
-          // Não bloquear o redirecionamento mesmo se houver erro
-        }
+      // Se der erro (incluindo duplicata ou 403), apenas logar mas não bloquear
+      if (error) {
+        console.error("Error registering InfinitePay redirect:", error);
+        // Não bloquear o redirecionamento mesmo se houver erro
       }
     } catch (err) {
       console.error("Error registering InfinitePay redirect:", err);
