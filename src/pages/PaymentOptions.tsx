@@ -154,9 +154,34 @@ const PaymentOptions = () => {
   
   const [returnedFromInfinitePay, setReturnedFromInfinitePay] = useState(getInitialReturnState());
   
+  // Estado para forçar re-avaliação quando página é restaurada do bfcache
+  const [pageShowTrigger, setPageShowTrigger] = useState(0);
+  
   // Determinar se é Brasil
   // Qualquer país que NÃO seja Brasil recebe: Zelle, Stripe Card e Stripe PIX
   const isBrazil = userCountry === "BR";
+
+  // Listener para detectar quando a página é restaurada do bfcache
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        console.log("[PaymentOptions] Page restored from bfcache. Re-evaluating state.");
+        // Resetar flag de processamento para permitir re-avaliação
+        hasProcessedReturn.current = false;
+        // Forçar re-avaliação do estado inicial
+        const newReturnState = getInitialReturnState();
+        setReturnedFromInfinitePay(newReturnState);
+        // Forçar o useEffect principal a re-executar
+        setPageShowTrigger(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []); // Este useEffect roda apenas uma vez para configurar o listener
 
   useEffect(() => {
     // Evitar processamento múltiplo
@@ -281,7 +306,7 @@ const PaymentOptions = () => {
         hasReturned
       });
     }
-  }, [leadId, termAcceptanceId, navigate, isBrazil]);
+  }, [leadId, termAcceptanceId, navigate, isBrazil, pageShowTrigger]);
 
   // Forçar fundo branco na página
   useEffect(() => {
