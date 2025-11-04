@@ -101,12 +101,36 @@ const PaymentOptions = () => {
   const getInitialReturnState = () => {
     if (!leadId || !termAcceptanceId) return false;
     const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
+    const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
     const hasReturned = sessionStorage.getItem(returnKey) === "true";
+    const wasRedirected = sessionStorage.getItem(redirectKey) === "true";
     const referrer = document.referrer;
     const isFromInfinitePay = referrer && referrer.includes("infinitepay.io");
     
-    // Só considerar retornado se realmente voltou (não apenas se foi redirecionado)
-    return hasReturned || isFromInfinitePay;
+    // Se já tem flag de retorno, usar ela
+    if (hasReturned) {
+      return true;
+    }
+    
+    // Se voltou do InfinitePay (referrer), marcar como retornado
+    if (isFromInfinitePay) {
+      sessionStorage.setItem(returnKey, "true");
+      if (wasRedirected) {
+        sessionStorage.removeItem(redirectKey);
+      }
+      return true;
+    }
+    
+    // Se foi redirecionado e está de volta na página, provavelmente voltou
+    // (se estava no Infinite Pay e voltou, a flag de redirecionamento ainda estaria true)
+    if (wasRedirected) {
+      // Marcar como retornado e limpar flag de redirecionamento
+      sessionStorage.setItem(returnKey, "true");
+      sessionStorage.removeItem(redirectKey);
+      return true;
+    }
+    
+    return false;
   };
   
   const [returnedFromInfinitePay, setReturnedFromInfinitePay] = useState(getInitialReturnState());
@@ -148,11 +172,12 @@ const PaymentOptions = () => {
     // Se for Brasil e não voltou do InfinitePay, registrar e redirecionar diretamente
     // IMPORTANTE: Só executar se NÃO voltou do InfinitePay (verificação explícita)
     if (isBrazil && !isFromInfinitePay && !hasReturned) {
-      // Se já foi redirecionado antes, não redirecionar novamente automaticamente
+      // Se já foi redirecionado antes, significa que voltou (caso contrário estaria no Infinite Pay)
       // Mostrar página de retorno para o usuário decidir
       if (wasRedirected) {
         setReturnedFromInfinitePay(true);
-        // Limpar a flag de redirecionamento para permitir novo redirecionamento se o usuário clicar
+        // Marcar como retornado e limpar flag de redirecionamento
+        sessionStorage.setItem(returnKey, "true");
         sessionStorage.removeItem(redirectKey);
         return;
       }
