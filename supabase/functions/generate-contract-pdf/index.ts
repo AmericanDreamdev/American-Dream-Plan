@@ -6,6 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 interface RequestBody {
@@ -14,15 +15,27 @@ interface RequestBody {
 }
 
 Deno.serve(async (req: Request) => {
+  console.log("[PDF Generation] ========== FUNCTION CALLED ==========");
+  console.log("[PDF Generation] Method:", req.method);
+  console.log("[PDF Generation] URL:", req.url);
+  console.log("[PDF Generation] Headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+  
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
+    console.log("[PDF Generation] CORS preflight request - returning OK");
+    console.log("[PDF Generation] CORS headers:", JSON.stringify(corsHeaders));
     return new Response("ok", { headers: corsHeaders });
   }
+  
+  console.log("[PDF Generation] POST request received - processing...");
 
   try {
+    console.log("[PDF Generation] Parsing request body...");
     const { lead_id, term_acceptance_id }: RequestBody = await req.json();
+    console.log("[PDF Generation] Request params - lead_id:", lead_id, "term_acceptance_id:", term_acceptance_id);
 
     if (!lead_id || !term_acceptance_id) {
+      console.error("[PDF Generation] Missing required parameters");
       return new Response(
         JSON.stringify({ error: "lead_id and term_acceptance_id are required" }),
         {
@@ -33,11 +46,26 @@ Deno.serve(async (req: Request) => {
     }
 
     // Initialize Supabase client
+    console.log("[PDF Generation] Initializing Supabase client...");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[PDF Generation] Missing Supabase environment variables");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log("[PDF Generation] Supabase client initialized");
 
     // Get lead data
+    console.log("[PDF Generation] Fetching lead data...");
     const { data: lead, error: leadError } = await supabase
       .from("leads")
       .select("*")
@@ -45,7 +73,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (leadError || !lead) {
-      console.error("Error fetching lead:", leadError);
+      console.error("[PDF Generation] Error fetching lead:", leadError);
       return new Response(
         JSON.stringify({ error: "Lead not found" }),
         {
@@ -54,8 +82,10 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+    console.log("[PDF Generation] Lead found:", lead.name, lead.email);
 
     // Get term acceptance data
+    console.log("[PDF Generation] Fetching term acceptance data...");
     const { data: termAcceptance, error: termError } = await supabase
       .from("term_acceptance")
       .select("*")
@@ -63,7 +93,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (termError || !termAcceptance) {
-      console.error("Error fetching term acceptance:", termError);
+      console.error("[PDF Generation] Error fetching term acceptance:", termError);
       return new Response(
         JSON.stringify({ error: "Term acceptance not found" }),
         {
@@ -72,8 +102,10 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+    console.log("[PDF Generation] Term acceptance found, term_id:", termAcceptance.term_id);
 
     // Get term content
+    console.log("[PDF Generation] Fetching term content...");
     const { data: termData, error: termDataError } = await supabase
       .from("application_terms")
       .select("title, content")
@@ -81,7 +113,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (termDataError || !termData) {
-      console.error("Error fetching term data:", termDataError);
+      console.error("[PDF Generation] Error fetching term data:", termDataError);
       return new Response(
         JSON.stringify({ error: "Term not found" }),
         {
@@ -90,9 +122,13 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+    console.log("[PDF Generation] Term content found, title:", termData.title);
+    console.log("[PDF Generation] Content length:", termData.content?.length || 0);
 
     // Generate PDF
+    console.log("[PDF Generation] Starting PDF generation...");
     const pdf = new jsPDF();
+    console.log("[PDF Generation] PDF object created");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 20;
     let currentY = margin;
@@ -118,7 +154,7 @@ Deno.serve(async (req: Request) => {
       return y;
     };
 
-    // PDF Header
+    // PDF Header - Estrutura Original
     pdf.setFontSize(20);
     pdf.setFont("helvetica", "bold");
     pdf.text("DOCUMENTO DE ACEITAÇÃO DE TERMOS", pageWidth / 2, currentY, {
@@ -173,24 +209,39 @@ Deno.serve(async (req: Request) => {
 
     currentY += 20;
 
-    // Conteúdo do Contrato
-    pdf.setFontSize(14);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("CONTEÚDO DO CONTRATO", margin, currentY);
-    currentY += 12;
-
-    // Remove HTML tags from content for PDF (simple approach)
-    const textContent = termData.content
+    // Remove HTML tags from content for PDF and format properly
+    console.log("[PDF Generation] Processing HTML content...");
+    let textContent = termData.content
+      .replace(/<h1[^>]*>/g, "\n\n")
+      .replace(/<h2[^>]*>/g, "\n\n")
+      .replace(/<\/h[12]>/g, "\n")
+      .replace(/<p[^>]*>/g, "\n")
+      .replace(/<\/p>/g, "\n")
+      .replace(/<strong[^>]*>/g, "")
+      .replace(/<\/strong>/g, "")
+      .replace(/<ul[^>]*>/g, "\n")
+      .replace(/<\/ul>/g, "\n")
+      .replace(/<li[^>]*>/g, "  • ")
+      .replace(/<\/li>/g, "\n")
       .replace(/<[^>]*>/g, "")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
       .replace(/&quot;/g, '"')
+      .replace(/\n{3,}/g, "\n\n") // Remove múltiplas quebras de linha
       .trim();
+    console.log("[PDF Generation] Text content processed, length:", textContent.length);
+
+    // Conteúdo do Contrato
+    pdf.setFontSize(14);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("CONTEÚDO DO CONTRATO", margin, currentY);
+    currentY += 12;
 
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
+    console.log("[PDF Generation] Adding content to PDF...");
     currentY = addWrappedText(
       textContent,
       margin,
@@ -199,8 +250,76 @@ Deno.serve(async (req: Request) => {
       10
     );
     currentY += 20;
+    console.log("[PDF Generation] Content added to PDF");
 
-    // Detalhes da Aceitação (movido para o final, como assinatura)
+    // Seção de Assinatura
+    const acceptanceDate = new Date(termAcceptance.accepted_at);
+    const day = acceptanceDate.getDate().toString().padStart(2, '0');
+    const monthNames = [
+      'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+      'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+    ];
+    const month = monthNames[acceptanceDate.getMonth()];
+    const year = acceptanceDate.getFullYear();
+
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "normal");
+    currentY = addWrappedText(
+      `Los Angeles, Califórnia, ${day} de ${month} de ${year}.`,
+      margin,
+      currentY,
+      pageWidth - margin * 2,
+      10
+    );
+    currentY += 20;
+
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("⸻", pageWidth / 2, currentY, { align: "center" });
+    currentY += 15;
+
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "bold");
+    pdf.text("CONTRATANTE", margin, currentY);
+    currentY += 12;
+
+    // Assinatura com nome sublinhado
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Assinatura:", margin, currentY);
+    
+    // Calcular posição do nome
+    const nameStartX = margin + pdf.getTextWidth("Assinatura: ") + 5;
+    pdf.setFont("helvetica", "bold");
+    pdf.text(lead.name, nameStartX, currentY);
+    
+    // Desenhar linha embaixo do nome (sublinhado)
+    const nameWidth = pdf.getTextWidth(lead.name);
+    const lineY = currentY + 2;
+    pdf.setLineWidth(0.5);
+    pdf.line(nameStartX, lineY, nameStartX + nameWidth, lineY);
+    
+    currentY += 12;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Nome completo:", margin, currentY);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(lead.name, margin + 50, currentY);
+    currentY += 10;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text("E-mail:", margin, currentY);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(lead.email, margin + 50, currentY);
+    currentY += 10;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Telefone:", margin, currentY);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(lead.phone, margin + 50, currentY);
+    currentY += 20;
+
+    // Detalhes da Aceitação (movido para o final, como estava antes)
     pdf.setFontSize(14);
     pdf.setFont("helvetica", "bold");
     pdf.text("DETALHES DA ACEITAÇÃO", margin, currentY);
@@ -290,9 +409,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // Generate PDF blob
+    console.log("[PDF Generation] Generating PDF blob...");
     const pdfBlob = pdf.output("blob");
     const pdfArrayBuffer = await pdfBlob.arrayBuffer();
     const pdfBuffer = new Uint8Array(pdfArrayBuffer);
+    console.log("[PDF Generation] PDF blob generated, size:", pdfBuffer.length, "bytes");
 
     // Upload to Storage - usar nome da pessoa no nome do arquivo
     // Normalizar nome para criar nome de arquivo seguro
@@ -317,6 +438,7 @@ Deno.serve(async (req: Request) => {
       .substring(0, 50); // Limita o tamanho
     
     const fileName = `${normalizedName}_${dateStr}_${timestamp}.pdf`;
+    console.log("[PDF Generation] Uploading PDF to storage, filename:", fileName);
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("contracts")
       .upload(fileName, pdfBuffer, {
@@ -325,7 +447,8 @@ Deno.serve(async (req: Request) => {
       });
 
     if (uploadError) {
-      console.error("Error uploading PDF:", uploadError);
+      console.error("[PDF Generation] Error uploading PDF:", uploadError);
+      console.error("[PDF Generation] Upload error details:", JSON.stringify(uploadError));
       
       // Se o arquivo já existe (409), tentar deletar e fazer upload novamente
       if (uploadError.statusCode === "409" || uploadError.status === 409) {
@@ -382,21 +505,27 @@ Deno.serve(async (req: Request) => {
     }
 
     // Get public URL
+    console.log("[PDF Generation] Getting public URL for PDF...");
     const {
       data: { publicUrl },
     } = supabase.storage.from("contracts").getPublicUrl(fileName);
+    console.log("[PDF Generation] Public URL:", publicUrl);
 
     // Update term_acceptance with PDF URL
+    console.log("[PDF Generation] Updating term_acceptance with PDF URL...");
     const { error: updateError } = await supabase
       .from("term_acceptance")
       .update({ pdf_url: publicUrl })
       .eq("id", term_acceptance_id);
 
     if (updateError) {
-      console.error("Error updating term acceptance:", updateError);
+      console.error("[PDF Generation] Error updating term acceptance:", updateError);
       // Don't fail the request if update fails, PDF is already uploaded
+    } else {
+      console.log("[PDF Generation] Term acceptance updated successfully");
     }
 
+    console.log("[PDF Generation] PDF generation completed successfully");
     return new Response(
       JSON.stringify({
         success: true,
@@ -409,9 +538,15 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error: any) {
-    console.error("Error generating PDF:", error);
+    console.error("[PDF Generation] CRITICAL ERROR:", error);
+    console.error("[PDF Generation] Error stack:", error.stack);
+    console.error("[PDF Generation] Error message:", error.message);
+    console.error("[PDF Generation] Error name:", error.name);
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({ 
+        error: error.message || "Internal server error",
+        details: error.stack 
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

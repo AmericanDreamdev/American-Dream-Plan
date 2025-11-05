@@ -341,17 +341,59 @@ const LeadForm = () => {
 
           // Gerar PDF em segundo plano (não aguardar a geração)
           // Isso permite que o usuário seja redirecionado imediatamente
-          supabase.functions.invoke("generate-contract-pdf", {
-            body: {
+          console.log("[LeadForm] Calling PDF generation function in background...", {
+            lead_id: data.id,
+            term_acceptance_id: acceptanceId,
+          });
+          
+          // Usar fetch diretamente com keepalive para evitar cancelamento na navegação
+          const { data: { session } } = await supabase.auth.getSession();
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          
+          const functionUrl = `${supabaseUrl}/functions/v1/generate-contract-pdf`;
+          
+          // Preparar headers
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+            "apikey": supabaseAnonKey,
+          };
+          
+          // Usar token da sessão se disponível, senão usar anon key
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          } else {
+            headers["Authorization"] = `Bearer ${supabaseAnonKey}`;
+          }
+          
+          // Fazer fetch com keepalive para não ser cancelado na navegação
+          fetch(functionUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
               lead_id: data.id,
               term_acceptance_id: acceptanceId,
-            },
-          }).catch((pdfErr) => {
+            }),
+            keepalive: true, // Mantém a requisição mesmo após navegação
+          })
+          .then(async (response) => {
+            try {
+              const result = await response.json();
+              console.log("[LeadForm] PDF generation completed (background):", result);
+              if (!response.ok) {
+                console.error("[LeadForm] PDF generation error:", result);
+              }
+            } catch (e) {
+              console.error("[LeadForm] Error parsing PDF response:", e);
+            }
+          })
+          .catch((pdfErr: any) => {
             // Log do erro mas não bloquear o fluxo
-            console.error("Error calling PDF generation (background):", pdfErr);
+            console.error("[LeadForm] Error calling PDF generation (background):", pdfErr);
           });
 
           // Redirecionar imediatamente para página de opções de pagamento com país detectado
+          console.log("[LeadForm] Redirecting immediately to payment options...");
           navigate(`/payment-options?lead_id=${data.id}&term_acceptance_id=${acceptanceId}&country=${userCountry}`);
         } else {
           setError("Erro ao registrar aceitação dos termos. Tente novamente.");
