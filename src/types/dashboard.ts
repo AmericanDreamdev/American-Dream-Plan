@@ -26,6 +26,7 @@ export interface DashboardUser {
   is_confirmado_pago: boolean;
   pdf_generated_at_formatted: string | null;
   is_brazilian: boolean;
+  consultation_form_id: string | null;
 }
 
 export interface DashboardStats {
@@ -34,6 +35,7 @@ export interface DashboardStats {
   totalPaid: number;
   totalPending: number;
   totalNotPaid: number;
+  totalConsultationForms: number;
 }
 
 export interface RawLead {
@@ -67,5 +69,19 @@ export interface RawPayment {
   stripe_payment_intent_id: string | null;
   created_at: string;
   updated_at: string | null;
+}
+
+export interface RawConsultationForm {
+  id: string;
+  lead_id: string;
+  payment_id: string | null;
+  nome_completo: string;
+  email: string;
+  telefone: string;
+  objetivo_principal: string | null;
+  tipo_visto_desejado: string | null;
+  created_at: string;
+  lead_name?: string;
+  lead_email?: string;
 }
 

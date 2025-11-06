@@ -8,35 +8,41 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 240 88% 10%;
-    --foreground: 0 0% 100%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
 
-    --card: 240 88% 12%;
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
 
-    --popover: 240 88% 12%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 72.2% 50.6%;
+    --primary-foreground: 0 85.7% 97.3%;
 
-    --secondary: 217 91% 50%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 240 88% 15%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
 
-    --accent: 0 0% 100%;
-    --accent-foreground: 217 91% 60%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 240 88% 18%;
-    --input: 240 88% 14%;
-    --ring: 217 91% 60%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 72.2% 50.6%;
 
     --radius: 0.5rem;
+
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
     
     /* Cores patrióticas - Azul, Branco, Vermelho */
     --patriotic-blue: 217 91% 60%;
@@ -61,55 +67,6 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .dark {
-    --background: 240 88% 10%;
-    --foreground: 0 0% 100%;
-
-    --card: 240 88% 12%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 240 88% 12%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 217 91% 50%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 240 88% 15%;
-    --muted-foreground: 0 0% 60%;
-
-    --accent: 0 0% 100%;
-    --accent-foreground: 217 91% 60%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 240 88% 18%;
-    --input: 240 88% 14%;
-    --ring: 217 91% 60%;
-    
-    /* Cores patrióticas - Azul, Branco, Vermelho */
-    --patriotic-blue: 217 91% 60%;
-    --patriotic-blue-dark: 217 91% 45%;
-    --patriotic-blue-light: 217 91% 75%;
-    --patriotic-white: 0 0% 100%;
-    --patriotic-red: 0 85% 58%;
-    
-    --shadow-card: 0 4px 20px -2px hsl(240 88% 10% / 0.5);
-    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.3);
-    --shadow-glow-blue: 0 0 40px hsl(217 91% 60% / 0.3);
-    --shadow-glow-red: 0 0 40px hsl(0 85% 58% / 0.3);
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
 }
 
 @layer base {
@@ -129,8 +86,8 @@ All colors MUST be HSL.
     font-weight: 700; /* Bold */
   }
 
-  /* Background lighting effects - apenas para páginas que não são dashboard */
-  body:not(.dashboard-page)::before {
+  /* Background lighting effects - apenas para páginas que não são dashboard e não são formulário de consultoria */
+  body:not(.dashboard-page):not(.consultation-form-page)::before {
     content: '';
     position: fixed;
     top: -50%;
@@ -150,8 +107,8 @@ All colors MUST be HSL.
     animation: floating 20s ease-in-out infinite;
   }
 
-  /* Segunda camada de luzes para mais profundidade - apenas para páginas que não são dashboard */
-  body:not(.dashboard-page)::after {
+  /* Segunda camada de luzes para mais profundidade - apenas para páginas que não são dashboard e não são formulário de consultoria */
+  body:not(.dashboard-page):not(.consultation-form-page)::after {
     content: '';
     position: fixed;
     top: -50%;
@@ -174,6 +131,26 @@ All colors MUST be HSL.
 
   body.dashboard-page::before,
   body.dashboard-page::after {
+    display: none;
+  }
+
+  /* Fundo cinza claro para formulário de consultoria */
+  body.consultation-form-page {
+    background: #f9fafb !important;
+  }
+
+  body.consultation-form-page::before,
+  body.consultation-form-page::after {
+    display: none;
+  }
+
+  /* Fundo branco para página de detalhes do formulário */
+  body.consultation-form-details-page {
+    background: #ffffff !important;
+  }
+
+  body.consultation-form-details-page::before,
+  body.consultation-form-details-page::after {
     display: none;
   }
 
@@ -213,6 +190,319 @@ All colors MUST be HSL.
     background: linear-gradient(to right, #0685F6, #032B89) !important;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(5, 117, 230, 0.3);
+  }
+
+  /* Desabilitar estilos azuis na página do formulário de consultoria */
+  .consultation-form-page button.bg-primary,
+  .consultation-form-page .bg-primary {
+    background: #111827 !important;
+    color: #fff !important;
+  }
+
+  .consultation-form-page button.bg-primary:hover,
+  .consultation-form-page .bg-primary:hover {
+    background: #1f2937 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .consultation-form-page .bg-card {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  .consultation-form-page .text-card-foreground {
+    color: #111827 !important;
+  }
+
+  .consultation-form-page input,
+  .consultation-form-page textarea,
+  .consultation-form-page select,
+  .consultation-form-page [role="combobox"] {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d1d5db !important;
+  }
+
+  .consultation-form-page input:focus,
+  .consultation-form-page textarea:focus,
+  .consultation-form-page select:focus,
+  .consultation-form-page [role="combobox"]:focus {
+    border-color: #9ca3af !important;
+    ring-color: #9ca3af !important;
+    outline-color: #9ca3af !important;
+  }
+
+  .consultation-form-page [data-radix-select-content] {
+    background: #ffffff !important;
+    border-color: #d1d5db !important;
+    color: #111827 !important;
+  }
+
+  .consultation-form-page [data-radix-select-item] {
+    color: #111827 !important;
+    background: #ffffff !important;
+  }
+
+  .consultation-form-page [data-radix-select-item]:hover,
+  .consultation-form-page [data-radix-select-item]:focus {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+  }
+
+  .consultation-form-page [data-radix-select-item][data-highlighted] {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+  }
+
+  .consultation-form-page [data-radix-select-item][data-state="checked"] {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+  }
+
+  /* Forçar todas as cores do dropdown para branco/cinza */
+  .consultation-form-page [data-radix-select-viewport] {
+    background: #ffffff !important;
+  }
+
+  .consultation-form-page [data-radix-select-content] * {
+    color: #111827 !important;
+  }
+
+  .consultation-form-page [data-radix-select-content] [data-radix-select-item-text] {
+    color: #111827 !important;
+  }
+
+  .consultation-form-page [data-radix-progress-root] {
+    background: #e5e7eb !important;
+  }
+
+  .consultation-form-page [data-radix-progress-indicator] {
+    background: #111827 !important;
+  }
+
+  /* Garantir que botões pretos tenham texto branco - usando seletores mais específicos */
+  .consultation-form-page button.bg-gray-900,
+  .consultation-form-page button.bg-gray-800,
+  .consultation-form-page button[class*="bg-gray-900"]:not([class*="outline"]),
+  .consultation-form-page button[class*="bg-gray-800"]:not([class*="outline"]) {
+    color: #ffffff !important;
+  }
+
+  .consultation-form-page button.bg-gray-900 *,
+  .consultation-form-page button.bg-gray-800 *,
+  .consultation-form-page button[class*="bg-gray-900"]:not([class*="outline"]) *,
+  .consultation-form-page button[class*="bg-gray-800"]:not([class*="outline"]) *,
+  .consultation-form-page button.bg-gray-900 span,
+  .consultation-form-page button.bg-gray-800 span,
+  .consultation-form-page button[class*="bg-gray-900"] span,
+  .consultation-form-page button[class*="bg-gray-800"] span {
+    color: #ffffff !important;
+  }
+
+  /* Garantir que botões outline tenham texto legível (escuro) - somente se não tiverem bg-gray */
+  .consultation-form-page button[class*="outline"]:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]),
+  .consultation-form-page button[data-variant="outline"]:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]),
+  .consultation-form-page button.variant-outline:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]) {
+    color: #111827 !important;
+    border-color: #d1d5db !important;
+  }
+
+  .consultation-form-page button[class*="outline"]:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]):hover,
+  .consultation-form-page button[data-variant="outline"]:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]):hover,
+  .consultation-form-page button.variant-outline:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]):hover {
+    background-color: #f3f4f6 !important;
+    color: #111827 !important;
+  }
+
+  /* Forçar texto escuro em todos os elementos filhos de botões outline */
+  .consultation-form-page button[class*="outline"]:not([class*="bg-gray"]) span,
+  .consultation-form-page button[class*="outline"]:not([class*="bg-gray"]) *:not([class*="bg-gray"]),
+  .consultation-form-page button[class*="outline"]:not([class*="bg-gray"]) {
+    color: #111827 !important;
+  }
+
+  /* Regra mais específica para garantir texto escuro em botões outline */
+  .consultation-form-page button.inline-flex[class*="outline"],
+  .consultation-form-page button.inline-flex[class*="outline"] *,
+  .consultation-form-page button.inline-flex[class*="outline"] span {
+    color: #111827 !important;
+  }
+
+  /* Override qualquer hover que possa estar mudando a cor */
+  .consultation-form-page button[class*="outline"]:hover,
+  .consultation-form-page button[class*="outline"]:hover *,
+  .consultation-form-page button[class*="outline"]:hover span {
+    color: #111827 !important;
+  }
+
+  /* Forçar cor usando style inline como fallback - mais específico */
+  .consultation-form-page button[style*="color"][style*="111827"],
+  .consultation-form-page button[style*="color"][style*="111827"] * {
+    color: #111827 !important;
+  }
+
+  /* Override COMPLETO do hover:text-accent-foreground que está bloqueando */
+  .consultation-form-page button[style*="color"]:hover,
+  .consultation-form-page button[style*="color"]:hover *,
+  .consultation-form-page button[style*="color"]:hover span,
+  .consultation-form-page button[style*="color"]:focus,
+  .consultation-form-page button[style*="color"]:focus * {
+    color: #111827 !important;
+  }
+
+  /* Override específico para botões outline na página de consultoria - FORÇAR COR */
+  .consultation-form-page button.inline-flex[style*="color"],
+  .consultation-form-page button.inline-flex[style*="111827"] {
+    color: #111827 !important;
+  }
+
+  .consultation-form-page button.inline-flex[style*="color"] *,
+  .consultation-form-page button.inline-flex[style*="color"] span,
+  .consultation-form-page button.inline-flex[style*="111827"] *,
+  .consultation-form-page button.inline-flex[style*="111827"] span {
+    color: #111827 !important;
+  }
+
+  /* BLOQUEAR completamente hover:text-accent-foreground */
+  .consultation-form-page button[style*="111827"].hover\:text-accent-foreground,
+  .consultation-form-page button[style*="111827"]:hover.hover\:text-accent-foreground {
+    color: #111827 !important;
+  }
+
+  /* Override direto do Tailwind hover:text-accent-foreground */
+  .consultation-form-page button[style*="111827"]:hover {
+    color: #111827 !important;
+  }
+
+  /* REGRA ULTRA ESPECÍFICA - sobrescreve TUDO */
+  .consultation-form-page button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap[style*="111827"],
+  .consultation-form-page button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap[style*="111827"]:hover,
+  .consultation-form-page button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap[style*="111827"]:focus,
+  .consultation-form-page button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap[style*="111827"] *,
+  .consultation-form-page button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap[style*="111827"]:hover *,
+  .consultation-form-page button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap[style*="111827"] span,
+  .consultation-form-page button.inline-flex.items-center.justify-center.gap-2.whitespace-nowrap[style*="111827"]:hover span {
+    color: #111827 !important;
+  }
+
+  /* REGRA GLOBAL: Garantir que TODOS os botões pretos tenham texto branco */
+  /* Aplicar para qualquer página, não apenas consultation-form-page */
+  button.bg-gray-900,
+  button.bg-gray-800,
+  button.bg-black,
+  button[class*="bg-gray-900"]:not([class*="outline"]):not([class*="text-gray"]),
+  button[class*="bg-gray-800"]:not([class*="outline"]):not([class*="text-gray"]),
+  button[class*="bg-black"]:not([class*="outline"]):not([class*="text-gray"]) {
+    color: #ffffff !important;
+  }
+
+  button.bg-gray-900 *,
+  button.bg-gray-800 *,
+  button.bg-black *,
+  button[class*="bg-gray-900"]:not([class*="outline"]) *,
+  button[class*="bg-gray-800"]:not([class*="outline"]) *,
+  button[class*="bg-black"]:not([class*="outline"]) *,
+  button.bg-gray-900 span,
+  button.bg-gray-800 span,
+  button.bg-black span,
+  button[class*="bg-gray-900"] span,
+  button[class*="bg-gray-800"] span,
+  button[class*="bg-black"] span,
+  button.bg-gray-900 svg,
+  button.bg-gray-800 svg,
+  button.bg-black svg,
+  button[class*="bg-gray-900"] svg,
+  button[class*="bg-gray-800"] svg,
+  button[class*="bg-black"] svg {
+    color: #ffffff !important;
+  }
+
+  /* Garantir hover também mantém texto branco */
+  button.bg-gray-900:hover,
+  button.bg-gray-800:hover,
+  button.bg-black:hover,
+  button[class*="bg-gray-900"]:hover:not([class*="outline"]),
+  button[class*="bg-gray-800"]:hover:not([class*="outline"]),
+  button[class*="bg-black"]:hover:not([class*="outline"]) {
+    color: #ffffff !important;
+  }
+
+  button.bg-gray-900:hover *,
+  button.bg-gray-800:hover *,
+  button.bg-black:hover *,
+  button[class*="bg-gray-900"]:hover *,
+  button[class*="bg-gray-800"]:hover *,
+  button[class*="bg-black"]:hover * {
+    color: #ffffff !important;
+  }
+
+  /* Regras específicas para PaymentSuccess e ConsultationForm */
+  /* Garantir texto branco em botões com bg-gray-900/800 em qualquer contexto */
+  button[class*="bg-gray-900"]:not([class*="outline"]),
+  button[class*="bg-gray-800"]:not([class*="outline"]) {
+    color: #ffffff !important;
+  }
+
+  button[class*="bg-gray-900"]:not([class*="outline"]) *,
+  button[class*="bg-gray-800"]:not([class*="outline"]) *,
+  button[class*="bg-gray-900"]:not([class*="outline"]) span,
+  button[class*="bg-gray-800"]:not([class*="outline"]) span,
+  button[class*="bg-gray-900"]:not([class*="outline"]) svg,
+  button[class*="bg-gray-800"]:not([class*="outline"]) svg {
+    color: #ffffff !important;
+  }
+
+  /* Regra ultra específica para botão "Voltar para a Página Inicial" */
+  .consultation-form-page button.bg-gray-900,
+  .consultation-form-page button.bg-gray-800,
+  .consultation-form-page button[class*="bg-gray-900"],
+  .consultation-form-page button[class*="bg-gray-800"],
+  .consultation-form-page button[style*="color"][style*="ffffff"],
+  .consultation-form-page button[style*="color"][style*="fff"] {
+    color: #ffffff !important;
+  }
+
+  .consultation-form-page button.bg-gray-900 *,
+  .consultation-form-page button.bg-gray-800 *,
+  .consultation-form-page button[class*="bg-gray-900"] *,
+  .consultation-form-page button[class*="bg-gray-800"] *,
+  .consultation-form-page button.bg-gray-900 span,
+  .consultation-form-page button.bg-gray-800 span,
+  .consultation-form-page button[class*="bg-gray-900"] span,
+  .consultation-form-page button[class*="bg-gray-800"] span {
+    color: #ffffff !important;
+  }
+  
+  /* NÃO aplicar texto branco em botões brancos - apenas em botões pretos */
+  .consultation-form-page button[style*="color"][style*="ffffff"] span,
+  .consultation-form-page button[style*="color"][style*="fff"] span,
+  .consultation-form-page button[style*="color"][style*="ffffff"] *,
+  .consultation-form-page button[style*="color"][style*="fff"] * {
+    color: #ffffff !important;
+  }
+  
+  /* Garantir que botões com fundo branco e cor preta tenham texto preto */
+  .consultation-form-page button[style*="background-color: #ffffff"][style*="color: #111827"] span,
+  .consultation-form-page button[style*="background-color:#ffffff"][style*="color:#111827"] span,
+  .consultation-form-page button[style*="background-color: #ffffff"][style*="color: #111827"] *,
+  .consultation-form-page button[style*="background-color:#ffffff"][style*="color:#111827"] * {
+    color: #111827 !important;
+  }
+
+  /* Override text-primary-foreground que vem do variant default */
+  .consultation-form-page button.bg-gray-900.text-primary-foreground,
+  .consultation-form-page button.bg-gray-800.text-primary-foreground,
+  .consultation-form-page button[class*="bg-gray-900"][class*="text-primary-foreground"],
+  .consultation-form-page button[class*="bg-gray-800"][class*="text-primary-foreground"] {
+    color: #ffffff !important;
+  }
+
+  .consultation-form-page button.bg-gray-900.text-primary-foreground *,
+  .consultation-form-page button.bg-gray-800.text-primary-foreground *,
+  .consultation-form-page button[class*="bg-gray-900"][class*="text-primary-foreground"] *,
+  .consultation-form-page button[class*="bg-gray-800"][class*="text-primary-foreground"] * {
+    color: #ffffff !important;
   }
 
   /* Text sem glow - apenas cor branca */
@@ -830,4 +1120,232 @@ All colors MUST be HSL.
     outline-color: hsl(217 91% 75%);
     box-shadow: 0 0 20px hsl(217 91% 60% / 0.5);
   }
+}
+
+/* REGRAS CRÍTICAS: Garantir que botões pretos sempre tenham texto branco, mesmo no hover */
+/* Botões com fundo preto (via style inline) devem ter texto branco */
+button[style*="background-color: #111827"],
+button[style*="background-color:#111827"],
+button[style*="backgroundColor: #111827"],
+button[style*="backgroundColor:#111827"],
+button[style*="background-color: #1f2937"],
+button[style*="background-color:#1f2937"],
+button[style*="backgroundColor: #1f2937"],
+button[style*="backgroundColor:#1f2937"] {
+  color: #ffffff !important;
+}
+
+button[style*="background-color: #111827"] *,
+button[style*="background-color:#111827"] *,
+button[style*="backgroundColor: #111827"] *,
+button[style*="backgroundColor:#111827"] *,
+button[style*="background-color: #111827"] span,
+button[style*="background-color:#111827"] span,
+button[style*="backgroundColor: #111827"] span,
+button[style*="backgroundColor:#111827"] span,
+button[style*="background-color: #111827"] svg,
+button[style*="background-color:#111827"] svg,
+button[style*="backgroundColor: #111827"] svg,
+button[style*="backgroundColor:#111827"] svg,
+button[style*="background-color: #1f2937"] *,
+button[style*="background-color:#1f2937"] *,
+button[style*="backgroundColor: #1f2937"] *,
+button[style*="backgroundColor:#1f2937"] *,
+button[style*="background-color: #1f2937"] span,
+button[style*="background-color:#1f2937"] span,
+button[style*="backgroundColor: #1f2937"] span,
+button[style*="backgroundColor:#1f2937"] span,
+button[style*="background-color: #1f2937"] svg,
+button[style*="background-color:#1f2937"] svg,
+button[style*="backgroundColor: #1f2937"] svg,
+button[style*="backgroundColor:#1f2937"] svg {
+  color: #ffffff !important;
+}
+
+/* Garantir que botões pretos mantenham texto branco no hover */
+button[style*="background-color: #111827"]:hover,
+button[style*="background-color:#111827"]:hover,
+button[style*="backgroundColor: #111827"]:hover,
+button[style*="backgroundColor:#111827"]:hover,
+button[style*="background-color: #1f2937"]:hover,
+button[style*="background-color:#1f2937"]:hover,
+button[style*="backgroundColor: #1f2937"]:hover,
+button[style*="backgroundColor:#1f2937"]:hover {
+  color: #ffffff !important;
+}
+
+button[style*="background-color: #111827"]:hover *,
+button[style*="background-color:#111827"]:hover *,
+button[style*="backgroundColor: #111827"]:hover *,
+button[style*="backgroundColor:#111827"]:hover *,
+button[style*="background-color: #111827"]:hover span,
+button[style*="background-color:#111827"]:hover span,
+button[style*="backgroundColor: #111827"]:hover span,
+button[style*="backgroundColor:#111827"]:hover span,
+button[style*="background-color: #111827"]:hover svg,
+button[style*="background-color:#111827"]:hover svg,
+button[style*="backgroundColor: #111827"]:hover svg,
+button[style*="backgroundColor:#111827"]:hover svg,
+button[style*="background-color: #1f2937"]:hover *,
+button[style*="background-color:#1f2937"]:hover *,
+button[style*="backgroundColor: #1f2937"]:hover *,
+button[style*="backgroundColor:#1f2937"]:hover *,
+button[style*="background-color: #1f2937"]:hover span,
+button[style*="background-color:#1f2937"]:hover span,
+button[style*="backgroundColor: #1f2937"]:hover span,
+button[style*="backgroundColor:#1f2937"]:hover span,
+button[style*="background-color: #1f2937"]:hover svg,
+button[style*="background-color:#1f2937"]:hover svg,
+button[style*="backgroundColor: #1f2937"]:hover svg,
+button[style*="backgroundColor:#1f2937"]:hover svg {
+  color: #ffffff !important;
+}
+
+/* REGRAS CRÍTICAS: Garantir que botões brancos sempre tenham texto preto */
+/* Botões com fundo branco (via style inline ou classe) devem ter texto preto */
+button[style*="background-color: #ffffff"],
+button[style*="background-color:#ffffff"],
+button[style*="backgroundColor: #ffffff"],
+button[style*="backgroundColor:#ffffff"] {
+  color: #111827 !important;
+}
+
+button[style*="background-color: #ffffff"] *,
+button[style*="background-color:#ffffff"] *,
+button[style*="backgroundColor: #ffffff"] *,
+button[style*="backgroundColor:#ffffff"] *,
+button[style*="background-color: #ffffff"] span,
+button[style*="background-color:#ffffff"] span,
+button[style*="backgroundColor: #ffffff"] span,
+button[style*="backgroundColor:#ffffff"] span {
+  color: #111827 !important;
+}
+
+/* Garantir que botões brancos não mudem de cor no hover */
+button[style*="background-color: #ffffff"]:hover,
+button[style*="background-color:#ffffff"]:hover,
+button[style*="backgroundColor: #ffffff"]:hover,
+button[style*="backgroundColor:#ffffff"]:hover {
+  color: #111827 !important;
+}
+
+button[style*="background-color: #ffffff"]:hover *,
+button[style*="background-color:#ffffff"]:hover *,
+button[style*="backgroundColor: #ffffff"]:hover *,
+button[style*="backgroundColor:#ffffff"]:hover *,
+button[style*="background-color: #ffffff"]:hover span,
+button[style*="background-color:#ffffff"]:hover span,
+button[style*="backgroundColor: #ffffff"]:hover span,
+button[style*="backgroundColor:#ffffff"]:hover span {
+  color: #111827 !important;
+}
+
+/* Para botões com fundo branco e texto preto via style inline */
+button[style*="color: #111827"],
+button[style*="color:#111827"] {
+  color: #111827 !important;
+}
+
+button[style*="color: #111827"] *,
+button[style*="color:#111827"] *,
+button[style*="color: #111827"] span,
+button[style*="color:#111827"] span {
+  color: #111827 !important;
+}
+
+button[style*="color: #111827"]:hover,
+button[style*="color:#111827"]:hover {
+  color: #111827 !important;
+}
+
+button[style*="color: #111827"]:hover *,
+button[style*="color:#111827"]:hover *,
+button[style*="color: #111827"]:hover span,
+button[style*="color:#111827"]:hover span {
+  color: #111827 !important;
+}
+
+/* Regras específicas para a página de consulta e dashboard */
+.consultation-form-page button[style*="background-color: #ffffff"],
+.consultation-form-page button[style*="background-color:#ffffff"],
+.consultation-form-page button[style*="backgroundColor: #ffffff"],
+.consultation-form-page button[style*="backgroundColor:#ffffff"] {
+  color: #111827 !important;
+}
+
+.consultation-form-page button[style*="background-color: #ffffff"] *,
+.consultation-form-page button[style*="background-color:#ffffff"] *,
+.consultation-form-page button[style*="backgroundColor: #ffffff"] *,
+.consultation-form-page button[style*="backgroundColor:#ffffff"] *,
+.consultation-form-page button[style*="background-color: #ffffff"] span,
+.consultation-form-page button[style*="background-color:#ffffff"] span,
+.consultation-form-page button[style*="backgroundColor: #ffffff"] span,
+.consultation-form-page button[style*="backgroundColor:#ffffff"] span {
+  color: #111827 !important;
+}
+
+/* Dashboard - garantir botões outline brancos com texto preto */
+button.bg-white,
+button[class*="bg-white"],
+button[class*="variant-outline"].bg-white,
+button[data-variant="outline"].bg-white,
+button.variant-outline.bg-white {
+  color: #111827 !important;
+}
+
+button.bg-white *,
+button[class*="bg-white"] *,
+button.bg-white span,
+button[class*="bg-white"] span,
+button[class*="variant-outline"].bg-white *,
+button[data-variant="outline"].bg-white *,
+button.variant-outline.bg-white * {
+  color: #111827 !important;
+}
+
+button.bg-white:hover,
+button[class*="bg-white"]:hover,
+button[class*="variant-outline"].bg-white:hover,
+button[data-variant="outline"].bg-white:hover,
+button.variant-outline.bg-white:hover {
+  color: #111827 !important;
+}
+
+button.bg-white:hover *,
+button[class*="bg-white"]:hover *,
+button.bg-white:hover span,
+button[class*="bg-white"]:hover span,
+button[class*="variant-outline"].bg-white:hover *,
+button[data-variant="outline"].bg-white:hover *,
+button.variant-outline.bg-white:hover * {
+  color: #111827 !important;
+}
+
+/* Regras específicas para botões outline com texto cinza ou vermelho */
+button.bg-white.text-gray-700,
+button.bg-white[class*="text-gray-700"],
+button.bg-white.text-red-600,
+button.bg-white[class*="text-red-600"] {
+  color: inherit !important;
+}
+
+button.bg-white.text-gray-700 *,
+button.bg-white[class*="text-gray-700"] *,
+button.bg-white.text-red-600 *,
+button.bg-white[class*="text-red-600"] * {
+  color: inherit !important;
+}
+
+button.bg-white.text-gray-700:hover,
+button.bg-white[class*="text-gray-700"]:hover,
+button.bg-white.text-red-600:hover,
+button.bg-white[class*="text-red-600"]:hover {
+  color: inherit !important;
+}
+
+button.bg-white.text-gray-700:hover *,
+button.bg-white[class*="text-gray-700"]:hover *,
+button.bg-white.text-red-600:hover *,
+button.bg-white[class*="text-red-600"]:hover * {
+  color: inherit !important;
 }

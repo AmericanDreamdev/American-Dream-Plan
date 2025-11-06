@@ -202,12 +202,191 @@ const PaymentOptions = () => {
       returnedFromInfinitePay
     });
 
+    // ===== VERIFICAÇÃO DE RETORNO DO PIX =====
+    const pixTrackerKey = `pix_checkout_${leadId}_${termAcceptanceId}`;
+    const pixTrackerData = sessionStorage.getItem(pixTrackerKey);
+    const referrer = document.referrer;
+    const isFromStripe = referrer && (
+      referrer.includes("checkout.stripe.com") || 
+      referrer.includes("stripe.com")
+    );
+
+    console.log("[PaymentOptions] 🔍 Checking PIX tracker:", {
+      hasTracker: !!pixTrackerData,
+      isFromStripe,
+      referrer: referrer ? referrer.substring(0, 100) : "none",
+      leadId,
+      termAcceptanceId,
+    });
+
+    // Verificar se há tracker de PIX (não depender apenas do referrer, pois pode não funcionar com navegação manual)
+    if (pixTrackerData) {
+      try {
+        const tracker = JSON.parse(pixTrackerData);
+        const trackerAge = Date.now() - tracker.timestamp;
+        const oneHour = 60 * 60 * 1000; // 1 hora em milissegundos
+        const ageInMinutes = Math.floor(trackerAge / 60000);
+
+        console.log("[PaymentOptions] 📊 PIX tracker details:", {
+          trackerAge: `${ageInMinutes} minutes`,
+          isExpired: trackerAge >= oneHour,
+          isFromStripe,
+          trackerData: tracker,
+        });
+
+        // Verificar se o tracker não expirou (1 hora)
+        // IMPORTANTE: Não exigir isFromStripe, pois o referrer pode não funcionar com navegação manual
+        if (trackerAge < oneHour) {
+          console.log("[PaymentOptions] ✅ PIX tracker valid, checking payment status...", {
+            note: isFromStripe ? "Detected return from Stripe" : "Tracker found, checking payment (may be manual return)",
+          });
+          
+          // Marcar como processado para evitar processamento múltiplo
+          hasProcessedReturn.current = true;
+          
+          // Buscar pagamento PIX usando edge function (mais confiável)
+          const checkPixPayment = async (retryCount = 0) => {
+            try {
+              console.log(`[PaymentOptions] 🔄 Checking PIX payment via edge function (attempt ${retryCount + 1}/3)...`, {
+                leadId,
+                termAcceptanceId,
+                trackerSessionId: tracker.session_id,
+                retryCount,
+              });
+
+              // Adicionar pequeno delay no primeiro retry para dar tempo do pagamento ser criado
+              if (retryCount > 0) {
+                console.log(`[PaymentOptions] ⏳ Waiting 1 second before retry ${retryCount + 1}...`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1 segundo de delay
+              }
+
+              // Chamar edge function para buscar pagamento PIX
+              console.log("[PaymentOptions] 📞 Calling edge function check-pix-payment...", {
+                functionName: "check-pix-payment",
+                body: {
+                  lead_id: leadId,
+                  term_acceptance_id: termAcceptanceId,
+                  session_id: tracker.session_id || undefined,
+                },
+              });
+
+              const { data: result, error } = await supabase.functions.invoke(
+                "check-pix-payment",
+                {
+                  body: {
+                    lead_id: leadId,
+                    term_acceptance_id: termAcceptanceId,
+                    session_id: tracker.session_id || undefined,
+                  },
+                }
+              );
+
+              console.log("[PaymentOptions] 📥 Edge function call completed", {
+                hasError: !!error,
+                hasData: !!result,
+                error: error,
+                result: result,
+              });
+
+              if (error) {
+                console.error("[PaymentOptions] ❌ Error calling check-pix-payment function:", {
+                  error,
+                  errorMessage: error.message,
+                  errorDetails: error,
+                  retryCount,
+                  leadId,
+                  termAcceptanceId,
+                });
+                // Limpar tracker em caso de erro após 3 tentativas
+                if (retryCount >= 2) {
+                  console.log("[PaymentOptions] 🗑️ Clearing tracker after max retries (error)");
+                  sessionStorage.removeItem(pixTrackerKey);
+                }
+                return;
+              }
+
+              console.log("[PaymentOptions] 📦 Edge function response:", result);
+
+              if (result?.found && result?.payment) {
+                const pixPayment = result.payment;
+                console.log("[PaymentOptions] ✅ PIX payment found via edge function, redirecting to success page", {
+                  paymentId: pixPayment.id,
+                  sessionId: pixPayment.stripe_session_id || tracker.session_id,
+                  status: pixPayment.status,
+                });
+                
+                // Limpar tracker antes de redirecionar
+                sessionStorage.removeItem(pixTrackerKey);
+                console.log("[PaymentOptions] 🗑️ Tracker cleared before redirect");
+                
+                // Redirecionar para PaymentSuccess
+                const sessionId = pixPayment.stripe_session_id || tracker.session_id;
+                const successUrl = sessionId 
+                  ? `/payment/success?session_id=${sessionId}&lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`
+                  : `/payment/success?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`;
+                
+                console.log("[PaymentOptions] 🔀 Redirecting to:", successUrl);
+                navigate(successUrl, { replace: true });
+                return;
+              } else {
+                // Se não encontrou e ainda tem tentativas, tentar novamente
+                if (retryCount < 2) {
+                  console.log(`[PaymentOptions] ⚠️ No PIX payment found yet, retrying (${retryCount + 1}/3)...`, {
+                    message: result?.message || "No payment found",
+                  });
+                  return checkPixPayment(retryCount + 1);
+                } else {
+                  console.log("[PaymentOptions] ❌ No PIX payment found after retries, clearing tracker", {
+                    message: result?.message || "No payment found",
+                  });
+                  // Se não encontrou pagamento após retries, limpar tracker (pode ter sido cancelado)
+                  sessionStorage.removeItem(pixTrackerKey);
+                }
+              }
+            } catch (err) {
+              console.error("[PaymentOptions] ❌ Error checking PIX payment:", {
+                error: err,
+                retryCount,
+                leadId,
+                termAcceptanceId,
+              });
+              // Limpar tracker em caso de erro após 3 tentativas
+              if (retryCount >= 2) {
+                console.log("[PaymentOptions] 🗑️ Clearing tracker after max retries (exception)");
+                sessionStorage.removeItem(pixTrackerKey);
+              }
+            }
+          };
+
+          // Executar verificação
+          checkPixPayment();
+          return; // Não continuar com o resto do useEffect
+        } else {
+          // Tracker expirado, limpar
+          console.log("[PaymentOptions] ⏰ PIX tracker expired, clearing", {
+            ageInMinutes: Math.floor(trackerAge / 60000),
+            maxAgeInMinutes: 60,
+          });
+          sessionStorage.removeItem(pixTrackerKey);
+        }
+      } catch (err) {
+        console.error("[PaymentOptions] ❌ Error parsing PIX tracker:", {
+          error: err,
+          trackerData: pixTrackerData,
+        });
+        // Limpar tracker em caso de erro
+        sessionStorage.removeItem(pixTrackerKey);
+      }
+    } else {
+      console.log("[PaymentOptions] ℹ️ No PIX tracker found");
+    }
+    // ===== FIM VERIFICAÇÃO DE RETORNO DO PIX =====
+
     // Chave para rastrear redirecionamento - usar uma chave mais persistente
     const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
     const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
     
     // Verificar se o usuário voltou do InfinitePay
-    const referrer = document.referrer;
     const isFromInfinitePay = referrer && referrer.includes("infinitepay.io");
     
     // Verificar se já foi marcado como retornado
@@ -222,37 +401,28 @@ const PaymentOptions = () => {
       returnedFromInfinitePay
     });
     
-    // Se voltou do InfinitePay OU já foi marcado como retornado, mostrar página de retorno
+    // Se voltou do InfinitePay OU já foi marcado como retornado, apenas limpar flags
     if (isFromInfinitePay || hasReturned) {
-      console.log("[PaymentOptions] useEffect: Detected return, setting state");
-      // Marcar como processado ANTES de fazer qualquer alteração
+      console.log("[PaymentOptions] useEffect: Detected return from InfinitePay");
+      // Marcar como processado e limpar flags
       hasProcessedReturn.current = true;
-      
-      // Usuário voltou do InfinitePay
-      setReturnedFromInfinitePay(true);
-      // Marcar como retornado para persistir mesmo se o referrer não funcionar
-      sessionStorage.setItem(returnKey, "true");
-      // Limpar a flag de redirecionamento
+      sessionStorage.removeItem(returnKey);
       sessionStorage.removeItem(redirectKey);
-      console.log("[PaymentOptions] useEffect: Return processed, marked as returned");
-      return; // IMPORTANTE: retornar ANTES de qualquer tentativa de inserção ou consulta
+      // Não redirecionar mais - o usuário pode escolher outro método ou aguardar o link
+      return;
     }
 
     // Se for Brasil e não voltou do InfinitePay, registrar e redirecionar diretamente
     // IMPORTANTE: Só executar se NÃO voltou do InfinitePay (verificação explícita)
     if (isBrazil && !isFromInfinitePay && !hasReturned) {
-      // Se já foi redirecionado antes, significa que voltou (caso contrário estaria no Infinite Pay)
-      // Mostrar página de retorno para o usuário decidir
+      // Se já foi redirecionado antes, apenas limpar flags
       if (wasRedirected) {
-        console.log("[PaymentOptions] useEffect: Was redirected but returned, showing return page");
-        // Marcar como processado
+        console.log("[PaymentOptions] useEffect: Was redirected but returned, clearing flags");
+        // Marcar como processado e limpar flags
         hasProcessedReturn.current = true;
-        
-        setReturnedFromInfinitePay(true);
-        // Marcar como retornado e limpar flag de redirecionamento
-        sessionStorage.setItem(returnKey, "true");
+        sessionStorage.removeItem(returnKey);
         sessionStorage.removeItem(redirectKey);
-        console.log("[PaymentOptions] useEffect: Return processed from wasRedirected");
+        // Não redirecionar mais - o usuário pode escolher outro método ou aguardar o link
         return;
       }
       
@@ -352,6 +522,19 @@ const PaymentOptions = () => {
   const handleStripeCheckout = async (method: "card" | "pix" = "card") => {
     if (!leadId || !termAcceptanceId) return;
 
+    // Se escolher outro método (card), limpar tracker de PIX se existir
+    if (method === "card") {
+      const pixTrackerKey = `pix_checkout_${leadId}_${termAcceptanceId}`;
+      const pixTrackerData = sessionStorage.getItem(pixTrackerKey);
+      if (pixTrackerData) {
+        console.log("[PaymentOptions] 🗑️ Clearing PIX tracker - user chose card instead", {
+          key: pixTrackerKey,
+          hadTracker: true,
+        });
+        sessionStorage.removeItem(pixTrackerKey);
+      }
+    }
+
     // Definir loading específico para o método
     if (method === "card") {
       setLoadingCard(true);
@@ -383,6 +566,24 @@ const PaymentOptions = () => {
         return;
       }
 
+      // Se for PIX, salvar tracker no sessionStorage antes de redirecionar
+      if (method === "pix" && leadId && termAcceptanceId) {
+        const pixTrackerKey = `pix_checkout_${leadId}_${termAcceptanceId}`;
+        const trackerData = {
+          lead_id: leadId,
+          term_acceptance_id: termAcceptanceId,
+          timestamp: Date.now(),
+          checkout_url: checkoutData.checkout_url,
+          session_id: checkoutData.session_id || null,
+        };
+        sessionStorage.setItem(pixTrackerKey, JSON.stringify(trackerData));
+        console.log("[PaymentOptions] ✅ PIX tracker saved:", {
+          key: pixTrackerKey,
+          data: trackerData,
+          timestamp: new Date(trackerData.timestamp).toISOString(),
+        });
+      }
+
       // Redirecionar para o checkout do Stripe
       if (checkoutData.checkout_url) {
         window.location.href = checkoutData.checkout_url;
@@ -398,7 +599,48 @@ const PaymentOptions = () => {
     }
   };
 
-  const handleZelleCheckout = () => {
+  const handleZelleCheckout = async () => {
+    if (!leadId || !termAcceptanceId) return;
+    
+    // Limpar tracker de PIX se existir (usuário escolheu outro método)
+    const pixTrackerKey = `pix_checkout_${leadId}_${termAcceptanceId}`;
+    const pixTrackerData = sessionStorage.getItem(pixTrackerKey);
+    if (pixTrackerData) {
+      console.log("[PaymentOptions] 🗑️ Clearing PIX tracker - user chose Zelle instead", {
+        key: pixTrackerKey,
+        hadTracker: true,
+      });
+      sessionStorage.removeItem(pixTrackerKey);
+    }
+    
+    // Registrar escolha do Zelle no banco de dados
+    try {
+      // Tentar inserir diretamente - se der erro (duplicata ou 403), não bloquear
+      // Não fazer SELECT primeiro para evitar erro 403
+      const { error } = await supabase.from("payments").insert({
+        lead_id: leadId,
+        term_acceptance_id: termAcceptanceId,
+        amount: 999.00, // Valor do Zelle em USD (US$ 999.00)
+        currency: "USD",
+        status: "redirected_to_zelle",
+        metadata: {
+          payment_method: "zelle",
+          zelle_email: "adm@migmainc.com",
+          redirected_at: new Date().toISOString(),
+        },
+      });
+      
+      // Se der erro (incluindo duplicata ou 403), apenas logar mas não bloquear
+      if (error) {
+        console.error("Error registering Zelle redirect:", error);
+        // Não bloquear a navegação mesmo se houver erro
+      }
+    } catch (err) {
+      console.error("Error registering Zelle redirect:", err);
+      // Não bloquear a navegação mesmo se houver erro
+    }
+    
+    // Navegar para a página de checkout do Zelle
     navigate(`/zelle-checkout?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
   };
 
@@ -448,7 +690,7 @@ const PaymentOptions = () => {
     return null;
   }
 
-  // Se for Brasil e voltou do InfinitePay, mostrar página com opções
+  // Se for Brasil e voltou do InfinitePay, mostrar mensagem informativa
   if (isBrazil && returnedFromInfinitePay) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -456,10 +698,10 @@ const PaymentOptions = () => {
           <Card className="shadow-xl bg-white border border-gray-200">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-                Voltar ao Pagamento
+                Pagamento Realizado
               </CardTitle>
               <CardDescription className="text-base">
-                Você voltou da página de pagamento. O que deseja fazer?
+                Após a verificação do pagamento, você receberá um link para preencher o formulário de consulta.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 p-6">

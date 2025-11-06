@@ -13,6 +13,8 @@ import PaymentOptions from "./pages/PaymentOptions";
 import ZelleCheckout from "./pages/ZelleCheckout";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import ConsultationForm from "./pages/ConsultationForm";
+import ConsultationFormDetails from "./pages/ConsultationFormDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -37,12 +39,22 @@ const App = () => (
           <Route path="/zelle-checkout" element={<ZelleCheckout />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
+          <Route path="/consultation-form" element={<ConsultationForm />} />
+          <Route path="/consultation-form/:token" element={<ConsultationForm />} />
           <Route path="/login" element={<Login />} />
           <Route 
-            path="/dashboard" 
+            path="/dashboard/*" 
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/consultation-form/:id" 
+            element={
+              <ProtectedRoute>
+                <ConsultationFormDetails />
               </ProtectedRoute>
             } 
           />

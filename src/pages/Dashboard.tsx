@@ -1,26 +1,18 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { useDashboardFilters } from "@/hooks/useDashboardFilters";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { DashboardStatsCards } from "@/components/dashboard/DashboardStatsCards";
-import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { DashboardLoading } from "@/components/dashboard/DashboardLoading";
 import { DashboardError } from "@/components/dashboard/DashboardError";
+import { OverviewPage } from "@/pages/dashboard/OverviewPage";
+import { UsersPage } from "@/pages/dashboard/UsersPage";
+import { FormsPage } from "@/pages/dashboard/FormsPage";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-
-  const { users, stats, loading, error, refetch } = useDashboardData();
-  const { filteredUsers, filteredStats } = useDashboardFilters({
-    users,
-    searchTerm,
-    activeTab,
-    stats,
-  });
+  const location = useLocation();
+  const { users, stats, consultationForms, loading, error, refetch } = useDashboardData();
 
   const handleLogout = async () => {
     try {
@@ -49,22 +41,22 @@ const Dashboard = () => {
     return <DashboardError error={error} onRetry={refetch} />;
   }
 
+  // Determinar qual página mostrar baseado na rota
+  const renderPage = () => {
+    if (location.pathname === "/dashboard/users") {
+      return <UsersPage users={users} stats={stats} consultationForms={consultationForms} />;
+    }
+    if (location.pathname === "/dashboard/forms") {
+      return <FormsPage consultationForms={consultationForms} />;
+    }
+    // Default: Overview
+    return <OverviewPage stats={stats} />;
+  };
+
   return (
-    <div className="min-h-screen bg-white p-6">
-      <div className="w-full mx-auto space-y-6" style={{ maxWidth: '95%' }}>
-        <DashboardHeader onRefresh={refetch} onLogout={handleLogout} />
-        <DashboardStatsCards stats={stats} />
-        <DashboardTabs
-          users={users}
-          filteredUsers={filteredUsers}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          stats={stats}
-        />
-      </div>
-    </div>
+    <DashboardLayout onLogout={handleLogout} onRefresh={refetch}>
+      {renderPage()}
+    </DashboardLayout>
   );
 };
 

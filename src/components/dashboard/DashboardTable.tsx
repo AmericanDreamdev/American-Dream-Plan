@@ -62,24 +62,25 @@ export const DashboardFullTable = ({ users, totalUsers, searchTerm }: DashboardF
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {users.length} de {totalUsers} usuários
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-gray-200 bg-gray-50">
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Nome</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Email</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Telefone</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Data Formulário</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Contrato</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Data Contrato</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Status Pagamento</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Valor</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Método</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Data Pagamento</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Status Geral</TableHead>
-              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">PDF</TableHead>
-            </TableRow>
-          </TableHeader>
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm -mx-6 px-6" style={{ minWidth: '100%' }}>
+        <div style={{ minWidth: '1300px' }}>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-200 bg-gray-50">
+              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Nome</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Email</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Telefone</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Contrato</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Data Contrato</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Status Pag.</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Valor</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Método</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Data Pag.</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Formulário</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Status Geral</TableHead>
+                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">PDF</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
@@ -98,6 +99,7 @@ export const DashboardFullTable = ({ users, totalUsers, searchTerm }: DashboardF
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
@@ -211,6 +213,7 @@ export const DashboardNotPaidTable = ({ users }: { users: DashboardUser[] }) => 
     return !u.is_confirmado_pago && (
       status === "Não pagou" ||
       status === "Redirecionado (InfinitePay)" ||
+      status === "Redirecionado (Zelle)" ||
       status === ''
     );
   });

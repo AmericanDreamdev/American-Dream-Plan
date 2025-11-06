@@ -77,6 +77,10 @@ export const getPaymentMethod = (payment: RawPayment | null, lead: RawLead): str
     return 'InfinitePay';
   }
   
+  if (payment.status === 'redirected_to_zelle') {
+    return 'Zelle';
+  }
+  
   // 2. Verificar metadata do payment
   if (metadata.payment_method) {
     const method = metadata.payment_method;
@@ -121,22 +125,30 @@ export const getPaymentMethod = (payment: RawPayment | null, lead: RawLead): str
  * Obtém o status de pagamento formatado
  */
 export const getStatusPagamento = (status: string | null, payment: RawPayment | null): string => {
-  if (!payment || !status) {
+  // Se não tem payment, retornar "Não pagou"
+  if (!payment) {
+    return 'Não pagou';
+  }
+  
+  // Se tem payment mas não tem status, usar o status do payment
+  const actualStatus = status || payment.status || null;
+  
+  if (!actualStatus) {
     return 'Não pagou';
   }
   
   // Pagamentos CONFIRMADOS
-  if (status === 'completed') {
+  if (actualStatus === 'completed') {
     const method = payment?.metadata?.payment_method || payment?.metadata?.requested_payment_method;
     const result = method === 'pix' ? 'Pago (PIX)' : method === 'card' ? 'Pago (Cartão)' : 'Pago (Stripe)';
     return result;
   }
-  if (status === 'zelle_confirmed') {
+  if (actualStatus === 'zelle_confirmed') {
     return 'Pago (Zelle)';
   }
   
   // IMPORTANTE: redirected_to_infinitepay significa APENAS que foi redirecionado
-  if (status === 'redirected_to_infinitepay') {
+  if (actualStatus === 'redirected_to_infinitepay') {
     const metadata = payment?.metadata || {};
     if (metadata.infinitepay_confirmed === true || metadata.infinitepay_paid === true) {
       return 'Pago (InfinitePay)';
@@ -144,8 +156,17 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
     return 'Redirecionado (InfinitePay)';
   }
   
+  // IMPORTANTE: redirected_to_zelle significa APENAS que foi redirecionado
+  if (actualStatus === 'redirected_to_zelle') {
+    const metadata = payment?.metadata || {};
+    if (metadata.zelle_confirmed === true || metadata.zelle_paid === true) {
+      return 'Pago (Zelle)';
+    }
+    return 'Redirecionado (Zelle)';
+  }
+  
   // Pagamentos PENDENTES
-  if (status === 'pending') {
+  if (actualStatus === 'pending') {
     const metadata = payment?.metadata || {};
     if (metadata.checkout_url || metadata.stripe_session_id) {
       return 'Pendente (Stripe)';
@@ -156,7 +177,7 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
     return 'Pendente';
   }
   
-  return status;
+  return actualStatus;
 };
 
 /**
@@ -178,7 +199,10 @@ export const getStatusGeral = (
     latestPayment.status === 'zelle_confirmed' ||
     (latestPayment.status === 'redirected_to_infinitepay' && 
      (latestPayment.metadata?.infinitepay_confirmed === true || 
-      latestPayment.metadata?.infinitepay_paid === true))
+      latestPayment.metadata?.infinitepay_paid === true)) ||
+    (latestPayment.status === 'redirected_to_zelle' && 
+     (latestPayment.metadata?.zelle_confirmed === true || 
+      latestPayment.metadata?.zelle_paid === true))
   );
   
   if (termAcceptance && isConfirmadoPago) {
@@ -198,6 +222,10 @@ export const getStatusGeral = (
   
   if (termAcceptance && latestPayment?.status === 'redirected_to_infinitepay' && !isConfirmadoPago) {
     return 'Contrato Aceito (Foi para InfinitePay - Aguardando Confirmação)';
+  }
+  
+  if (termAcceptance && latestPayment?.status === 'redirected_to_zelle' && !isConfirmadoPago) {
+    return 'Contrato Aceito (Foi para Zelle - Aguardando Confirmação)';
   }
   
   if (termAcceptance && !latestPayment) {
@@ -226,6 +254,11 @@ export const isConfirmadoPago = (payment: RawPayment | null): boolean => {
     return metadata.infinitepay_confirmed === true || metadata.infinitepay_paid === true;
   }
   
+  if (payment.status === 'redirected_to_zelle') {
+    const metadata = payment.metadata || {};
+    return metadata.zelle_confirmed === true || metadata.zelle_paid === true;
+  }
+  
   return false;
 };
 
@@ -238,7 +271,7 @@ export const findRelevantPayment = (
 ): RawPayment | null => {
   if (!payments || payments.length === 0) return null;
   
-  const paidStatuses = ['completed', 'zelle_confirmed', 'redirected_to_infinitepay'];
+  const paidStatuses = ['completed', 'zelle_confirmed', 'redirected_to_infinitepay', 'redirected_to_zelle'];
   
   // PASSO 1: Buscar TODOS os pagamentos completos
   const allCompletedPayments = payments.filter((p) => 

@@ -180,7 +180,7 @@ const ZelleCheckout = () => {
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
                 <strong>Importante:</strong> Certifique-se de enviar o pagamento para o email correto ({zelleEmail}). 
-                Após realizar o pagamento, clique em "Confirmar Pagamento" abaixo.
+                Após realizar o pagamento, você receberá um link para preencher o formulário de consulta.
               </p>
             </div>
 
@@ -194,34 +194,13 @@ const ZelleCheckout = () => {
                 Escolher outro método
               </Button>
               <Button
-                onClick={async () => {
-                  // Registrar confirmação de pagamento Zelle
-                  if (leadId && termAcceptanceId) {
-                    try {
-                      await supabase.from("payments").insert({
-                        lead_id: leadId,
-                        term_acceptance_id: termAcceptanceId,
-                        amount: amountUSD,
-                        currency: "USD",
-                        status: "zelle_confirmed",
-                        metadata: {
-                          payment_method: "zelle",
-                          zelle_email: zelleEmail,
-                          confirmed_at: new Date().toISOString(),
-                        },
-                      });
-                    } catch (err) {
-                      console.error("Error registering Zelle payment:", err);
-                      // Não bloqueia o redirecionamento mesmo se houver erro
-                    }
-                  }
-                  
-                  // Redirecionar para a página de sucesso
-                  navigate("/payment/success");
+                onClick={() => {
+                  toast.success("Após realizar o pagamento, você receberá um link para preencher o formulário de consulta.");
+                  navigate(`/payment-options?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
                 }}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                Confirmar Pagamento
+                Entendi, já realizei o pagamento
               </Button>
             </div>
 

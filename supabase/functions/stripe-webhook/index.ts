@@ -8,6 +8,68 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
+// TODO: Descomentar quando receber as credenciais SMTP
+// Função auxiliar para enviar email via SMTP
+/*
+async function sendEmail(
+  to: string,
+  toName: string,
+  subject: string,
+  htmlContent: string,
+  textContent?: string
+): Promise<boolean> {
+  try {
+    const emailEndpoint = "http://212.1.213.163:3000/send-smtp";
+    
+    // Obter credenciais SMTP das variáveis de ambiente
+    const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
+    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
+    const smtpSecure = Deno.env.get("SMTP_SECURE") === "true";
+    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpPassword = Deno.env.get("SMTP_PASSWORD");
+    
+    if (!smtpUser || !smtpPassword) {
+      console.error("SMTP credentials not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.");
+      return false;
+    }
+    
+    const emailData = {
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      user: smtpUser,
+      password: smtpPassword,
+      to: to,
+      subject: subject,
+      html: htmlContent,
+      text: textContent || htmlContent.replace(/<[^>]*>/g, ""), // Remove HTML tags para texto simples
+      fromName: "American Dream",
+      toName: toName,
+    };
+
+    const response = await fetch(emailEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error sending email:", response.status, errorText);
+      return false;
+    }
+
+    console.log("✅ Email sent successfully to:", to);
+    return true;
+  } catch (error: any) {
+    console.error("Error sending email:", error.message);
+    return false;
+  }
+}
+*/
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -39,11 +101,18 @@ Deno.serve(async (req: Request) => {
       apiVersion: "2024-12-18.acacia",
     });
 
-    // Obter o corpo da requisição e o signature header
+    // IMPORTANTE: Obter o corpo da requisição como RAW TEXT (não parseado)
+    // O Stripe precisa do corpo exato como recebido para verificar a assinatura
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
 
+    // Log para debug (remover em produção se necessário)
+    console.log("Webhook received - Signature present:", !!signature);
+    console.log("Webhook secret configured:", !!stripeWebhookSecret);
+    console.log("Body length:", body.length);
+
     if (!signature) {
+      console.error("No stripe-signature header found");
       return new Response(
         JSON.stringify({ error: "No signature provided" }),
         {
@@ -53,18 +122,64 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    if (!stripeWebhookSecret) {
+      console.error("STRIPE_WEBHOOK_SECRET not configured");
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Verificar webhook signature
+    // NOTA: O body DEVE ser o texto raw exatamente como recebido do Stripe
     let event: Stripe.Event;
     try {
+      // Log detalhado antes da verificação
+      console.log("Attempting webhook signature verification...", {
+        signatureLength: signature?.length,
+        webhookSecretLength: stripeWebhookSecret?.length,
+        webhookSecretPrefix: stripeWebhookSecret?.substring(0, 7) + "...",
+        bodyLength: body.length,
+        bodyIsString: typeof body === "string",
+        bodyFirstChars: body.substring(0, 50),
+      });
+
       event = await stripe.webhooks.constructEventAsync(
         body,
         signature,
         stripeWebhookSecret
       );
+      console.log("✅ Webhook signature verified successfully. Event type:", event.type, "Event ID:", event.id);
     } catch (err: any) {
-      console.error("Webhook signature verification failed:", err.message);
+      console.error("❌ Webhook signature verification failed:", err.message);
+      console.error("Error details:", {
+        signatureLength: signature?.length,
+        webhookSecretLength: stripeWebhookSecret?.length,
+        webhookSecretPrefix: stripeWebhookSecret?.substring(0, 7) + "...",
+        bodyLength: body.length,
+        bodyIsString: typeof body === "string",
+        bodyPreview: body.substring(0, 200),
+        errorType: err.type,
+        errorCode: err.code,
+      });
+      
+      // Se o erro for de assinatura, pode ser que o webhook secret esteja errado
+      // ou que o corpo tenha sido modificado
       return new Response(
-        JSON.stringify({ error: `Webhook Error: ${err.message}` }),
+        JSON.stringify({ 
+          error: `Webhook Error: ${err.message}`,
+          hint: "Check if STRIPE_WEBHOOK_SECRET is correct. Make sure you're using the webhook secret from Stripe Dashboard > Webhooks > Your endpoint > Signing secret. The secret should start with 'whsec_'",
+          troubleshooting: [
+            "1. Go to Stripe Dashboard > Webhooks > Your endpoint",
+            "2. Click on 'Reveal' to see the signing secret",
+            "3. Copy the secret (starts with 'whsec_')",
+            "4. Update STRIPE_WEBHOOK_SECRET in Supabase Edge Function environment variables",
+            "5. Redeploy the edge function"
+          ]
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -78,8 +193,10 @@ Deno.serve(async (req: Request) => {
       
       try {
         // Expandir charges para obter payment_method_details
+        // NOTA: Não podemos expandir charges.data.payment_method diretamente
+        // Precisamos expandir charges e depois acessar payment_method_details
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-          expand: ['charges.data.payment_method'],
+          expand: ['charges'],
         });
         
         // O método de pagamento está nos charges (quando o pagamento já foi processado)
@@ -96,8 +213,9 @@ Deno.serve(async (req: Request) => {
           const methodType = paymentIntent.payment_method_types[0];
           return methodType === "pix" ? "pix" : methodType === "card" ? "card" : methodType;
         }
-      } catch (err) {
-        console.error("Error retrieving payment intent:", err);
+      } catch (err: any) {
+        console.error("Error retrieving payment intent:", err.message || err);
+        // Não falhar o webhook por causa disso, apenas logar o erro
       }
       return null;
     };
@@ -154,6 +272,43 @@ Deno.serve(async (req: Request) => {
           console.error("Error updating payment:", updateError);
         } else {
           console.log(`Payment completed (${paymentMethod || "unknown"}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
+          
+          // TODO: Descomentar quando receber as credenciais SMTP
+          // Enviar email de confirmação de pagamento
+          /*
+          const leadId = session.metadata?.lead_id;
+          if (leadId) {
+            try {
+              const { data: lead } = await supabase
+                .from("leads")
+                .select("name, email")
+                .eq("id", leadId)
+                .single();
+
+              if (lead && lead.email) {
+                const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "Cartão" : paymentMethod || "Pagamento";
+                const amountFormatted = updateData.currency === "BRL" 
+                  ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
+                  : `US$ ${updateData.amount.toFixed(2)}`;
+
+                const emailSubject = "Pagamento Confirmado - American Dream";
+                const emailHtml = `
+                  <h1>Pagamento Confirmado!</h1>
+                  <p>Olá ${lead.name},</p>
+                  <p>Seu pagamento foi confirmado com sucesso!</p>
+                  <p><strong>Método de pagamento:</strong> ${paymentMethodName}</p>
+                  <p><strong>Valor:</strong> ${amountFormatted}</p>
+                  <p>Obrigado por confiar no American Dream!</p>
+                `;
+
+                await sendEmail(lead.email, lead.name, emailSubject, emailHtml);
+              }
+            } catch (emailError: any) {
+              console.error("Error sending payment confirmation email:", emailError.message);
+              // Não falhar o webhook por causa do email
+            }
+          }
+          */
         }
 
         break;
@@ -203,6 +358,43 @@ Deno.serve(async (req: Request) => {
           console.error("Error updating payment:", updateError);
         } else {
           console.log(`Async payment completed (${paymentMethod}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
+          
+          // TODO: Descomentar quando receber as credenciais SMTP
+          // Enviar email de confirmação de pagamento
+          /*
+          const leadId = session.metadata?.lead_id;
+          if (leadId) {
+            try {
+              const { data: lead } = await supabase
+                .from("leads")
+                .select("name, email")
+                .eq("id", leadId)
+                .single();
+
+              if (lead && lead.email) {
+                const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "Cartão" : paymentMethod || "Pagamento";
+                const amountFormatted = updateData.currency === "BRL" 
+                  ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
+                  : `US$ ${updateData.amount.toFixed(2)}`;
+
+                const emailSubject = "Pagamento Confirmado - American Dream";
+                const emailHtml = `
+                  <h1>Pagamento Confirmado!</h1>
+                  <p>Olá ${lead.name},</p>
+                  <p>Seu pagamento foi confirmado com sucesso!</p>
+                  <p><strong>Método de pagamento:</strong> ${paymentMethodName}</p>
+                  <p><strong>Valor:</strong> ${amountFormatted}</p>
+                  <p>Obrigado por confiar no American Dream!</p>
+                `;
+
+                await sendEmail(lead.email, lead.name, emailSubject, emailHtml);
+              }
+            } catch (emailError: any) {
+              console.error("Error sending payment confirmation email:", emailError.message);
+              // Não falhar o webhook por causa do email
+            }
+          }
+          */
         }
 
         break;

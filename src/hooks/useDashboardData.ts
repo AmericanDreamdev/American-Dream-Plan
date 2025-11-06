@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { DashboardUser, DashboardStats, RawLead, RawTermAcceptance, RawPayment } from "@/types/dashboard";
+import { DashboardUser, DashboardStats, RawLead, RawTermAcceptance, RawPayment, RawConsultationForm } from "@/types/dashboard";
 import {
   formatDate,
   formatValue,
@@ -17,6 +17,7 @@ import {
 interface UseDashboardDataReturn {
   users: DashboardUser[];
   stats: DashboardStats;
+  consultationForms: RawConsultationForm[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -24,12 +25,14 @@ interface UseDashboardDataReturn {
 
 export const useDashboardData = (): UseDashboardDataReturn => {
   const [users, setUsers] = useState<DashboardUser[]>([]);
+  const [consultationForms, setConsultationForms] = useState<RawConsultationForm[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalLeads: 0,
     totalContracts: 0,
     totalPaid: 0,
     totalPending: 0,
     totalNotPaid: 0,
+    totalConsultationForms: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +40,8 @@ export const useDashboardData = (): UseDashboardDataReturn => {
   const transformData = (
     leadsData: RawLead[],
     termAcceptancesData: RawTermAcceptance[],
-    allPaymentsData: RawPayment[]
+    allPaymentsData: RawPayment[],
+    consultationForms: RawConsultationForm[]
   ): DashboardUser[] => {
     // Combinar os dados manualmente
     const leadsWithData = leadsData.map((lead) => {
@@ -67,6 +71,11 @@ export const useDashboardData = (): UseDashboardDataReturn => {
 
       // Encontrar pagamento mais relevante
       const latestPayment = findRelevantPayment(payments, termAcceptance);
+      
+      // Encontrar formulário de consulta mais recente para este lead
+      const consultationForm = consultationForms
+        .filter((form) => form.lead_id === lead.id)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
 
       // Determinar se é confirmado como pago
       const confirmedPago = isConfirmadoPago(latestPayment);
@@ -111,6 +120,7 @@ export const useDashboardData = (): UseDashboardDataReturn => {
         is_confirmado_pago: confirmedPago,
         pdf_generated_at_formatted: pdfGeneratedAtFormatted,
         is_brazilian: isBrazilianPhone(lead.phone),
+        consultation_form_id: consultationForm?.id || null,
       };
     });
   };
@@ -136,6 +146,7 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       if (!u.is_confirmado_pago) {
         return status === 'Não pagou' ||
           status === 'Redirecionado (InfinitePay)' ||
+          status === 'Redirecionado (Zelle)' ||
           status === '' ||
           status === null;
       }
@@ -148,6 +159,7 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       totalPaid,
       totalPending,
       totalNotPaid,
+      totalConsultationForms: 0, // Will be updated in fetchData
     };
   };
 
@@ -191,17 +203,52 @@ export const useDashboardData = (): UseDashboardDataReturn => {
 
       if (paymentsError) throw paymentsError;
 
+      // 4. Buscar formulários de consultoria
+      const { data: consultationFormsData, error: consultationFormsError } = await supabase
+        .from("consultation_forms")
+        .select(`
+          id,
+          lead_id,
+          payment_id,
+          nome_completo,
+          email,
+          telefone,
+          objetivo_principal,
+          tipo_visto_desejado,
+          created_at
+        `)
+        .order("created_at", { ascending: false });
+
+      if (consultationFormsError) {
+        console.error("Erro ao buscar consultation_forms:", consultationFormsError);
+        // Não falhar, apenas logar o erro
+      }
+
+      // Enriquecer formulários com dados do lead
+      const enrichedForms = (consultationFormsData || []).map((form) => {
+        const lead = leadsData?.find((l) => l.id === form.lead_id);
+        return {
+          ...form,
+          lead_name: lead?.name,
+          lead_email: lead?.email,
+        };
+      }) as RawConsultationForm[];
+
+      setConsultationForms(enrichedForms);
+
       // Transformar dados
       const transformedData = transformData(
         leadsData || [],
         termAcceptancesData || [],
-        allPaymentsData || []
+        allPaymentsData || [],
+        enrichedForms
       );
 
       setUsers(transformedData);
 
       // Calcular estatísticas
       const calculatedStats = calculateStats(transformedData);
+      calculatedStats.totalConsultationForms = enrichedForms.length;
       setStats(calculatedStats);
     } catch (err: any) {
       console.error("Error fetching dashboard data:", err);
@@ -218,6 +265,7 @@ export const useDashboardData = (): UseDashboardDataReturn => {
   return {
     users,
     stats,
+    consultationForms,
     loading,
     error,
     refetch: fetchData,
