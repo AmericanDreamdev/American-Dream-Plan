@@ -560,18 +560,7 @@ const ConsultationForm = () => {
             return;
           }
 
-          // Verificar se token já foi usado
-          if (tokenData.used_at) {
-            setError("Este link já foi utilizado. Por favor, solicite um novo link.");
-            setLoading(false);
-            return;
-          }
-
-          // Marcar token como usado
-          await supabase
-            .from("approval_tokens")
-            .update({ used_at: new Date().toISOString() })
-            .eq("id", tokenData.id);
+          // Token pode ser usado múltiplas vezes - não marcar como usado
 
           // Configurar dados do formulário
           if (tokenData.lead) {

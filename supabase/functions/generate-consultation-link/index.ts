@@ -78,12 +78,12 @@ serve(async (req) => {
     }
 
     // Verificar se já existe token válido para este lead_id e term_acceptance_id
+    // Token pode ser usado múltiplas vezes, então não verificamos used_at
     const { data: existingToken } = await supabase
       .from("approval_tokens")
       .select("token, expires_at, used_at")
       .eq("lead_id", lead_id)
       .eq("term_acceptance_id", term_acceptance_id)
-      .is("used_at", null)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
