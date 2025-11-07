@@ -28,7 +28,7 @@ import { countries } from "@/data/countries";
 import { parsePhoneNumber, isValidPhoneNumber, AsYouType } from "libphonenumber-js";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
 
-const FORM_CACHE_KEY = "direct_consultation_form_cache";
+const FORM_CACHE_KEY = "analysis_form_cache";
 
 interface Term {
   id: string;
@@ -138,7 +138,7 @@ async function createApprovalToken(leadId: string, termAcceptanceId: string | nu
   }
 }
 
-const DirectConsultationForm = () => {
+const AnalysisForm = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -373,7 +373,7 @@ const DirectConsultationForm = () => {
 
           // Gerar PDF em segundo plano (não aguardar a geração)
           // Isso permite que o usuário seja redirecionado imediatamente
-          console.log("[DirectConsultationForm] Calling PDF generation function in background...", {
+          console.log("[AnalysisForm] Calling PDF generation function in background...", {
             lead_id: data.id,
             term_acceptance_id: acceptanceId,
           });
@@ -411,21 +411,21 @@ const DirectConsultationForm = () => {
           .then(async (response) => {
             try {
               const result = await response.json();
-              console.log("[DirectConsultationForm] PDF generation completed (background):", result);
+              console.log("[AnalysisForm] PDF generation completed (background):", result);
               if (!response.ok) {
-                console.error("[DirectConsultationForm] PDF generation error:", result);
+                console.error("[AnalysisForm] PDF generation error:", result);
               }
             } catch (e) {
-              console.error("[DirectConsultationForm] Error parsing PDF response:", e);
+              console.error("[AnalysisForm] Error parsing PDF response:", e);
             }
           })
           .catch((pdfErr: any) => {
             // Log do erro mas não bloquear o fluxo
-            console.error("[DirectConsultationForm] Error calling PDF generation (background):", pdfErr);
+            console.error("[AnalysisForm] Error calling PDF generation (background):", pdfErr);
           });
 
           // Criar token de aprovação e redirecionar para ConsultationForm
-          console.log("[DirectConsultationForm] Creating approval token and redirecting to consultation form...");
+          console.log("[AnalysisForm] Creating approval token and redirecting to consultation form...");
           const token = await createApprovalToken(data.id, acceptanceId);
           
           if (token) {
@@ -634,7 +634,7 @@ const DirectConsultationForm = () => {
                             // Salvar dados atuais no cache antes de navegar
                             const currentValues = form.getValues();
                             saveToCache(currentValues);
-                            navigate("/terms", { state: { returnTo: "/direct-consultation-form" } });
+                            navigate("/terms", { state: { returnTo: "/analysis-form" } });
                           }}
                           className="text-[#0575E6] hover:text-[#021B79] underline font-medium"
                         >
@@ -689,5 +689,5 @@ const DirectConsultationForm = () => {
   );
 };
 
-export default DirectConsultationForm;
+export default AnalysisForm;
 
