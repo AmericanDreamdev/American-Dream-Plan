@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LeadForm from "./pages/LeadForm";
+import DirectConsultationForm from "./pages/DirectConsultationForm";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
@@ -34,6 +35,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/lead-form" element={<LeadForm />} />
+          <Route path="/direct-consultation-form" element={<DirectConsultationForm />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/payment-options" element={<PaymentOptions />} />
           <Route path="/zelle-checkout" element={<ZelleCheckout />} />

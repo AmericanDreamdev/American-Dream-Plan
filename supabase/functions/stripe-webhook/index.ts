@@ -8,9 +8,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-// TODO: Descomentar quando receber as credenciais SMTP
 // Função auxiliar para enviar email via SMTP
-/*
 async function sendEmail(
   to: string,
   toName: string,
@@ -68,7 +66,6 @@ async function sendEmail(
     return false;
   }
 }
-*/
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
@@ -273,9 +270,7 @@ Deno.serve(async (req: Request) => {
         } else {
           console.log(`Payment completed (${paymentMethod || "unknown"}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
           
-          // TODO: Descomentar quando receber as credenciais SMTP
           // Enviar email de confirmação de pagamento
-          /*
           const leadId = session.metadata?.lead_id;
           if (leadId) {
             try {
@@ -308,7 +303,6 @@ Deno.serve(async (req: Request) => {
               // Não falhar o webhook por causa do email
             }
           }
-          */
         }
 
         break;
@@ -359,9 +353,7 @@ Deno.serve(async (req: Request) => {
         } else {
           console.log(`Async payment completed (${paymentMethod}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
           
-          // TODO: Descomentar quando receber as credenciais SMTP
           // Enviar email de confirmação de pagamento
-          /*
           const leadId = session.metadata?.lead_id;
           if (leadId) {
             try {
@@ -394,7 +386,6 @@ Deno.serve(async (req: Request) => {
               // Não falhar o webhook por causa do email
             }
           }
-          */
         }
 
         break;
