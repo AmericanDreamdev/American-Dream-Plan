@@ -10,9 +10,10 @@ interface UsersPageProps {
   users: DashboardUser[];
   stats: DashboardStats;
   consultationForms: any[];
+  onUpdate?: () => void;
 }
 
-export const UsersPage = ({ users, stats, consultationForms }: UsersPageProps) => {
+export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPageProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
@@ -97,14 +98,9 @@ export const UsersPage = ({ users, stats, consultationForms }: UsersPageProps) =
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Usuários</h1>
-        <p className="text-gray-500 mt-1">Gerencie todos os usuários e seus status</p>
-      </div>
 
       {/* Filtros */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+      <div className="bg-white border-0 rounded-lg p-4 shadow-md">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-900">Filtros</h3>
           {activeFilters.size > 0 && (
@@ -226,6 +222,7 @@ export const UsersPage = ({ users, stats, consultationForms }: UsersPageProps) =
         activeTab={activeTab}
         onTabChange={setActiveTab}
         stats={stats}
+        onUpdate={onUpdate}
       />
     </div>
   );

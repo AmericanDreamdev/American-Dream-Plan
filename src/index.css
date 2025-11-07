@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light Bootstrap Dashboard inspired styles */
+@layer components {
+  .card-stats {
+    @apply rounded-lg bg-white border-0 shadow-md transition-all duration-200;
+  }
+  
+  .card-stats:hover {
+    @apply shadow-lg;
+  }
+  
+  .icon-big {
+    @apply text-4xl min-h-[64px] flex items-center justify-center;
+  }
+  
+  .numbers {
+    @apply text-2xl font-light text-gray-900;
+  }
+  
+  .card-category {
+    @apply text-sm font-normal text-gray-500 uppercase mb-0;
+  }
+  
+  .stats {
+    @apply text-xs text-gray-400 flex items-center gap-1;
+  }
+  
+  .table-hover tbody tr:hover {
+    @apply bg-blue-50/30 transition-colors;
+  }
+  
+  .table-striped tbody tr:nth-child(odd) {
+    @apply bg-gray-50/50;
+  }
+  
+  .table-striped tbody tr:nth-child(even) {
+    @apply bg-white;
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

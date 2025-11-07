@@ -52,7 +52,7 @@ async function sendEmail(
       text: textContent || htmlContent.replace(/<[^>]*>/g, ""), // Remove HTML tags para texto simples
       fromName: "American Dream",
       toName: toName,
-    };
+n    };
 
     const response = await fetch(emailEndpoint, {
       method: "POST",

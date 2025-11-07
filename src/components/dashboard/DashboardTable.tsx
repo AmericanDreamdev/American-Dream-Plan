@@ -19,7 +19,8 @@ export const DashboardTable = ({
   emptyMessage = "Nenhum usuário encontrado",
   emptySubMessage,
   columns,
-}: DashboardTableProps) => {
+  onUpdate,
+}: DashboardTableProps & { onUpdate?: () => void }) => {
   if (users.length === 0 && showEmptyMessage) {
     return (
       <Table>
@@ -42,7 +43,7 @@ export const DashboardTable = ({
     <Table>
       <TableBody>
         {users.map((user) => (
-          <DashboardTableRow key={user.lead_id} user={user} />
+          <DashboardTableRow key={user.lead_id} user={user} onUpdate={onUpdate} />
         ))}
       </TableBody>
     </Table>
@@ -54,37 +55,34 @@ interface DashboardFullTableProps {
   users: DashboardUser[];
   totalUsers: number;
   searchTerm?: string;
+  onUpdate?: () => void;
 }
 
-export const DashboardFullTable = ({ users, totalUsers, searchTerm }: DashboardFullTableProps) => {
+export const DashboardFullTable = ({ users, totalUsers, searchTerm, onUpdate }: DashboardFullTableProps) => {
   return (
     <div className="px-6 pb-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {users.length} de {totalUsers} usuários
       </div>
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm -mx-6 px-6" style={{ minWidth: '100%' }}>
-        <div style={{ minWidth: '1300px' }}>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-200 bg-gray-50">
-              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Nome</TableHead>
-              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Email</TableHead>
-              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Telefone</TableHead>
-              <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Contrato</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Data Contrato</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Status Pag.</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Valor</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Método</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Data Pag.</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Formulário</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">Status Geral</TableHead>
-                <TableHead className="text-xs font-semibold text-gray-900 py-2.5 px-3 whitespace-nowrap">PDF</TableHead>
-              </TableRow>
-            </TableHeader>
+      <div className="overflow-x-auto rounded-lg border-0 shadow-md -mx-6 px-6 bg-white">
+        <Table className="table-hover">
+          <TableHeader>
+            <TableRow className="border-gray-200 bg-gray-50 hover:bg-gray-50">
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[140px]">Nome</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[150px] hidden lg:table-cell">Email</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[100px] hidden xl:table-cell">Telefone</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[80px]">Contrato</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[100px] hidden xl:table-cell">Data Contrato</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[140px]">Pagamento</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[80px]">Formulário</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[100px] hidden xl:table-cell">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[100px]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center py-12 text-gray-600 bg-white">
+                <TableCell colSpan={9} className="text-center py-12 text-gray-600 bg-white">
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-base font-medium text-gray-900">Nenhum usuário encontrado</p>
                   <p className="text-sm text-gray-500 mt-1">
@@ -94,19 +92,18 @@ export const DashboardFullTable = ({ users, totalUsers, searchTerm }: DashboardF
               </TableRow>
             ) : (
               users.map((user) => (
-                <DashboardTableRow key={user.lead_id} user={user} />
+                <DashboardTableRow key={user.lead_id} user={user} onUpdate={onUpdate} />
               ))
             )}
           </TableBody>
         </Table>
-        </div>
       </div>
     </div>
   );
 };
 
 // Tabela simplificada para Pagos
-export const DashboardPaidTable = ({ users }: { users: DashboardUser[] }) => {
+export const DashboardPaidTable = ({ users, onUpdate }: { users: DashboardUser[]; onUpdate?: () => void }) => {
   const paidUsers = users.filter((u) => u.is_confirmado_pago === true);
 
   return (
@@ -166,7 +163,7 @@ export const DashboardPaidTable = ({ users }: { users: DashboardUser[] }) => {
 };
 
 // Tabela simplificada para Pendentes
-export const DashboardPendingTable = ({ users }: { users: DashboardUser[] }) => {
+export const DashboardPendingTable = ({ users, onUpdate }: { users: DashboardUser[]; onUpdate?: () => void }) => {
   const pendingUsers = users.filter((u) => u.status_pagamento_formatado === "Pendente");
 
   return (
@@ -207,7 +204,7 @@ export const DashboardPendingTable = ({ users }: { users: DashboardUser[] }) => 
 };
 
 // Tabela simplificada para Não Pagaram
-export const DashboardNotPaidTable = ({ users }: { users: DashboardUser[] }) => {
+export const DashboardNotPaidTable = ({ users, onUpdate }: { users: DashboardUser[]; onUpdate?: () => void }) => {
   const notPaidUsers = users.filter((u) => {
     const status = u.status_pagamento_formatado || '';
     return !u.is_confirmado_pago && (

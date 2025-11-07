@@ -18,6 +18,7 @@ interface DashboardTabsProps {
   activeTab: string;
   onTabChange: (value: string) => void;
   stats: DashboardStats;
+  onUpdate?: () => void;
 }
 
 export const DashboardTabs = ({
@@ -29,9 +30,10 @@ export const DashboardTabs = ({
   activeTab,
   onTabChange,
   stats,
+  onUpdate,
 }: DashboardTabsProps) => {
   return (
-    <Card className="border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <Card className="border-0 bg-white shadow-md overflow-hidden">
       <CardHeader className="pb-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="relative w-full md:w-64">
@@ -48,35 +50,35 @@ export const DashboardTabs = ({
       <Separator className="bg-gray-200" />
       <CardContent className="p-0 overflow-x-auto">
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-          <div className="px-6 pt-4">
-            <TabsList className="grid w-full md:w-auto grid-cols-5 md:grid-cols-5 bg-gray-100">
-              <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900">
+            <div className="px-6 pt-4">
+            <TabsList className="grid w-full md:w-auto grid-cols-5 md:grid-cols-5 bg-gray-50 border border-gray-200">
+              <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 Todos
-                <Badge variant="secondary" className="ml-1 bg-gray-200 text-gray-700">
+                <Badge variant="secondary" className="ml-1 bg-gray-200 text-gray-700 text-xs">
                   {stats.totalLeads}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="paid" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900">
+              <TabsTrigger value="paid" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 Pagos
-                <Badge variant="secondary" className="ml-1 bg-green-100 text-green-700">
+                <Badge variant="secondary" className="ml-1 bg-green-100 text-green-700 text-xs">
                   {stats.totalPaid}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="pending" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900">
+              <TabsTrigger value="pending" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 Pendentes
-                <Badge variant="secondary" className="ml-1 bg-gray-200 text-gray-700">
+                <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700 text-xs">
                   {stats.totalPending}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="not-paid" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900">
+              <TabsTrigger value="not-paid" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 Não Pagaram
-                <Badge variant="secondary" className="ml-1 bg-red-100 text-red-700">
+                <Badge variant="secondary" className="ml-1 bg-red-100 text-red-700 text-xs">
                   {stats.totalNotPaid}
                 </Badge>
               </TabsTrigger>
-              <TabsTrigger value="consultation" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900">
+              <TabsTrigger value="consultation" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 Formulários
-                <Badge variant="secondary" className="ml-1 bg-gray-200 text-gray-700">
+                <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-700 text-xs">
                   {stats.totalConsultationForms}
                 </Badge>
               </TabsTrigger>
@@ -84,19 +86,19 @@ export const DashboardTabs = ({
           </div>
 
           <TabsContent value="all" className="mt-4 space-y-0">
-            <DashboardFullTable users={filteredUsers} totalUsers={users.length} searchTerm={searchTerm} />
+            <DashboardFullTable users={filteredUsers} totalUsers={users.length} searchTerm={searchTerm} onUpdate={onUpdate} />
           </TabsContent>
 
           <TabsContent value="paid" className="mt-4 space-y-0">
-            <DashboardPaidTable users={filteredUsers} />
+            <DashboardPaidTable users={filteredUsers} onUpdate={onUpdate} />
           </TabsContent>
 
           <TabsContent value="pending" className="mt-4 space-y-0">
-            <DashboardPendingTable users={filteredUsers} />
+            <DashboardPendingTable users={filteredUsers} onUpdate={onUpdate} />
           </TabsContent>
 
           <TabsContent value="not-paid" className="mt-4 space-y-0">
-            <DashboardNotPaidTable users={filteredUsers} />
+            <DashboardNotPaidTable users={filteredUsers} onUpdate={onUpdate} />
           </TabsContent>
 
           <TabsContent value="consultation" className="mt-4 space-y-0">
