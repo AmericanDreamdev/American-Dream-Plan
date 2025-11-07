@@ -17,7 +17,16 @@ async function sendEmail(
   textContent?: string
 ): Promise<boolean> {
   try {
-    const emailEndpoint = "http://212.1.213.163:3000/send-smtp";
+    // Obter chave de autenticação do endpoint de email
+    const emailApiKey = Deno.env.get("EMAIL_API_KEY");
+    
+    if (!emailApiKey) {
+      console.error("EMAIL_API_KEY not configured. Please set EMAIL_API_KEY environment variable.");
+      return false;
+    }
+    
+    // Construir URL com chave de autenticação
+    const emailEndpoint = `http://212.1.213.163:3000/send-smtp?key=${encodeURIComponent(emailApiKey)}`;
     
     // Obter credenciais SMTP das variáveis de ambiente
     const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
@@ -53,13 +62,26 @@ async function sendEmail(
       body: JSON.stringify(emailData),
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Error sending email:", response.status, errorText);
+      console.error("Error sending email:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: responseText,
+        endpoint: emailEndpoint.replace(/\?key=.*/, "?key=***"), // Ocultar chave no log
+      });
       return false;
     }
 
-    console.log("✅ Email sent successfully to:", to);
+    // Log detalhado de sucesso
+    console.log("✅ Email sent successfully:", {
+      to: to,
+      subject: subject,
+      status: response.status,
+      response: responseText.substring(0, 200), // Primeiros 200 caracteres da resposta
+    });
+    
     return true;
   } catch (error: any) {
     console.error("Error sending email:", error.message);
@@ -102,11 +124,41 @@ Deno.serve(async (req: Request) => {
     // O Stripe precisa do corpo exato como recebido para verificar a assinatura
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
+    
+    // Coletar informações da requisição para rastreamento
+    const requestInfo = {
+      method: req.method,
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries()),
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Tentar extrair informações do evento mesmo se a assinatura falhar
+    let eventId: string | null = null;
+    let eventType: string | null = null;
+    try {
+      const bodyParsed = JSON.parse(body);
+      eventId = bodyParsed.id || null;
+      eventType = bodyParsed.type || null;
+    } catch {
+      // Ignorar erro de parsing - não é crítico
+    }
 
     // Log para debug (remover em produção se necessário)
     console.log("Webhook received - Signature present:", !!signature);
     console.log("Webhook secret configured:", !!stripeWebhookSecret);
     console.log("Body length:", body.length);
+    console.log("Request info:", {
+      method: requestInfo.method,
+      url: requestInfo.url,
+      userAgent: requestInfo.headers["user-agent"],
+      origin: requestInfo.headers["origin"],
+      referer: requestInfo.headers["referer"],
+      xForwardedFor: requestInfo.headers["x-forwarded-for"],
+      xRealIp: requestInfo.headers["x-real-ip"],
+      eventId: eventId,
+      eventType: eventType,
+    });
 
     if (!signature) {
       console.error("No stripe-signature header found");
@@ -150,9 +202,37 @@ Deno.serve(async (req: Request) => {
         stripeWebhookSecret
       );
       console.log("✅ Webhook signature verified successfully. Event type:", event.type, "Event ID:", event.id);
+      
+      // Salvar tentativa bem-sucedida no banco de dados
+      try {
+        const { error: dbError } = await supabase.from('webhook_attempts').insert({
+          event_id: event.id,
+          event_type: event.type,
+          signature_length: signature?.length,
+          body_length: body.length,
+          error_message: null,
+          error_type: null,
+          user_agent: requestInfo.headers["user-agent"],
+          origin: requestInfo.headers["origin"],
+          referer: requestInfo.headers["referer"],
+          x_forwarded_for: requestInfo.headers["x-forwarded-for"],
+          x_real_ip: requestInfo.headers["x-real-ip"],
+          request_url: requestInfo.url,
+          request_method: requestInfo.method,
+          success: true,
+        });
+        
+        if (dbError) {
+          console.error("Error saving successful webhook attempt:", dbError);
+        }
+      } catch (dbError: any) {
+        console.error("Error attempting to save successful webhook attempt:", dbError.message);
+      }
     } catch (err: any) {
       console.error("❌ Webhook signature verification failed:", err.message);
-      console.error("Error details:", {
+      
+      // Log detalhado do erro
+      const errorDetails = {
         signatureLength: signature?.length,
         webhookSecretLength: stripeWebhookSecret?.length,
         webhookSecretPrefix: stripeWebhookSecret?.substring(0, 7) + "...",
@@ -161,7 +241,49 @@ Deno.serve(async (req: Request) => {
         bodyPreview: body.substring(0, 200),
         errorType: err.type,
         errorCode: err.code,
-      });
+        eventId: eventId,
+        eventType: eventType,
+        requestInfo: {
+          method: requestInfo.method,
+          url: requestInfo.url,
+          userAgent: requestInfo.headers["user-agent"],
+          origin: requestInfo.headers["origin"],
+          referer: requestInfo.headers["referer"],
+          xForwardedFor: requestInfo.headers["x-forwarded-for"],
+          xRealIp: requestInfo.headers["x-real-ip"],
+        },
+      };
+      
+      console.error("Error details:", errorDetails);
+      
+      // Tentar salvar tentativa falha no banco de dados para análise
+      try {
+        // Inserir registro da tentativa falha
+        const { error: dbError } = await supabase.from('webhook_attempts').insert({
+          event_id: eventId,
+          event_type: eventType,
+          signature_length: signature?.length,
+          body_length: body.length,
+          error_message: err.message,
+          error_type: err.type,
+          user_agent: requestInfo.headers["user-agent"],
+          origin: requestInfo.headers["origin"],
+          referer: requestInfo.headers["referer"],
+          x_forwarded_for: requestInfo.headers["x-forwarded-for"],
+          x_real_ip: requestInfo.headers["x-real-ip"],
+          request_url: requestInfo.url,
+          request_method: requestInfo.method,
+          success: false,
+        });
+        
+        if (dbError) {
+          console.error("Error saving webhook attempt to database:", dbError);
+        } else {
+          console.log("✅ Webhook attempt saved to database for analysis");
+        }
+      } catch (dbError: any) {
+        console.error("Error attempting to save webhook attempt:", dbError.message);
+      }
       
       // Se o erro for de assinatura, pode ser que o webhook secret esteja errado
       // ou que o corpo tenha sido modificado
@@ -288,12 +410,87 @@ Deno.serve(async (req: Request) => {
 
                 const emailSubject = "Pagamento Confirmado - American Dream";
                 const emailHtml = `
-                  <h1>Pagamento Confirmado!</h1>
-                  <p>Olá ${lead.name},</p>
-                  <p>Seu pagamento foi confirmado com sucesso!</p>
-                  <p><strong>Método de pagamento:</strong> ${paymentMethodName}</p>
-                  <p><strong>Valor:</strong> ${amountFormatted}</p>
-                  <p>Obrigado por confiar no American Dream!</p>
+                  <!DOCTYPE html>
+                  <html lang="pt-BR">
+                  <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  </head>
+                  <body style="margin: 0; padding: 0; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; background-color: #f5f5f5;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+                      <tr>
+                        <td align="center" style="padding: 40px 20px;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <tr>
+                              <td style="padding: 40px 40px 30px; text-align: center; background-color: #2563eb; border-radius: 8px 8px 0 0;">
+                                <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">American Dream</h1>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 40px;">
+                                <h2 style="margin: 0 0 20px; color: #1e40af; font-size: 24px; font-weight: bold; line-height: 1.4;">
+                                  Pagamento Confirmado!
+                                </h2>
+                                <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Olá ${lead.name},
+                                </p>
+                                <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Seu pagamento foi confirmado com sucesso!
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6; border-radius: 8px; margin-bottom: 30px;">
+                                  <tr>
+                                    <td style="padding: 24px;">
+                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                          <td style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+                                            <p style="margin: 0 0 8px; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                              Método de pagamento
+                                            </p>
+                                            <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 600; line-height: 1.5;">
+                                              ${paymentMethodName}
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                          <td style="padding-top: 16px;">
+                                            <p style="margin: 0 0 8px; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                              Valor
+                                            </p>
+                                            <p style="margin: 0; color: #111827; font-size: 24px; font-weight: bold; line-height: 1.5;">
+                                              ${amountFormatted}
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                </table>
+                                <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Em breve você receberá mais informações sobre os próximos passos do seu processo.
+                                </p>
+                                <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 500; line-height: 1.6;">
+                                  Obrigado por confiar no American Dream!
+                                </p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; text-align: center;">
+                                <p style="margin: 0 0 10px; color: #6b7280; font-size: 12px; line-height: 1.5;">
+                                  Este é um email automático, por favor não responda.
+                                </p>
+                                <p style="margin: 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">
+                                  © 2025 American Dream. Todos os direitos reservados.
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </body>
+                  </html>
                 `;
 
                 await sendEmail(lead.email, lead.name, emailSubject, emailHtml);
@@ -371,12 +568,87 @@ Deno.serve(async (req: Request) => {
 
                 const emailSubject = "Pagamento Confirmado - American Dream";
                 const emailHtml = `
-                  <h1>Pagamento Confirmado!</h1>
-                  <p>Olá ${lead.name},</p>
-                  <p>Seu pagamento foi confirmado com sucesso!</p>
-                  <p><strong>Método de pagamento:</strong> ${paymentMethodName}</p>
-                  <p><strong>Valor:</strong> ${amountFormatted}</p>
-                  <p>Obrigado por confiar no American Dream!</p>
+                  <!DOCTYPE html>
+                  <html lang="pt-BR">
+                  <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  </head>
+                  <body style="margin: 0; padding: 0; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; background-color: #f5f5f5;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
+                      <tr>
+                        <td align="center" style="padding: 40px 20px;">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <tr>
+                              <td style="padding: 40px 40px 30px; text-align: center; background-color: #2563eb; border-radius: 8px 8px 0 0;">
+                                <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">American Dream</h1>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 40px;">
+                                <h2 style="margin: 0 0 20px; color: #1e40af; font-size: 24px; font-weight: bold; line-height: 1.4;">
+                                  Pagamento Confirmado!
+                                </h2>
+                                <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Olá ${lead.name},
+                                </p>
+                                <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Seu pagamento foi confirmado com sucesso!
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6; border-radius: 8px; margin-bottom: 30px;">
+                                  <tr>
+                                    <td style="padding: 24px;">
+                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                          <td style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+                                            <p style="margin: 0 0 8px; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                              Método de pagamento
+                                            </p>
+                                            <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 600; line-height: 1.5;">
+                                              ${paymentMethodName}
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                        <tr>
+                                          <td style="padding-top: 16px;">
+                                            <p style="margin: 0 0 8px; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                              Valor
+                                            </p>
+                                            <p style="margin: 0; color: #111827; font-size: 24px; font-weight: bold; line-height: 1.5;">
+                                              ${amountFormatted}
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                </table>
+                                <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Em breve você receberá mais informações sobre os próximos passos do seu processo.
+                                </p>
+                                <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 500; line-height: 1.6;">
+                                  Obrigado por confiar no American Dream!
+                                </p>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; text-align: center;">
+                                <p style="margin: 0 0 10px; color: #6b7280; font-size: 12px; line-height: 1.5;">
+                                  Este é um email automático, por favor não responda.
+                                </p>
+                                <p style="margin: 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">
+                                  © 2025 American Dream. Todos os direitos reservados.
+                                </p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </body>
+                  </html>
                 `;
 
                 await sendEmail(lead.email, lead.name, emailSubject, emailHtml);

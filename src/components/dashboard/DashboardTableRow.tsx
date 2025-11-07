@@ -57,7 +57,13 @@ export const DashboardTableRow = ({ user }: DashboardTableRowProps) => {
         : `${window.location.origin}${result.link}`;
       setGeneratedLink(fullLink);
       setIsLinkDialogOpen(true);
-      toast.success("Link gerado com sucesso!");
+      
+      // Mostrar mensagem de sucesso com informação sobre email
+      if (result.email_sent) {
+        toast.success("Link gerado e email enviado com sucesso!");
+      } else {
+        toast.success("Link gerado com sucesso! (Email não enviado - verifique se o lead tem email cadastrado)");
+      }
     } catch (error: any) {
       console.error("Erro ao gerar link:", error);
       toast.error(error.message || "Erro ao gerar link de consultoria");
