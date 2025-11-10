@@ -112,12 +112,30 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
+  
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+  }
 
   body {
     @apply bg-background text-foreground relative overflow-x-hidden;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background: #ffffff;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+  }
+  
+  /* Prevenir overflow horizontal no root */
+  #root {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    position: relative;
   }
 
   /* Font weight standardization */
@@ -1756,14 +1774,29 @@ button.bg-white[class*="text-red-600"]:hover * {
 }
 
 @media (max-width: 768px) {
+  /* Prevenir overflow horizontal global */
+  * {
+    max-width: 100vw;
+  }
+  
+  body, html {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: relative;
+  }
+  
   .for-whom-cards {
     flex-direction: column;
     align-items: center;
+    width: 100%;
+    max-width: 100%;
   }
   
   .for-whom-mini-card {
     max-width: 100%;
     min-height: 160px;
+    width: 100%;
   }
   
   .for-whom-cards:hover > .for-whom-mini-card:not(:hover) {
@@ -1777,6 +1810,95 @@ button.bg-white[class*="text-red-600"]:hover * {
   
   .for-whom-big-card {
     padding: 24px 32px;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Cards container mobile */
+  .cards-container-new {
+    margin: 20px 0;
+    padding: 0 10px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .card-wrapper {
+    margin: 8px;
+    width: calc(100% - 16px);
+    max-width: calc(100% - 16px);
+  }
+  
+  .card-interactive {
+    max-width: 100%;
+    width: 100%;
+    padding: 24px 20px;
+    box-sizing: border-box;
+  }
+  
+  .card-interactive .card-title {
+    font-size: 16px;
+    word-wrap: break-word;
+  }
+  
+  .card-interactive .card-description {
+    font-size: 13px;
+    word-wrap: break-word;
+  }
+  
+  /* WhatsApp benefits mobile */
+  .whatsapp-benefits-container {
+    padding: 24px 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .whatsapp-benefit-item {
+    padding: 16px;
+    gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .whatsapp-benefit-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    flex-shrink: 0;
+  }
+  
+  .whatsapp-benefit-title {
+    font-size: 16px;
+    word-wrap: break-word;
+  }
+  
+  .whatsapp-benefit-description {
+    font-size: 13px;
+    word-wrap: break-word;
+  }
+  
+  /* Especialistas cards mobile */
+  .grid.md\\:grid-cols-2 {
+    gap: 1.5rem;
+  }
+  
+  /* Container geral */
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    box-sizing: border-box;
+  }
+  
+  /* Seções */
+  section {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 }
 

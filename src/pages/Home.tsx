@@ -21,11 +21,11 @@ const Home = () => {
   const whatsappLink = "https://chat.whatsapp.com/C5k7GQN1N5L0qmkDZgUlMn";
 
   return (
-    <div className="min-h-screen bg-black text-white relative">
+    <div className="min-h-screen bg-black text-white relative overflow-x-hidden w-full max-w-full">
       <Header />
       
       {/* Hero Section - Estilo do bridge-main */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden w-full max-w-full">
         <div
           className="absolute inset-0 z-0"
           style={{
@@ -38,41 +38,42 @@ const Home = () => {
         
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-background z-0" />
 
-        <div className="container relative z-10 px-4 py-20 mx-auto text-center animate-fade-in">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            Construa seu caminho para o <br />
+        <div className="container relative z-10 px-4 py-12 md:py-20 mx-auto text-center animate-fade-in">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 md:mb-6 leading-tight px-2">
+            Construa seu caminho para o <br className="hidden sm:block" />
             <span className="text-shine">American</span>{" "}
             <span className="text-shine">Dream</span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-6 md:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
             com clareza, estratégia e suporte de quem já chegou lá
           </p>
           
-          <p className="text-lg md:text-xl text-white/80 mb-12 max-w-4xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-white/80 mb-8 md:mb-12 max-w-4xl mx-auto px-4">
             Descubra o método que transforma o sonho de viver legalmente nos EUA em um plano prático e real, sem atalhos e sem achismos.
           </p>
 
           <Button 
             size="xl"
             onClick={() => window.open(whatsappLink, '_blank')}
-            className="bg-[#0575E6] text-white hover:bg-[#0685F6] shadow-lg hover:shadow-xl transform hover:scale-105 font-bold px-10 py-6 text-lg"
+            className="bg-[#0575E6] text-white hover:bg-[#0685F6] shadow-lg hover:shadow-xl transform hover:scale-105 font-bold px-6 py-4 md:px-10 md:py-6 text-base md:text-lg mx-4"
           >
-            <WhatsAppIcon className="h-6 w-6 mr-2" />
-            Participar da Live Gratuita
-            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+            <WhatsAppIcon className="h-5 w-5 md:h-6 md:w-6 mr-2" />
+            <span className="hidden sm:inline">Participar da Live Gratuita</span>
+            <span className="sm:hidden">Participar da Live</span>
+            <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
       </section>
 
       {/* O que você vai aprender */}
-      <section id="o-que-vai-aprender" className="py-24 relative z-10 bg-gradient-to-b from-white via-gray-50 to-white">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+      <section id="o-que-vai-aprender" className="py-12 md:py-24 relative z-10 bg-gradient-to-b from-white via-gray-50 to-white overflow-x-hidden w-full max-w-full">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-8 md:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 text-gray-900 px-2">
               O que você vai aprender na Live Gratuita
             </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-700 max-w-3xl mx-auto px-4">
               Conteúdo prático e acionável para começar sua jornada hoje
             </p>
           </div>
@@ -115,14 +116,14 @@ const Home = () => {
       </section>
 
       {/* Para quem é */}
-      <section className="py-24 relative z-10 bg-[#0a0e27] overflow-hidden">
-        <div className="container mx-auto px-6 relative z-10">
+      <section className="py-12 md:py-24 relative z-10 bg-[#0a0e27] overflow-hidden w-full max-w-full">
+        <div className="container mx-auto px-4 md:px-6 relative z-10">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-6xl font-bold mb-4 text-white">
+            <div className="text-center mb-8 md:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-3 md:mb-4 text-white px-2">
                 Para quem é
               </h2>
-              <p className="text-xl text-white/80 mb-12">Se você:</p>
+              <p className="text-lg md:text-xl text-white/80 mb-8 md:mb-12">Se você:</p>
             </div>
             
             <div className="for-whom-cards-wrapper">
@@ -148,11 +149,11 @@ const Home = () => {
       </section>
 
       {/* Bônus do WhatsApp */}
-      <section className="py-24 relative z-10 bg-white">
-        <div className="container mx-auto px-6">
+      <section className="py-12 md:py-24 relative z-10 bg-white overflow-x-hidden w-full max-w-full">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-6xl font-bold mb-4 text-gray-900">
+            <div className="text-center mb-8 md:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-3 md:mb-4 text-gray-900 px-2">
                 Ao entrar no grupo oficial do WhatsApp, você garante
               </h2>
             </div>
@@ -192,12 +193,13 @@ const Home = () => {
               <div className="whatsapp-cta-button">
                 <Button 
                   size="lg" 
-                  className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-xl md:text-2xl py-8 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
+                  className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-base sm:text-lg md:text-xl lg:text-2xl py-6 md:py-8 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
                   onClick={() => window.open(whatsappLink, '_blank')}
                 >
-                  <WhatsAppIcon className="h-6 w-6 mr-3" />
-                  Quero participar pelo WhatsApp
-                  <ArrowRight className="h-6 w-6 ml-3" />
+                  <WhatsAppIcon className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
+                  <span className="hidden sm:inline">Quero participar pelo WhatsApp</span>
+                  <span className="sm:hidden">Participar pelo WhatsApp</span>
+                  <ArrowRight className="h-5 w-5 md:h-6 md:w-6 ml-2 md:ml-3" />
                 </Button>
               </div>
             </div>
@@ -206,13 +208,13 @@ const Home = () => {
       </section>
 
       {/* Por que participar */}
-      <section className="py-24 relative z-10 glass">
-        <div className="container mx-auto px-6">
+      <section className="py-12 md:py-24 relative z-10 glass overflow-x-hidden w-full max-w-full">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-white px-2">
               Por que participar
             </h2>
-            <p className="text-xl md:text-2xl text-white/90 leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 leading-relaxed px-4">
               Você sai com um <span className="text-primary font-bold">plano claro e acionável</span> para começar hoje — com suporte de quem entende o caminho até o sonho americano.
             </p>
           </div>
@@ -220,18 +222,18 @@ const Home = () => {
       </section>
 
       {/* Especialistas */}
-      <section className="py-24 relative z-10 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+      <section className="py-12 md:py-24 relative z-10 bg-white overflow-x-hidden w-full max-w-full">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-8 md:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 text-gray-900 px-2">
               Quem vai te guiar
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 px-4">
               Experiência comprovada em processos de visto
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-12 max-w-5xl mx-auto">
             <Card className="overflow-hidden bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-shadow flex flex-col">
               <div className="w-full relative overflow-hidden bg-gradient-to-b from-primary/10 to-primary/20">
                 <SpecialistCarousel
@@ -295,24 +297,25 @@ const Home = () => {
       </section>
 
       {/* CTA Final */}
-      <section className="py-24 relative z-10 glass">
-        <div className="container mx-auto px-6">
+      <section className="py-12 md:py-24 relative z-10 glass overflow-x-hidden w-full max-w-full">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 md:p-12 border border-white/20">
-              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 md:p-8 lg:p-12 border border-white/20">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-white px-2">
                 Garanta sua vaga agora
               </h2>
-              <p className="text-xl text-white/90 mb-8">
+              <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 md:mb-8 px-4">
                 As vagas do grupo são limitadas para manter a qualidade do suporte e do evento ao vivo.
               </p>
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-xl md:text-2xl px-12 py-8 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
+                className="bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-sm sm:text-base md:text-xl lg:text-2xl px-6 py-4 md:px-12 md:py-8 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 mx-4"
                 onClick={() => window.open(whatsappLink, '_blank')}
               >
-                <WhatsAppIcon className="h-6 w-6 mr-3" />
-                Entrar no grupo do WhatsApp e garantir minha vaga
-                <ArrowRight className="h-6 w-6 ml-3" />
+                <WhatsAppIcon className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
+                <span className="hidden sm:inline">Entrar no grupo do WhatsApp e garantir minha vaga</span>
+                <span className="sm:hidden">Entrar no grupo do WhatsApp</span>
+                <ArrowRight className="h-5 w-5 md:h-6 md:w-6 ml-2 md:ml-3" />
               </Button>
             </div>
           </div>
@@ -320,11 +323,11 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-border relative z-10 bg-black">
-        <div className="container mx-auto px-6">
+      <footer className="py-8 md:py-12 border-t border-border relative z-10 bg-black">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="text-center text-muted-foreground mb-4">
-            <p className="mb-4 text-2xl font-bold text-white">American Dream Consultoria</p>
-            <p>© 2025 American Dream. Todos os direitos reservados.</p>
+            <p className="mb-3 md:mb-4 text-xl md:text-2xl font-bold text-white">American Dream Consultoria</p>
+            <p className="text-sm md:text-base">© 2025 American Dream. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
