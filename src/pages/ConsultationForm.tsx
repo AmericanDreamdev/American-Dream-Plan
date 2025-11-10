@@ -883,7 +883,7 @@ const ConsultationForm = () => {
           </CardHeader>
           <CardContent>
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/oferta")}
               style={{ 
                 backgroundColor: '#111827',
                 color: '#ffffff',
@@ -948,7 +948,7 @@ const ConsultationForm = () => {
               />
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/oferta")}
                   style={{ 
                     backgroundColor: '#ffffff',
                     color: '#111827',
@@ -2463,7 +2463,7 @@ const ConsultationForm = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/oferta")}
                   style={{ 
                     backgroundColor: '#ffffff',
                     color: '#111827',

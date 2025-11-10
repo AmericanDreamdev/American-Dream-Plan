@@ -275,7 +275,7 @@ const PaymentSuccess = () => {
               </Button>
             )}
             <Button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/oferta")}
               variant="outline"
                 className="w-full border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-600 shadow-none text-sm sm:text-base py-6 sm:py-7"
             >

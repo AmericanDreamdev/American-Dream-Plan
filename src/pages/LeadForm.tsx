@@ -416,7 +416,7 @@ const LeadForm = () => {
       <div className="w-full max-w-2xl">
         <Button
           variant="ghost"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/oferta")}
           className="mb-6 text-white hover:text-white hover:bg-white/10 border border-white/20 bg-white/5"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
