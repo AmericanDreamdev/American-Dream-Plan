@@ -1430,6 +1430,8 @@ button.bg-white[class*="text-red-600"]:hover * {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   background-size: 200px;
+  display: inline;
+  white-space: nowrap;
 }
 
 /* Animação para "American" - começa imediatamente */

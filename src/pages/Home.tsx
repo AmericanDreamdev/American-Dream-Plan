@@ -41,8 +41,10 @@ const Home = () => {
         <div className="container relative z-10 px-4 py-12 md:py-20 mx-auto text-center animate-fade-in">
           <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 md:mb-6 leading-tight px-2">
             Construa seu caminho para o <br className="hidden sm:block" />
-            <span className="text-shine">American</span>{" "}
-            <span className="text-shine">Dream</span>
+            <span className="whitespace-nowrap inline-block">
+              <span className="text-shine">American</span>{" "}
+              <span className="text-shine">Dream</span>
+            </span>
           </h1>
           
           <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-6 md:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
