@@ -118,7 +118,7 @@ export const SpecialistCarousel = ({
                 }}
                 loading={index === 0 && isVisible ? "eager" : "lazy"}
                 decoding="async"
-                fetchPriority={index === 0 && isVisible ? "high" : "low"}
+                fetchpriority={index === 0 && isVisible ? "high" : "low"}
               />
             </div>
           );

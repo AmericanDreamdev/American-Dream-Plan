@@ -236,17 +236,16 @@ All colors MUST be HSL.
   /* Button effects - Gradiente azul elegante */
   button.bg-primary,
   .bg-primary {
-    background: linear-gradient(to right, #0575E6, #021B79) !important;
+    background: linear-gradient(to right, #023E8A, #012A5E) !important;
     color: #fff;
     border: none;
     transition: all 0.3s ease;
   }
 
-  button.bg-primary:hover,
-  .bg-primary:hover {
-    background: linear-gradient(to right, #0685F6, #032B89) !important;
+  button.bg-primary:hover {
+    background: linear-gradient(to right, #034A9F, #013B7A) !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(5, 117, 230, 0.3);
+    box-shadow: 0 4px 12px rgba(2, 62, 138, 0.3);
   }
 
   /* Desabilitar estilos azuis na página do formulário de consultoria */

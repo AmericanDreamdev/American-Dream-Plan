@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import ConsultationForm from "./pages/ConsultationForm";
 import ConsultationFormDetails from "./pages/ConsultationFormDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { ScrollToTop } from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
           v7_relativeSplatPath: true,
         }}
       >
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/oferta" element={<Index />} />

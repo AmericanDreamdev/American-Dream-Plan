@@ -1,207 +1,360 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { CheckCircle2, ArrowRight, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Trophy, Square, Heart, AlertCircle, Video, CheckCircle2, Play, Download, Bell, Users2, MapPin, Building, Award, Shield, Clock, Headphones } from "lucide-react";
 import { SpecialistCarousel } from "@/components/ui/specialist-carousel";
-import { Header } from "@/components/Header";
+import HeroSection from "@/components/HeroSection";
 
-const WhatsAppIcon = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="16" 
-    height="16" 
-    fill="currentColor" 
-    className={className}
-    viewBox="0 0 16 16"
-  >
-    <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
-  </svg>
-);
+const WHATSAPP_LINK = "https://chat.whatsapp.com/C5k7GQN1N5L0qmkDZgUlMn";
 
-const Home = () => {
-  const whatsappLink = "https://chat.whatsapp.com/C5k7GQN1N5L0qmkDZgUlMn";
-
+// Componente da seção de WhatsApp
+const WhatsAppFormSection = () => {
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-x-hidden w-full max-w-full">
-      <Header />
-      
-      {/* Hero Section - Estilo do bridge-main */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden w-full max-w-full">
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: `url(/hero-american-dream.jpg)`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "brightness(0.4)",
-          }}
-        />
-        
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-background z-0" />
-
-        <div className="container relative z-10 px-4 py-12 md:py-20 mx-auto text-center animate-fade-in">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4 md:mb-6 leading-tight px-2">
-            Construa seu caminho para o <br className="hidden sm:block" />
-            <span className="whitespace-nowrap inline-block">
-              <span className="text-shine">American</span>{" "}
-              <span className="text-shine">Dream</span>
-            </span>
-          </h1>
+    <>
+      <style>{`
+        .whatsapp-section-no-hover,
+        .whatsapp-section-no-hover *,
+        .whatsapp-section-no-hover *:hover,
+        .whatsapp-section-no-hover *:focus,
+        .whatsapp-section-no-hover *:active {
+          transition: none !important;
+          animation: none !important;
+          transform: none !important;
+        }
+        .whatsapp-section-no-hover button,
+        .whatsapp-section-no-hover button:hover {
+          transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+          transform: none !important;
+        }
+      `}</style>
+      <section className="whatsapp-section-no-hover py-20 bg-primary text-primary-foreground">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-8 text-primary-foreground text-center">
+            Ao entrar no grupo oficial do WhatsApp, você garante
+          </h2>
           
-          <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-6 md:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
-            com clareza, estratégia e suporte de quem já chegou lá
-          </p>
-          
-          <p className="text-base sm:text-lg md:text-xl text-white/80 mb-8 md:mb-12 max-w-4xl mx-auto px-4">
-            Descubra o método que transforma o sonho de viver legalmente nos EUA em um plano prático e real, sem atalhos e sem achismos.
-          </p>
+          <div className="space-y-6 mb-8">
+            {[
+              {
+                icon: Play,
+                text: "Link da live gratuita em primeira mão.",
+              },
+              {
+                icon: Download,
+                text: "Materiais de apoio exclusivos (checklists, guias e cronograma).",
+              },
+              {
+                icon: Bell,
+                text: "Avisos antecipados de conteúdos e oportunidades.",
+              },
+              {
+                icon: Users2,
+                text: "Acesso à comunidade oficial para networking e dúvidas.",
+              },
+            ].map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-foreground flex items-center justify-center mt-0.5">
+                    <span className="text-primary font-bold text-sm">*</span>
+                  </div>
+                  <p className="text-primary-foreground text-base leading-relaxed">{item.text}</p>
+                </div>
+              );
+            })}
+          </div>
 
-          <Button 
-            size="xl"
-            onClick={() => window.open(whatsappLink, '_blank')}
-            className="bg-[#0575E6] text-white hover:bg-[#0685F6] shadow-lg hover:shadow-xl transform hover:scale-105 font-bold px-6 py-4 md:px-10 md:py-6 text-base md:text-lg mx-4"
-          >
-            <WhatsAppIcon className="h-5 w-5 md:h-6 md:w-6 mr-2" />
-            <span className="hidden sm:inline">Participar da Live Gratuita</span>
-            <span className="sm:hidden">Participar da Live</span>
-            <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 transition-transform group-hover:translate-x-1" />
-          </Button>
-        </div>
-      </section>
-
-      {/* O que você vai aprender */}
-      <section id="o-que-vai-aprender" className="py-12 md:py-24 relative z-10 bg-gradient-to-b from-white via-gray-50 to-white overflow-x-hidden w-full max-w-full">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center mb-8 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 text-gray-900 px-2">
-              O que você vai aprender na Live Gratuita
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-700 max-w-3xl mx-auto px-4">
-              Conteúdo prático e acionável para começar sua jornada hoje
+          {/* Warning Box */}
+          <div className="bg-white/10 p-6 rounded-xl backdrop-blur-sm mb-8">
+            <p className="text-lg font-medium text-center lg:text-left text-primary-foreground">
+              Vagas limitadas para manter a qualidade do suporte!
             </p>
           </div>
 
-          <div className="cards-container-new">
-            {[
-              {
-                number: "01",
-                title: "Os 3 pilares para conquistar o sonho americano",
-                description: "Sem cair nas armadilhas que travam a maioria"
-              },
-              {
-                number: "02",
-                title: "O passo a passo real",
-                description: "Para organizar sua jornada — do planejamento ao primeiro visto"
-              },
-              {
-                number: "03",
-                title: "Como se preparar emocional e financeiramente",
-                description: "Para mudar de país com segurança"
-              },
-              {
-                number: "04",
-                title: "Os erros mais comuns",
-                description: "Que fazem muita gente desistir (e como evitá-los)"
-              }
-            ].map((item, index) => (
-              <div key={index} className="card-wrapper">
-                <a className={`card-interactive card-${index + 1}`} href="#">
-                  <p className="card-title">{item.title}</p>
-                  <p className="card-description">{item.description}</p>
-                  <div className="go-corner">
-                    <div className="go-arrow">→</div>
-                  </div>
-                </a>
-              </div>
-            ))}
+          {/* CTA Button */}
+          <div className="text-center">
+            <Button
+              onClick={() => window.open(WHATSAPP_LINK, "_blank")}
+              className="bg-[#25D366] hover:bg-[#25D366] text-white text-lg px-8 py-6 h-auto rounded-lg shadow-lg hover:shadow-xl transition-all"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="20" 
+                height="20" 
+                fill="white" 
+                className="mr-2"
+                viewBox="0 0 16 16"
+              >
+                <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+              </svg>
+              Entrar no Grupo WhatsApp
+            </Button>
+          </div>
+        </div>
+      </div>
+    </section>
+    </>
+  );
+};
+
+const Home = () => {
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <HeroSection whatsappLink={WHATSAPP_LINK} />
+
+      {/* What You'll Learn Section */}
+      <section id="benefits" className="py-20 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            {/* Title */}
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center mb-4 text-foreground">
+              O que você vai aprender na{" "}
+              <span className="text-[#023E8A]">Live Gratuita</span>
+            </h2>
+            
+            {/* Subtitle */}
+            <p className="text-center text-lg text-muted-foreground mb-12 max-w-2xl mx-auto">
+              Conteúdo exclusivo e prático para transformar seu sonho em realidade
+            </p>
+
+            {/* Cards Grid */}
+            <div className="grid gap-6 sm:grid-cols-2 mb-12">
+              {[
+                {
+                  icon: Trophy,
+                  iconColor: "text-[#023E8A]",
+                  title: "Os 3 pilares para conquistar o sonho americano",
+                  description: "sem cair nas armadilhas que travam a maioria.",
+                },
+                {
+                  icon: Square,
+                  iconColor: "text-gray-400",
+                  title: "O passo a passo real",
+                  description: "para organizar sua jornada — do planejamento ao primeiro visto.",
+                },
+                {
+                  icon: Heart,
+                  iconColor: "text-[#023E8A]",
+                  title: "Como se preparar emocional e financeiramente",
+                  description: "para mudar de país com segurança.",
+                },
+                {
+                  icon: AlertCircle,
+                  iconColor: "text-red-500",
+                  title: "Os erros mais comuns",
+                  description: "que fazem muita gente desistir (e como evitá-los).",
+                },
+              ].map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <Card
+                    key={index}
+                    className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white"
+                  >
+                    <CardContent className="p-6 flex items-start gap-4">
+                      <div className={`flex-shrink-0 ${item.iconColor}`}>
+                        <Icon className="w-8 h-8" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-foreground mb-1 text-lg">
+                          {item.title}
+                        </h3>
+                        <p className="text-muted-foreground text-base">
+                          {item.description}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* CTA Button */}
+            <div className="text-center">
+              <Button
+                onClick={() => window.open(WHATSAPP_LINK, "_blank")}
+                className="bg-[#023E8A] hover:bg-[#034A9F] text-white text-lg px-8 py-6 h-auto rounded-lg shadow-lg hover:shadow-xl transition-all"
+              >
+                <Video className="w-5 h-5 mr-2" />
+                Live 100% gratuita e ao vivo
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Para quem é */}
-      <section className="py-12 md:py-24 relative z-10 bg-[#0a0e27] overflow-hidden w-full max-w-full">
-        <div className="container mx-auto px-4 md:px-6 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-8 md:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-3 md:mb-4 text-white px-2">
+      {/* Who It's For Section */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+            {/* Left Section - Content */}
+            <div className="space-y-6">
+              {/* Title */}
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-800 text-center lg:text-left">
                 Para quem é
               </h2>
-              <p className="text-lg md:text-xl text-white/80 mb-8 md:mb-12">Se você:</p>
-            </div>
-            
-            <div className="for-whom-cards-wrapper">
-              <div className="for-whom-cards">
+              
+              {/* Subtitle */}
+              <p className="text-lg text-gray-700">
+                Se você:
+              </p>
+
+              {/* List Items */}
+              <div className="space-y-4">
                 {[
                   "Sempre sonhou em morar nos Estados Unidos, mas não sabe por onde começar.",
                   "Quer um plano estruturado, acessível e realista.",
-                  "Está cansado de informações confusas ou promessas milagrosas."
+                  "Está cansado de informações confusas ou promessas milagrosas.",
                 ].map((item, index) => (
-                  <div key={index} className={`for-whom-mini-card for-whom-card-${index + 1}`}>
-                    <p className="for-whom-tip">{String(index + 1).padStart(2, '0')}</p>
-                    <p className="for-whom-second-text">{item}</p>
+                  <div
+                    key={index}
+                    className="flex items-start gap-3"
+                  >
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center mt-0.5">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    </div>
+                    <p className="text-gray-700 text-base leading-relaxed">{item}</p>
                   </div>
                 ))}
               </div>
-              
-              <div className="for-whom-big-card">
-                <p className="for-whom-big-text">Então essa live é para você.</p>
+
+              {/* Highlight Box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-6">
+                <p className="text-[#023E8A] font-semibold text-lg text-center">
+                  Então essa live é para você.
+                </p>
+              </div>
+
+              {/* CTA Button */}
+              <Button
+                onClick={() => window.open(WHATSAPP_LINK, "_blank")}
+                className="bg-[#25D366] hover:bg-[#20BA5A] text-white text-lg px-8 py-6 h-auto rounded-lg shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="20" 
+                  height="20" 
+                  fill="currentColor" 
+                  className="mr-2"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+                </svg>
+                Quero Participar
+              </Button>
+            </div>
+
+            {/* Right Section - Image */}
+            <div className="relative hidden lg:block">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src="/foto 14 ceme_original.webp"
+                  alt="Pessoas olhando para o American Dream"
+                  className="w-full h-auto object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=600&fit=crop";
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Bônus do WhatsApp */}
-      <section className="py-12 md:py-24 relative z-10 bg-white overflow-x-hidden w-full max-w-full">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-8 md:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-3 md:mb-4 text-gray-900 px-2">
-                Ao entrar no grupo oficial do WhatsApp, você garante
-              </h2>
+      {/* Benefits Section */}
+      <WhatsAppFormSection />
+
+      {/* Why Participate Section */}
+      <section className="py-20 bg-muted">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+            {/* Left Section - Image */}
+            <div className="relative hidden lg:block">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src="/foto 2.webp"
+                  alt="Planejamento e estratégia para o American Dream"
+                  className="w-full h-auto object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&h=600&fit=crop";
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="whatsapp-benefits-container">
-              <div className="whatsapp-benefits-list">
+            {/* Right Section - Content */}
+            <div className="space-y-8 text-center lg:text-left">
+              {/* Title */}
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900">
+                Por que participar
+              </h2>
+
+              {/* Introductory Paragraph */}
+              <p className="text-lg sm:text-xl text-gray-700 leading-relaxed">
+                Você sai com um{" "}
+                <span className="text-[#023E8A] font-bold">plano claro e acionável</span> para começar hoje — com suporte de quem
+                entende o caminho até o sonho americano.
+              </p>
+
+              {/* Benefits List */}
+              <div className="space-y-6">
                 {[
                   {
-                    title: "Link da live gratuita",
-                    description: "Em primeira mão"
+                    icon: MapPin,
+                    iconColor: "text-[#023E8A]",
+                    title: "Estratégia Clara",
+                    description: "Método testado e aprovado por milhares de brasileiros",
                   },
                   {
-                    title: "Materiais de apoio exclusivos",
-                    description: "Checklists, guias e cronograma"
+                    icon: Building,
+                    iconColor: "text-red-500",
+                    title: "Suporte Especializado",
+                    description: "Orientação de quem já viveu essa jornada com sucesso",
                   },
                   {
-                    title: "Avisos antecipados",
-                    description: "De conteúdos e oportunidades"
+                    icon: Award,
+                    iconColor: "text-[#023E8A]",
+                    title: "Resultados Reais",
+                    description: "Plano prático que você pode começar a aplicar imediatamente",
                   },
-                  {
-                    title: "Acesso à comunidade oficial",
-                    description: "Para networking e dúvidas"
-                  }
-                ].map((item, index) => (
-                  <div key={index} className="whatsapp-benefit-item">
-                    <div className="whatsapp-benefit-icon">
-                      <CheckCircle2 className="h-6 w-6" />
+                ].map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={index} className="flex flex-col items-center lg:flex-row lg:items-start gap-4">
+                      <div className={`flex-shrink-0 ${item.iconColor}`}>
+                        <Icon className="w-8 h-8" />
+                      </div>
+                      <div className="text-center lg:text-left">
+                        <h3 className="font-bold text-gray-900 text-lg mb-1">
+                          {item.title}
+                        </h3>
+                        <p className="text-gray-700 text-base">
+                          {item.description}
+                        </p>
+                      </div>
                     </div>
-                    <div className="whatsapp-benefit-content">
-                      <h3 className="whatsapp-benefit-title">{item.title}</h3>
-                      <p className="whatsapp-benefit-description">{item.description}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <div className="whatsapp-cta-button">
-                <Button 
-                  size="lg" 
-                  className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-base sm:text-lg md:text-xl lg:text-2xl py-6 md:py-8 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
-                  onClick={() => window.open(whatsappLink, '_blank')}
+              {/* CTA Button */}
+              <div className="pt-4 flex justify-center lg:justify-start">
+                <Button
+                  onClick={() => window.open(WHATSAPP_LINK, "_blank")}
+                  className="bg-[#25D366] hover:bg-[#20BA5A] text-white text-lg px-8 py-6 h-auto rounded-lg shadow-lg hover:shadow-xl transition-all"
                 >
-                  <WhatsAppIcon className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
-                  <span className="hidden sm:inline">Quero participar pelo WhatsApp</span>
-                  <span className="sm:hidden">Participar pelo WhatsApp</span>
-                  <ArrowRight className="h-5 w-5 md:h-6 md:w-6 ml-2 md:ml-3" />
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="20" 
+                    height="20" 
+                    fill="white" 
+                    className="mr-2"
+                    viewBox="0 0 16 16"
+                  >
+                    <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+                  </svg>
+                  Garantir Minha Vaga Agora
                 </Button>
               </div>
             </div>
@@ -209,21 +362,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Por que participar */}
-      <section className="py-12 md:py-24 relative z-10 glass overflow-x-hidden w-full max-w-full">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-white px-2">
-              Por que participar
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 leading-relaxed px-4">
-              Você sai com um <span className="text-primary font-bold">plano claro e acionável</span> para começar hoje — com suporte de quem entende o caminho até o sonho americano.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Especialistas */}
+      {/* Instructors Section */}
       <section className="py-12 md:py-24 relative z-10 bg-white overflow-x-hidden w-full max-w-full">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-8 md:mb-16">
@@ -298,39 +437,107 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA Final */}
-      <section className="py-12 md:py-24 relative z-10 glass overflow-x-hidden w-full max-w-full">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 md:p-8 lg:p-12 border border-white/20">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 text-white px-2">
-                Garanta sua vaga agora
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 md:mb-8 px-4">
-                As vagas do grupo são limitadas para manter a qualidade do suporte e do evento ao vivo.
-              </p>
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-sm sm:text-base md:text-xl lg:text-2xl px-6 py-4 md:px-12 md:py-8 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 mx-4"
-                onClick={() => window.open(whatsappLink, '_blank')}
+      {/* Final CTA Section */}
+      <section className="py-20 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            {/* Title */}
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+              Garanta sua vaga agora
+            </h2>
+            
+            {/* Description */}
+            <p className="text-xl sm:text-2xl text-white">
+              As vagas do grupo são limitadas para manter a qualidade do suporte e do evento ao vivo.
+            </p>
+
+            {/* Badges Container */}
+            <div className="flex items-center justify-center space-x-4 sm:space-x-8 bg-white/10 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/20 my-8 mx-auto">
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-white">100%</div>
+                <div className="text-xs sm:text-sm text-gray-300">Gratuito</div>
+              </div>
+              <div className="w-px h-8 sm:h-12 bg-white/30"></div>
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-white">+7K</div>
+                <div className="text-xs sm:text-sm text-gray-300">Aprovados</div>
+              </div>
+              <div className="w-px h-8 sm:h-12 bg-white/30"></div>
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-white">Live</div>
+                <div className="text-xs sm:text-sm text-gray-300">Ao Vivo</div>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <div className="pt-4 flex justify-center">
+              <button
+                onClick={() => window.open(WHATSAPP_LINK, "_blank")}
+                className="inline-flex items-center px-4 sm:px-8 md:px-12 py-4 sm:py-6 bg-green-500 text-white font-bold text-base sm:text-lg md:text-xl rounded-xl hover:bg-green-600 transform hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-3xl max-w-full"
               >
-                <WhatsAppIcon className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
-                <span className="hidden sm:inline">Entrar no grupo do WhatsApp e garantir minha vaga</span>
-                <span className="sm:hidden">Entrar no grupo do WhatsApp</span>
-                <ArrowRight className="h-5 w-5 md:h-6 md:w-6 ml-2 md:ml-3" />
-              </Button>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="24" 
+                  height="24" 
+                  fill="white" 
+                  className="mr-2 sm:mr-4 flex-shrink-0"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+                </svg>
+                <span className="hidden md:inline">Entrar no Grupo do WhatsApp e </span>
+                <span>Garantir Minha Vaga</span>
+              </button>
+            </div>
+
+            {/* Last Spots Message */}
+            <p className="text-white text-sm mt-4">
+              Últimas vagas disponíveis!
+            </p>
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 pt-8">
+              {[
+                {
+                  icon: Shield,
+                  title: "Dados Seguros",
+                  description: "Suas informações estão protegidas",
+                },
+                {
+                  icon: Clock,
+                  title: "Acesso Imediato",
+                  description: "Entre no grupo em segundos",
+                },
+                {
+                  icon: Headphones,
+                  title: "Suporte Especializado",
+                  description: "Tire suas dúvidas com experts",
+                },
+              ].map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div key={index} className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 rounded-full bg-blue-300/30 flex items-center justify-center mb-3">
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-white font-semibold text-lg mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-white/80 text-sm">
+                      {item.description}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 md:py-12 border-t border-border relative z-10 bg-black">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center text-muted-foreground mb-4">
-            <p className="mb-3 md:mb-4 text-xl md:text-2xl font-bold text-white">American Dream Consultoria</p>
-            <p className="text-sm md:text-base">© 2025 American Dream. Todos os direitos reservados.</p>
-          </div>
+      <footer className="py-8 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p>© 2025 American Dream. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>
@@ -338,4 +545,3 @@ const Home = () => {
 };
 
 export default Home;
-
