@@ -72,14 +72,34 @@ Deno.serve(async (req: Request) => {
       apiVersion: "2024-12-18.acacia",
     });
 
-    // Valor do contrato em USD
-    const usdAmount = 99900; // US$ 999,00 em centavos
+    // Valor base do contrato em USD (sem taxas)
+    const baseUsdAmount = 99900; // US$ 999,00 em centavos
     
-    // Valor fixo para PIX: R$ 5.500,00
-    const brlAmount = 550000; // R$ 5.500,00 em centavos (valor fixo para PIX)
+    // Valor base para PIX em BRL (sem taxas)
+    const baseBrlAmount = 550000; // R$ 5.500,00 em centavos
     
-    // Taxa de câmbio calculada para referência
-    const exchangeRate = brlAmount / usdAmount; // Taxa atual baseada no valor fixo
+    // Taxas de processamento
+    const cardFeePercentage = 0.039; // 3.9%
+    const cardFeeFixed = 30; // $0.30 em centavos
+    const pixFeePercentage = 0.018; // 1.8%
+    
+    // Calcular valores finais com taxas
+    // Cartão: valor base + (valor base * 3.9%) + $0.30
+    const usdAmountWithFee = Math.round(baseUsdAmount + (baseUsdAmount * cardFeePercentage) + cardFeeFixed);
+    
+    // PIX: valor base + (valor base * 1.8%)
+    const brlAmountWithFee = Math.round(baseBrlAmount + (baseBrlAmount * pixFeePercentage));
+    
+    // Valores finais para exibição
+    const usdAmount = usdAmountWithFee;
+    const brlAmount = brlAmountWithFee;
+    
+    // Calcular valores das taxas para metadata
+    const cardFeeAmount = usdAmountWithFee - baseUsdAmount; // Taxa total em centavos
+    const pixFeeAmount = brlAmountWithFee - baseBrlAmount; // Taxa total em centavos
+    
+    // Taxa de câmbio calculada para referência (baseada nos valores base)
+    const exchangeRate = baseBrlAmount / baseUsdAmount;
 
     // Detectar URL do site automaticamente se SITE_URL não estiver configurada
     // Tenta pegar do header Referer ou Origin da requisição
@@ -146,9 +166,13 @@ Deno.serve(async (req: Request) => {
     console.log("Requested payment method:", payment_method || "not specified");
     console.log("Payment method types:", JSON.stringify(paymentMethodTypes));
     console.log("Currency:", currency);
-    console.log("Amount:", amount, "centavos =", amount / 100, currency === "brl" ? "reais" : "dólares");
-    console.log("USD Amount (reference):", usdAmount, "centavos =", usdAmount / 100, "dólares");
-    console.log("BRL Amount (for PIX):", brlAmount, "centavos =", brlAmount / 100, "reais");
+    console.log("Base USD Amount:", baseUsdAmount, "centavos =", baseUsdAmount / 100, "dólares");
+    console.log("Base BRL Amount:", baseBrlAmount, "centavos =", baseBrlAmount / 100, "reais");
+    console.log("Card Fee:", cardFeePercentage * 100 + "% + $" + (cardFeeFixed / 100).toFixed(2), "=", cardFeeAmount / 100, "dólares");
+    console.log("PIX Fee:", pixFeePercentage * 100 + "% =", pixFeeAmount / 100, "reais");
+    console.log("Final USD Amount (with fees):", usdAmount, "centavos =", usdAmount / 100, "dólares");
+    console.log("Final BRL Amount (with fees):", brlAmount, "centavos =", brlAmount / 100, "reais");
+    console.log("Amount to charge:", amount, "centavos =", amount / 100, currency === "brl" ? "reais" : "dólares");
     console.log("Customer email:", lead.email);
 
     // Criar sessão de checkout
@@ -162,8 +186,8 @@ Deno.serve(async (req: Request) => {
             product_data: {
               name: "Consultoria American Dream - Contrato de Consultoria",
               description: currency === "brl" 
-                ? `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. Valor: R$ ${(brlAmount / 100).toFixed(2)}`
-                : `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. Valor: US$ ${(usdAmount / 100).toFixed(2)}`,
+                ? `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. Valor: R$ ${(baseBrlAmount / 100).toFixed(2)} + Taxa de processamento (1.8%): R$ ${(pixFeeAmount / 100).toFixed(2)} = Total: R$ ${(brlAmount / 100).toFixed(2)}`
+                : `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. Valor: US$ ${(baseUsdAmount / 100).toFixed(2)} + Taxa de processamento (3.9% + $0.30): US$ ${(cardFeeAmount / 100).toFixed(2)} = Total: US$ ${(usdAmount / 100).toFixed(2)}`,
             },
             unit_amount: amount,
           },
@@ -178,8 +202,14 @@ Deno.serve(async (req: Request) => {
         lead_id: lead_id,
         term_acceptance_id: term_acceptance_id,
         lead_name: lead.name,
-        original_usd_amount: (usdAmount / 100).toString(),
-        brl_amount: (brlAmount / 100).toString(),
+        base_usd_amount: (baseUsdAmount / 100).toString(),
+        base_brl_amount: (baseBrlAmount / 100).toString(),
+        final_usd_amount: (usdAmount / 100).toString(),
+        final_brl_amount: (brlAmount / 100).toString(),
+        card_fee_amount: (cardFeeAmount / 100).toString(),
+        pix_fee_amount: (pixFeeAmount / 100).toString(),
+        card_fee_percentage: (cardFeePercentage * 100).toString(),
+        pix_fee_percentage: (pixFeePercentage * 100).toString(),
         exchange_rate: exchangeRate.toFixed(3),
       },
       payment_method_options: {
@@ -229,8 +259,14 @@ Deno.serve(async (req: Request) => {
         metadata: {
           payment_method: payment_method, // Salvar o método escolhido (card ou pix)
           requested_payment_method: payment_method, // Manter compatibilidade
-          original_usd_amount: (usdAmount / 100).toString(),
-          brl_amount: (brlAmount / 100).toString(),
+          base_usd_amount: (baseUsdAmount / 100).toString(),
+          base_brl_amount: (baseBrlAmount / 100).toString(),
+          final_usd_amount: (usdAmount / 100).toString(),
+          final_brl_amount: (brlAmount / 100).toString(),
+          card_fee_amount: (cardFeeAmount / 100).toString(),
+          pix_fee_amount: (pixFeeAmount / 100).toString(),
+          card_fee_percentage: (cardFeePercentage * 100).toString(),
+          pix_fee_percentage: (pixFeePercentage * 100).toString(),
           exchange_rate: exchangeRate.toFixed(3),
           checkout_url: session.url,
         },

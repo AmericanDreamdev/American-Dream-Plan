@@ -781,10 +781,10 @@ const PaymentOptions = () => {
         <div className="grid md:grid-cols-3 gap-4">
           {/* Zelle */}
           <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white"
+            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
             onClick={handleZelleCheckout}
           >
-            <CardContent className="p-6 text-center">
+            <CardContent className="p-6 text-center flex flex-col flex-grow">
               <div className="flex justify-center mb-4">
                 <div className="flex items-center justify-center w-20 h-20">
                   <ZelleIcon className="w-full h-full" />
@@ -794,8 +794,9 @@ const PaymentOptions = () => {
               <p className="text-sm text-gray-600 mb-4">
                 Pagamento rápido e seguro via Zelle
               </p>
+              <div className="flex-grow"></div>
               <Button 
-                className="w-full"
+                className="w-full mt-auto"
                 variant="outline"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -809,21 +810,30 @@ const PaymentOptions = () => {
 
           {/* Stripe Card */}
           <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white"
+            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
             onClick={() => handleStripeCheckout("card")}
           >
-            <CardContent className="p-6 text-center">
+            <CardContent className="p-6 text-center flex flex-col flex-grow">
               <div className="flex justify-center mb-4">
                 <div className="flex items-center justify-center w-full max-w-[200px] h-20">
                   <StripeIcon className="w-full h-full" />
                 </div>
               </div>
               <h3 className="text-xl font-semibold mb-2">Cartão de Crédito</h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-2">
                 Visa, Mastercard, American Express
               </p>
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-xs font-semibold text-amber-800 mb-1">
+                  ⚠️ Taxa de processamento
+                </p>
+                <p className="text-xs text-amber-700">
+                  3.9% + $0.30 será adicionada ao valor
+                </p>
+              </div>
+              <div className="flex-grow"></div>
               <Button 
-                className="w-full"
+                className="w-full mt-auto"
                 variant="outline"
                 disabled={loadingCard}
                 onClick={(e) => {
@@ -845,21 +855,30 @@ const PaymentOptions = () => {
 
           {/* Stripe PIX */}
           <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white"
+            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
             onClick={() => handleStripeCheckout("pix")}
           >
-            <CardContent className="p-6 text-center">
+            <CardContent className="p-6 text-center flex flex-col flex-grow">
               <div className="flex justify-center mb-4">
                 <div className="flex items-center justify-center w-20 h-20">
                   <PixIcon className="w-full h-full" />
                 </div>
               </div>
               <h3 className="text-xl font-semibold mb-2">PIX</h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-2">
                 Pagamento instantâneo via PIX
               </p>
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                <p className="text-xs font-semibold text-amber-800 mb-1">
+                  ⚠️ Taxa de processamento
+                </p>
+                <p className="text-xs text-amber-700">
+                  1.8% será adicionada ao valor
+                </p>
+              </div>
+              <div className="flex-grow"></div>
               <Button 
-                className="w-full"
+                className="w-full mt-auto"
                 variant="outline"
                 disabled={loadingPix}
                 onClick={(e) => {
@@ -915,8 +934,10 @@ const PaymentOptions = () => {
             {/* Métodos de pagamento renderizados baseado no país */}
             {renderPaymentMethods()}
 
-            <div className="mt-6 text-center text-sm text-gray-500">
-              <p>Pagamento seguro processado via Stripe e Zelle</p>
+            <div className="mt-6 space-y-2">
+              <div className="text-center text-sm text-gray-500">
+                <p>Pagamento seguro processado via Stripe e Zelle</p>
+              </div>
             </div>
           </CardContent>
         </Card>
