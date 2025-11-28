@@ -541,10 +541,17 @@ Deno.serve(async (req: Request) => {
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
 
-                // Construir URL do formulário
-                const siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
+                // Construir URL do formulário (garantir que não há barras duplas)
+                let siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
+                // Remover todas as barras finais e espaços
+                siteUrl = siteUrl.trim().replace(/\/+$/, "");
+                // Garantir que começa com http:// ou https://
+                if (!siteUrl.match(/^https?:\/\//i)) {
+                  siteUrl = `https://${siteUrl}`;
+                }
+                // Construir link sem barras duplas
                 const consultationLink = consultationToken 
-                  ? `${siteUrl}/consultation-form/${consultationToken}`
+                  ? `${siteUrl}/consultation-form/${consultationToken}`.replace(/([^:]\/)\/+/g, '$1')
                   : null;
 
                 const emailSubject = "Pagamento Confirmado - American Dream";
@@ -754,10 +761,17 @@ Deno.serve(async (req: Request) => {
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
 
-                // Construir URL do formulário
-                const siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
+                // Construir URL do formulário (garantir que não há barras duplas)
+                let siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
+                // Remover todas as barras finais e espaços
+                siteUrl = siteUrl.trim().replace(/\/+$/, "");
+                // Garantir que começa com http:// ou https://
+                if (!siteUrl.match(/^https?:\/\//i)) {
+                  siteUrl = `https://${siteUrl}`;
+                }
+                // Construir link sem barras duplas
                 const consultationLink = consultationToken 
-                  ? `${siteUrl}/consultation-form/${consultationToken}`
+                  ? `${siteUrl}/consultation-form/${consultationToken}`.replace(/([^:]\/)\/+/g, '$1')
                   : null;
 
                 const emailSubject = "Pagamento Confirmado - American Dream";

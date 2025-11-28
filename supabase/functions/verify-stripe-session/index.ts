@@ -63,11 +63,29 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Initialize Stripe
-    // Prioridade: STRIPE_SECRET_KEY_TEST > STRIPE_SECRET_KEY
-    let stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
-    if (!stripeSecretKey) {
-      stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    // Detectar ambiente baseado na SITE_URL
+    // Se estiver em americandream.323network.com → produção
+    // Se estiver em localhost → teste
+    let siteUrl = Deno.env.get("SITE_URL") || "http://localhost:8081";
+    
+    const isProduction = siteUrl.includes("americandream.323network.com") || 
+                        siteUrl.includes("323network.com");
+    const isLocalhost = siteUrl.includes("localhost") || 
+                       siteUrl.includes("127.0.0.1") ||
+                       siteUrl.includes("0.0.0.0");
+    
+    // Escolher chave baseado no ambiente
+    let stripeSecretKey: string | undefined;
+    
+    if (isProduction) {
+      // Produção: priorizar STRIPE_SECRET_KEY_LIVE, depois STRIPE_SECRET_KEY
+      stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE") || Deno.env.get("STRIPE_SECRET_KEY");
+    } else if (isLocalhost) {
+      // Teste (localhost): usar STRIPE_SECRET_KEY_TEST ou STRIPE_SECRET_KEY se for sk_test_
+      stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_TEST") || Deno.env.get("STRIPE_SECRET_KEY");
+    } else {
+      // Ambiente desconhecido: usar STRIPE_SECRET_KEY como padrão
+      stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || Deno.env.get("STRIPE_SECRET_KEY_TEST");
     }
     
     if (!stripeSecretKey) {
@@ -79,6 +97,14 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+    
+    const isTestMode = stripeSecretKey.startsWith("sk_test_");
+    const isLiveMode = stripeSecretKey.startsWith("sk_live_");
+    
+    console.log("=== STRIPE ENVIRONMENT DETECTION ===");
+    console.log("Site URL:", siteUrl);
+    console.log("Environment:", isProduction ? "🚨 PRODUCTION" : isLocalhost ? "✅ TEST (localhost)" : "❓ UNKNOWN");
+    console.log("Stripe Key Type:", isLiveMode ? "LIVE (production)" : isTestMode ? "TEST" : "UNKNOWN");
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: "2024-12-18.acacia",
