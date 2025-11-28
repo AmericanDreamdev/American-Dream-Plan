@@ -161,6 +161,71 @@ const PaymentOptions = () => {
   // Qualquer país que NÃO seja Brasil recebe: Zelle, Stripe Card e Stripe PIX
   const isBrazil = userCountry === "BR";
 
+  // Valores base (sem taxas)
+  const baseUsdAmount = 999.00; // US$ 999,00
+  
+  // Taxas de processamento
+  const cardFeePercentage = 0.039; // 3.9%
+  const cardFeeFixed = 0.30; // $0.30
+  
+  // Taxas do Stripe para PIX
+  const STRIPE_PIX_PROCESSING_PERCENTAGE = 0.0119; // 1.19%
+  const STRIPE_CURRENCY_CONVERSION_PERCENTAGE = 0.006; // 0.6%
+  const STRIPE_PIX_TOTAL_PERCENTAGE = STRIPE_PIX_PROCESSING_PERCENTAGE + STRIPE_CURRENCY_CONVERSION_PERCENTAGE; // ~1.8%
+  
+  // Estado para taxa de câmbio
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+  const [loadingExchangeRate, setLoadingExchangeRate] = useState(true);
+  
+  // Obter taxa de câmbio ao carregar o componente
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      try {
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (response.ok) {
+          const data = await response.json();
+          const baseRate = parseFloat(data.rates.BRL);
+          
+          // Aplicar margem comercial (4% acima da taxa oficial)
+          const rateWithMargin = baseRate * 1.04;
+          setExchangeRate(rateWithMargin);
+          console.log("[PaymentOptions] Exchange rate fetched:", rateWithMargin, "(base:", baseRate + ")");
+        } else {
+          throw new Error("API response not ok");
+        }
+      } catch (error) {
+        console.error("[PaymentOptions] Error fetching exchange rate:", error);
+        // Taxa de fallback
+        setExchangeRate(5.6);
+        console.log("[PaymentOptions] Using fallback exchange rate: 5.6");
+      } finally {
+        setLoadingExchangeRate(false);
+      }
+    };
+    
+    fetchExchangeRate();
+  }, []);
+  
+  // Calcular valores finais com taxas
+  const cardFinalAmount = baseUsdAmount + (baseUsdAmount * cardFeePercentage) + cardFeeFixed; // US$ 1,038.26
+  const zelleAmount = baseUsdAmount; // US$ 999,00 (sem taxas)
+  
+  // Calcular valor PIX com conversão dinâmica (se taxa disponível)
+  const calculatePIXAmount = (netAmountUSD: number, rate: number): number => {
+    // 1. Converter USD para BRL
+    const netAmountBRL = netAmountUSD * rate;
+    
+    // 2. Calcular valor antes das taxas do Stripe
+    const grossAmountBRL = netAmountBRL / (1 - STRIPE_PIX_TOTAL_PERCENTAGE);
+    
+    // 3. Arredondar para 2 casas decimais
+    return Math.round(grossAmountBRL * 100) / 100;
+  };
+  
+  const pixFinalAmount = exchangeRate 
+    ? calculatePIXAmount(baseUsdAmount, exchangeRate) 
+    : null; // Será calculado quando taxa estiver disponível
+
   // Listener para detectar quando a página é restaurada do bfcache
   useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
@@ -544,14 +609,23 @@ const PaymentOptions = () => {
     setError(null);
 
     try {
+      // Preparar body com taxa de câmbio se disponível (para PIX)
+      const requestBody: any = {
+        lead_id: leadId,
+        term_acceptance_id: termAcceptanceId,
+        payment_method: method, // Passar o método específico (card ou pix)
+      };
+      
+      // Se for PIX e tiver taxa de câmbio, enviar para garantir consistência
+      if (method === "pix" && exchangeRate) {
+        requestBody.exchange_rate = exchangeRate;
+        console.log("[PaymentOptions] Sending exchange rate to backend:", exchangeRate);
+      }
+      
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
         "create-checkout-session",
         {
-          body: {
-            lead_id: leadId,
-            term_acceptance_id: termAcceptanceId,
-            payment_method: method, // Passar o método específico (card ou pix)
-          },
+          body: requestBody,
         }
       );
 
@@ -790,10 +864,15 @@ const PaymentOptions = () => {
                   <ZelleIcon className="w-full h-full" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Zelle</h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Zelle</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-1">
                 Pagamento rápido e seguro via Zelle
               </p>
+              <div className="mb-4">
+                <p className="text-base sm:text-lg font-bold text-blue-600">
+                  ${zelleAmount.toFixed(2)}
+                </p>
+              </div>
               <div className="flex-grow"></div>
               <Button 
                 className="w-full mt-auto"
@@ -819,16 +898,16 @@ const PaymentOptions = () => {
                   <StripeIcon className="w-full h-full" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Cartão de Crédito</h3>
-              <p className="text-sm text-gray-600 mb-2">
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Cartão de Crédito</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-1">
                 Visa, Mastercard, American Express
               </p>
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-xs font-semibold text-amber-800 mb-1">
-                  ⚠️ Taxa de processamento
+              <div className="mb-2">
+                <p className="text-base sm:text-lg font-bold text-blue-600">
+                  ${cardFinalAmount.toFixed(2)}
                 </p>
-                <p className="text-xs text-amber-700">
-                  3.9% + $0.30 será adicionada ao valor
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                  * Taxa de processamento incluída
                 </p>
               </div>
               <div className="flex-grow"></div>
@@ -864,17 +943,25 @@ const PaymentOptions = () => {
                   <PixIcon className="w-full h-full" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">PIX</h3>
-              <p className="text-sm text-gray-600 mb-2">
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">PIX</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-1">
                 Pagamento instantâneo via PIX
               </p>
-              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-xs font-semibold text-amber-800 mb-1">
-                  ⚠️ Taxa de processamento
-                </p>
-                <p className="text-xs text-amber-700">
-                  1.8% será adicionada ao valor
-                </p>
+              <div className="mb-4">
+                {loadingExchangeRate || pixFinalAmount === null ? (
+                  <p className="text-base sm:text-lg font-bold text-gray-400">
+                    Carregando...
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-base sm:text-lg font-bold text-blue-600">
+                      R$ {pixFinalAmount.toFixed(2)}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                      * Taxa de processamento incluída
+                    </p>
+                  </>
+                )}
               </div>
               <div className="flex-grow"></div>
               <Button 

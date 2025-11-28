@@ -12,6 +12,7 @@ interface RequestBody {
   lead_id: string;
   term_acceptance_id: string;
   payment_method?: "card" | "pix"; // Método de pagamento específico (opcional)
+  exchange_rate?: number; // Taxa de câmbio USD → BRL (opcional, do frontend)
 }
 
 Deno.serve(async (req: Request) => {
@@ -21,7 +22,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { lead_id, term_acceptance_id, payment_method }: RequestBody = await req.json();
+    const { lead_id, term_acceptance_id, payment_method, exchange_rate: frontendExchangeRate }: RequestBody = await req.json();
 
     if (!lead_id || !term_acceptance_id) {
       return new Response(
@@ -74,21 +75,79 @@ Deno.serve(async (req: Request) => {
 
     // Valor base do contrato em USD (sem taxas)
     const baseUsdAmount = 99900; // US$ 999,00 em centavos
-    
-    // Valor base para PIX em BRL (sem taxas)
-    const baseBrlAmount = 550000; // R$ 5.500,00 em centavos
+    const baseUsdAmountDecimal = baseUsdAmount / 100; // US$ 999.00
     
     // Taxas de processamento
     const cardFeePercentage = 0.039; // 3.9%
     const cardFeeFixed = 30; // $0.30 em centavos
-    const pixFeePercentage = 0.018; // 1.8%
     
-    // Calcular valores finais com taxas
+    // Taxas do Stripe para PIX
+    const STRIPE_PIX_PROCESSING_PERCENTAGE = 0.0119; // 1.19% - taxa de processamento
+    const STRIPE_CURRENCY_CONVERSION_PERCENTAGE = 0.006; // 0.6% - taxa de conversão de moedas
+    const STRIPE_PIX_TOTAL_PERCENTAGE = STRIPE_PIX_PROCESSING_PERCENTAGE + STRIPE_CURRENCY_CONVERSION_PERCENTAGE; // ~1.8%
+    
+    // ===== OBTER TAXA DE CÂMBIO =====
+    // Prioridade 1: Taxa do frontend (recomendado)
+    // Prioridade 2: API externa com margem comercial
+    // Prioridade 3: Taxa de fallback
+    let exchangeRate: number;
+    
+    if (frontendExchangeRate && frontendExchangeRate > 0) {
+      // Usar taxa do frontend (garante consistência)
+      exchangeRate = frontendExchangeRate;
+      console.log("Using exchange rate from frontend:", exchangeRate);
+    } else {
+      // Buscar de API externa com margem comercial
+      try {
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (response.ok) {
+          const data = await response.json();
+          const baseRate = parseFloat(data.rates.BRL);
+          
+          // Aplicar margem comercial (4% acima da taxa oficial)
+          exchangeRate = baseRate * 1.04;
+          console.log("Using exchange rate from API with 4% margin:", exchangeRate, "(base rate:", baseRate + ")");
+        } else {
+          throw new Error("API response not ok");
+        }
+      } catch (apiError) {
+        console.error("Error fetching exchange rate from API:", apiError);
+        // Taxa de fallback
+        exchangeRate = 5.6;
+        console.log("Using fallback exchange rate:", exchangeRate);
+      }
+    }
+    
+    // ===== CALCULAR VALOR PIX COM CONVERSÃO E MARKUP =====
+    /**
+     * Calcula o valor a cobrar para PIX BRL considerando as taxas do Stripe
+     * 
+     * @param netAmountUSD - Valor líquido desejado em dólares (ex: 999 para $999.00)
+     * @param exchangeRate - Taxa de câmbio USD para BRL (ex: 5.6)
+     * @returns Valor a cobrar em centavos de BRL
+     */
+    const calculatePIXAmountWithFees = (netAmountUSD: number, exchangeRate: number): number => {
+      // 1. Converter USD para BRL
+      const netAmountBRL = netAmountUSD * exchangeRate;
+      
+      // 2. Calcular valor antes das taxas do Stripe
+      // Fórmula: Valor líquido / (1 - Taxa percentual total)
+      const grossAmountBRL = netAmountBRL / (1 - STRIPE_PIX_TOTAL_PERCENTAGE);
+      
+      // 3. Arredondar para 2 casas decimais e converter para centavos
+      const grossAmountRounded = Math.round(grossAmountBRL * 100) / 100;
+      const grossAmountInCents = Math.round(grossAmountRounded * 100);
+      
+      return grossAmountInCents;
+    };
+    
+    // Calcular valor PIX com conversão dinâmica
+    const brlAmountWithFee = calculatePIXAmountWithFees(baseUsdAmountDecimal, exchangeRate);
+    const baseBrlAmount = Math.round(baseUsdAmountDecimal * exchangeRate * 100); // Valor base em BRL (sem markup) em centavos
+    
+    // Calcular valores finais com taxas para cartão
     // Cartão: valor base + (valor base * 3.9%) + $0.30
     const usdAmountWithFee = Math.round(baseUsdAmount + (baseUsdAmount * cardFeePercentage) + cardFeeFixed);
-    
-    // PIX: valor base + (valor base * 1.8%)
-    const brlAmountWithFee = Math.round(baseBrlAmount + (baseBrlAmount * pixFeePercentage));
     
     // Valores finais para exibição
     const usdAmount = usdAmountWithFee;
@@ -96,10 +155,7 @@ Deno.serve(async (req: Request) => {
     
     // Calcular valores das taxas para metadata
     const cardFeeAmount = usdAmountWithFee - baseUsdAmount; // Taxa total em centavos
-    const pixFeeAmount = brlAmountWithFee - baseBrlAmount; // Taxa total em centavos
-    
-    // Taxa de câmbio calculada para referência (baseada nos valores base)
-    const exchangeRate = baseBrlAmount / baseUsdAmount;
+    const pixFeeAmount = brlAmountWithFee - baseBrlAmount; // Taxa total em centavos (markup do Stripe)
 
     // Detectar URL do site automaticamente se SITE_URL não estiver configurada
     // Tenta pegar do header Referer ou Origin da requisição
@@ -166,12 +222,14 @@ Deno.serve(async (req: Request) => {
     console.log("Requested payment method:", payment_method || "not specified");
     console.log("Payment method types:", JSON.stringify(paymentMethodTypes));
     console.log("Currency:", currency);
-    console.log("Base USD Amount:", baseUsdAmount, "centavos =", baseUsdAmount / 100, "dólares");
-    console.log("Base BRL Amount:", baseBrlAmount, "centavos =", baseBrlAmount / 100, "reais");
+    console.log("Exchange Rate:", exchangeRate, "(source:", frontendExchangeRate ? "frontend" : "API/fallback" + ")");
+    console.log("Base USD Amount:", baseUsdAmount, "centavos =", baseUsdAmountDecimal, "dólares");
+    console.log("Base BRL Amount (converted):", baseBrlAmount, "centavos =", baseBrlAmount / 100, "reais");
     console.log("Card Fee:", cardFeePercentage * 100 + "% + $" + (cardFeeFixed / 100).toFixed(2), "=", cardFeeAmount / 100, "dólares");
-    console.log("PIX Fee:", pixFeePercentage * 100 + "% =", pixFeeAmount / 100, "reais");
+    console.log("PIX Stripe Fees:", (STRIPE_PIX_TOTAL_PERCENTAGE * 100).toFixed(2) + "% (processing:", (STRIPE_PIX_PROCESSING_PERCENTAGE * 100).toFixed(2) + "%, conversion:", (STRIPE_CURRENCY_CONVERSION_PERCENTAGE * 100).toFixed(2) + "%)");
+    console.log("PIX Markup Amount:", pixFeeAmount / 100, "reais");
     console.log("Final USD Amount (with fees):", usdAmount, "centavos =", usdAmount / 100, "dólares");
-    console.log("Final BRL Amount (with fees):", brlAmount, "centavos =", brlAmount / 100, "reais");
+    console.log("Final BRL Amount (with markup):", brlAmount, "centavos =", brlAmount / 100, "reais");
     console.log("Amount to charge:", amount, "centavos =", amount / 100, currency === "brl" ? "reais" : "dólares");
     console.log("Customer email:", lead.email);
 
@@ -186,8 +244,8 @@ Deno.serve(async (req: Request) => {
             product_data: {
               name: "Consultoria American Dream - Contrato de Consultoria",
               description: currency === "brl" 
-                ? `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. Valor: R$ ${(baseBrlAmount / 100).toFixed(2)} + Taxa de processamento (1.8%): R$ ${(pixFeeAmount / 100).toFixed(2)} = Total: R$ ${(brlAmount / 100).toFixed(2)}`
-                : `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status. Valor: US$ ${(baseUsdAmount / 100).toFixed(2)} + Taxa de processamento (3.9% + $0.30): US$ ${(cardFeeAmount / 100).toFixed(2)} = Total: US$ ${(usdAmount / 100).toFixed(2)}`,
+                ? `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status.`
+                : `Consultoria completa para obtenção de vistos B1/B2, F1 e Change of Status.`,
             },
             unit_amount: amount,
           },
@@ -209,7 +267,7 @@ Deno.serve(async (req: Request) => {
         card_fee_amount: (cardFeeAmount / 100).toString(),
         pix_fee_amount: (pixFeeAmount / 100).toString(),
         card_fee_percentage: (cardFeePercentage * 100).toString(),
-        pix_fee_percentage: (pixFeePercentage * 100).toString(),
+        pix_fee_percentage: (STRIPE_PIX_TOTAL_PERCENTAGE * 100).toFixed(2),
         exchange_rate: exchangeRate.toFixed(3),
       },
       payment_method_options: {
@@ -266,7 +324,7 @@ Deno.serve(async (req: Request) => {
           card_fee_amount: (cardFeeAmount / 100).toString(),
           pix_fee_amount: (pixFeeAmount / 100).toString(),
           card_fee_percentage: (cardFeePercentage * 100).toString(),
-          pix_fee_percentage: (pixFeePercentage * 100).toString(),
+          pix_fee_percentage: (STRIPE_PIX_TOTAL_PERCENTAGE * 100).toFixed(2),
           exchange_rate: exchangeRate.toFixed(3),
           checkout_url: session.url,
         },
