@@ -52,7 +52,7 @@ async function sendEmail(
       text: textContent || htmlContent.replace(/<[^>]*>/g, ""), // Remove HTML tags para texto simples
       fromName: "American Dream",
       toName: toName,
-n    };
+    };
 
     const response = await fetch(emailEndpoint, {
       method: "POST",
@@ -89,6 +89,103 @@ n    };
   }
 }
 
+// Função auxiliar para gerar token de consulta
+function generateShortToken(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let token = "app-";
+  for (let i = 0; i < 8; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+// Função para gerar ou buscar token de consulta
+async function getOrCreateConsultationToken(
+  supabase: any,
+  leadId: string,
+  termAcceptanceId: string | null,
+  paymentId: string | null
+): Promise<string | null> {
+  try {
+    // Verificar se já existe token válido
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    
+    // Construir query baseada em termAcceptanceId (pode ser null)
+    let query = supabase
+      .from("approval_tokens")
+      .select("token")
+      .eq("lead_id", leadId)
+      .is("used_at", null)
+      .gt("expires_at", new Date().toISOString());
+    
+    // Se termAcceptanceId for null, usar .is(), senão usar .eq()
+    if (termAcceptanceId === null) {
+      query = query.is("term_acceptance_id", null);
+    } else {
+      query = query.eq("term_acceptance_id", termAcceptanceId);
+    }
+    
+    const { data: existingToken } = await query.maybeSingle();
+
+    if (existingToken) {
+      console.log("Using existing consultation token");
+      return existingToken.token;
+    }
+
+    // Gerar novo token
+    let token = generateShortToken();
+    let tokenExists = true;
+    let attempts = 0;
+
+    while (tokenExists && attempts < 10) {
+      const { data: checkToken } = await supabase
+        .from("approval_tokens")
+        .select("token")
+        .eq("token", token)
+        .maybeSingle();
+
+      if (!checkToken) {
+        tokenExists = false;
+      } else {
+        token = generateShortToken();
+        attempts++;
+      }
+    }
+
+    if (tokenExists) {
+      console.error("Failed to generate unique token");
+      return null;
+    }
+
+    // Criar token
+    const { data: newToken, error: tokenError } = await supabase
+      .from("approval_tokens")
+      .insert({
+        token,
+        lead_id: leadId,
+        term_acceptance_id: termAcceptanceId,
+        payment_id: paymentId,
+        payment_proof_id: null,
+        expires_at: expiresAt.toISOString(),
+        used_at: null,
+      })
+      .select("token")
+      .single();
+
+    if (tokenError) {
+      console.error("Error creating consultation token:", tokenError);
+      return null;
+    }
+
+    console.log("Created new consultation token");
+    return newToken.token;
+  } catch (error: any) {
+    console.error("Error in getOrCreateConsultationToken:", error.message);
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -122,8 +219,13 @@ Deno.serve(async (req: Request) => {
 
     // IMPORTANTE: Obter o corpo da requisição como RAW TEXT (não parseado)
     // O Stripe precisa do corpo exato como recebido para verificar a assinatura
-    const body = await req.text();
+    // Tentar obter o body de forma que preserve exatamente como o Stripe enviou
     const signature = req.headers.get("stripe-signature");
+    
+    // Obter body como arrayBuffer primeiro e depois converter para string
+    // Isso garante que não há modificações no body
+    const bodyArrayBuffer = await req.arrayBuffer();
+    const body = new TextDecoder().decode(bodyArrayBuffer);
     
     // Coletar informações da requisição para rastreamento
     const requestInfo = {
@@ -180,6 +282,14 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Verificar se o webhook secret parece válido (deve começar com whsec_ e ter pelo menos 50 caracteres)
+    if (!stripeWebhookSecret.startsWith("whsec_") || stripeWebhookSecret.length < 50) {
+      console.error("⚠️ WARNING: Webhook secret seems invalid. Expected format: whsec_... (at least 50 chars)");
+      console.error("Current secret length:", stripeWebhookSecret.length);
+      console.error("Current secret prefix:", stripeWebhookSecret.substring(0, 10) + "...");
+      // Continuar mesmo assim - pode ser um secret válido mas curto
     }
 
     // Verificar webhook signature
@@ -392,10 +502,33 @@ Deno.serve(async (req: Request) => {
         } else {
           console.log(`Payment completed (${paymentMethod || "unknown"}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
           
-          // Enviar email de confirmação de pagamento
+          // Enviar email de confirmação de pagamento com link do formulário
           const leadId = session.metadata?.lead_id;
+          const termAcceptanceId = session.metadata?.term_acceptance_id;
+          
           if (leadId) {
             try {
+              // Buscar payment_id atualizado
+              const { data: updatedPayment } = await supabase
+                .from("payments")
+                .select("id")
+                .eq("stripe_session_id", session.id)
+                .single();
+
+              // Gerar ou buscar token de consulta (não falhar se der erro)
+              let consultationToken: string | null = null;
+              try {
+                consultationToken = await getOrCreateConsultationToken(
+                  supabase,
+                  leadId,
+                  termAcceptanceId || null,
+                  updatedPayment?.id || null
+                );
+              } catch (tokenError: any) {
+                console.error("Error generating consultation token (non-fatal):", tokenError.message);
+                // Continuar sem o token - email será enviado sem link
+              }
+
               const { data: lead } = await supabase
                 .from("leads")
                 .select("name, email")
@@ -407,6 +540,12 @@ Deno.serve(async (req: Request) => {
                 const amountFormatted = updateData.currency === "BRL" 
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
+
+                // Construir URL do formulário
+                const siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
+                const consultationLink = consultationToken 
+                  ? `${siteUrl}/consultation-form/${consultationToken}`
+                  : null;
 
                 const emailSubject = "Pagamento Confirmado - American Dream";
                 const emailHtml = `
@@ -467,9 +606,35 @@ Deno.serve(async (req: Request) => {
                                     </td>
                                   </tr>
                                 </table>
+                                ${consultationLink ? `
+                                <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Agora você pode preencher o formulário de consultoria. Clique no botão abaixo para começar:
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 30px;">
+                                  <tr>
+                                    <td align="center" style="padding: 0 0 20px;">
+                                      <a href="${consultationLink}" 
+                                         style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; text-align: center; min-width: 200px;">
+                                        Preencher Formulário de Consultoria
+                                      </a>
+                                    </td>
+                                  </tr>
+                                </table>
+                                <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                  Ou copie e cole este link no seu navegador:
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6; border-radius: 4px; margin-bottom: 30px;">
+                                  <tr>
+                                    <td style="padding: 12px; font-family: monospace; font-size: 12px; color: #111827; word-break: break-all;">
+                                      ${consultationLink}
+                                    </td>
+                                  </tr>
+                                </table>
+                                ` : `
                                 <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
                                   Em breve você receberá mais informações sobre os próximos passos do seu processo.
                                 </p>
+                                `}
                                 <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 500; line-height: 1.6;">
                                   Obrigado por confiar no American Dream!
                                 </p>
@@ -550,10 +715,33 @@ Deno.serve(async (req: Request) => {
         } else {
           console.log(`Async payment completed (${paymentMethod}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
           
-          // Enviar email de confirmação de pagamento
+          // Enviar email de confirmação de pagamento com link do formulário
           const leadId = session.metadata?.lead_id;
+          const termAcceptanceId = session.metadata?.term_acceptance_id;
+          
           if (leadId) {
             try {
+              // Buscar payment_id atualizado
+              const { data: updatedPayment } = await supabase
+                .from("payments")
+                .select("id")
+                .eq("stripe_session_id", session.id)
+                .single();
+
+              // Gerar ou buscar token de consulta (não falhar se der erro)
+              let consultationToken: string | null = null;
+              try {
+                consultationToken = await getOrCreateConsultationToken(
+                  supabase,
+                  leadId,
+                  termAcceptanceId || null,
+                  updatedPayment?.id || null
+                );
+              } catch (tokenError: any) {
+                console.error("Error generating consultation token (non-fatal):", tokenError.message);
+                // Continuar sem o token - email será enviado sem link
+              }
+
               const { data: lead } = await supabase
                 .from("leads")
                 .select("name, email")
@@ -565,6 +753,12 @@ Deno.serve(async (req: Request) => {
                 const amountFormatted = updateData.currency === "BRL" 
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
+
+                // Construir URL do formulário
+                const siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
+                const consultationLink = consultationToken 
+                  ? `${siteUrl}/consultation-form/${consultationToken}`
+                  : null;
 
                 const emailSubject = "Pagamento Confirmado - American Dream";
                 const emailHtml = `
@@ -625,9 +819,35 @@ Deno.serve(async (req: Request) => {
                                     </td>
                                   </tr>
                                 </table>
+                                ${consultationLink ? `
+                                <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                                  Agora você pode preencher o formulário de consultoria. Clique no botão abaixo para começar:
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 30px;">
+                                  <tr>
+                                    <td align="center" style="padding: 0 0 20px;">
+                                      <a href="${consultationLink}" 
+                                         style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; text-align: center; min-width: 200px;">
+                                        Preencher Formulário de Consultoria
+                                      </a>
+                                    </td>
+                                  </tr>
+                                </table>
+                                <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px; line-height: 1.5;">
+                                  Ou copie e cole este link no seu navegador:
+                                </p>
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6; border-radius: 4px; margin-bottom: 30px;">
+                                  <tr>
+                                    <td style="padding: 12px; font-family: monospace; font-size: 12px; color: #111827; word-break: break-all;">
+                                      ${consultationLink}
+                                    </td>
+                                  </tr>
+                                </table>
+                                ` : `
                                 <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
                                   Em breve você receberá mais informações sobre os próximos passos do seu processo.
                                 </p>
+                                `}
                                 <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 500; line-height: 1.6;">
                                   Obrigado por confiar no American Dream!
                                 </p>

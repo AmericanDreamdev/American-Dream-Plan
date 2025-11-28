@@ -58,7 +58,15 @@ Deno.serve(async (req: Request) => {
     }
 
     // Initialize Stripe
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    // Prioridade: STRIPE_SECRET_KEY_TEST > STRIPE_SECRET_KEY
+    // Se STRIPE_SECRET_KEY_TEST estiver configurada, usa ela (garante ambiente de teste)
+    // Caso contrário, usa STRIPE_SECRET_KEY e verifica se é de teste
+    let stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    
+    if (!stripeSecretKey) {
+      stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    }
+    
     if (!stripeSecretKey) {
       return new Response(
         JSON.stringify({ error: "Stripe secret key not configured" }),
@@ -67,6 +75,20 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Verificar se a chave é de teste ou produção
+    const isTestMode = stripeSecretKey.startsWith("sk_test_");
+    const isLiveMode = stripeSecretKey.startsWith("sk_live_");
+    
+    if (!isTestMode && !isLiveMode) {
+      console.warn("⚠️  Stripe key format unrecognized. Expected 'sk_test_' or 'sk_live_'");
+    }
+    
+    if (isLiveMode) {
+      console.warn("⚠️  WARNING: Using LIVE (production) Stripe key! This will charge real money.");
+    } else if (isTestMode) {
+      console.log("✅ Using TEST Stripe key - Safe for testing");
     }
 
     const stripe = new Stripe(stripeSecretKey, {
@@ -219,6 +241,7 @@ Deno.serve(async (req: Request) => {
       : ["card", "pix"]; // Ambos se não especificado (fallback)
 
     console.log("=== CHECKOUT SESSION CREATION ===");
+    console.log("Stripe Environment:", isTestMode ? "🧪 TEST MODE" : isLiveMode ? "🚨 LIVE MODE (PRODUCTION)" : "❓ UNKNOWN");
     console.log("Requested payment method:", payment_method || "not specified");
     console.log("Payment method types:", JSON.stringify(paymentMethodTypes));
     console.log("Currency:", currency);

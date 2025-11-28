@@ -39,6 +39,32 @@ const PaymentSuccess = () => {
     return false;
   };
 
+  // Função para verificar status diretamente no Stripe
+  const verifyStripeSession = async (sessionId: string) => {
+    try {
+      console.log("Verifying session status directly with Stripe:", sessionId);
+      const { data, error } = await supabase.functions.invoke("verify-stripe-session", {
+        body: { session_id: sessionId },
+      });
+
+      if (error) {
+        console.error("Error verifying stripe session:", error);
+        return null;
+      }
+
+      if (data?.success && data?.updated) {
+        console.log("✅ Payment status updated via Stripe verification");
+        // Recarregar informações do pagamento após atualização
+        return true;
+      }
+
+      return data?.payment_status === "completed";
+    } catch (err) {
+      console.error("Error calling verify-stripe-session:", err);
+      return null;
+    }
+  };
+
   // Função para buscar informações do pagamento
   const fetchPaymentInfo = async () => {
     const leadId = searchParams.get("lead_id");
@@ -60,6 +86,26 @@ const PaymentSuccess = () => {
         } else if (data) {
           payment = data;
           setPayment(data);
+          
+          // Se o pagamento estiver pendente, verificar diretamente no Stripe
+          if (data.status === "pending") {
+            console.log("Payment is pending, verifying with Stripe...");
+            const verified = await verifyStripeSession(sessionId);
+            
+            if (verified) {
+              // Recarregar o pagamento após verificação
+              const { data: updatedPayment } = await supabase
+                .from("payments")
+                .select("*")
+                .eq("stripe_session_id", sessionId)
+                .maybeSingle();
+              
+              if (updatedPayment) {
+                payment = updatedPayment;
+                setPayment(updatedPayment);
+              }
+            }
+          }
         }
       }
 
@@ -79,6 +125,26 @@ const PaymentSuccess = () => {
         } else if (data) {
           payment = data;
           setPayment(data);
+          
+          // Se tiver session_id e estiver pendente, verificar no Stripe
+          if (data.stripe_session_id && data.status === "pending") {
+            console.log("Payment is pending, verifying with Stripe...");
+            const verified = await verifyStripeSession(data.stripe_session_id);
+            
+            if (verified) {
+              // Recarregar o pagamento após verificação
+              const { data: updatedPayment } = await supabase
+                .from("payments")
+                .select("*")
+                .eq("stripe_session_id", data.stripe_session_id)
+                .maybeSingle();
+              
+              if (updatedPayment) {
+                payment = updatedPayment;
+                setPayment(updatedPayment);
+              }
+            }
+          }
         }
       }
 
@@ -129,6 +195,7 @@ const PaymentSuccess = () => {
 
       try {
         let payment = null;
+        let currentSessionId = sessionId;
 
         if (sessionId) {
           const { data } = await supabase
@@ -139,6 +206,7 @@ const PaymentSuccess = () => {
           
           if (data) {
             payment = data;
+            currentSessionId = data.stripe_session_id || sessionId;
           }
         }
 
@@ -154,10 +222,29 @@ const PaymentSuccess = () => {
           
           if (data) {
             payment = data;
+            currentSessionId = data.stripe_session_id || null;
           }
         }
 
         if (payment) {
+          // Se estiver pendente e tiver session_id, verificar no Stripe
+          if (payment.status === "pending" && currentSessionId) {
+            const verified = await verifyStripeSession(currentSessionId);
+            
+            if (verified) {
+              // Recarregar o pagamento após verificação
+              const { data: updatedPayment } = await supabase
+                .from("payments")
+                .select("*")
+                .eq("stripe_session_id", currentSessionId)
+                .maybeSingle();
+              
+              if (updatedPayment) {
+                payment = updatedPayment;
+              }
+            }
+          }
+          
           setPayment(payment);
           const confirmed = checkPaymentStatus(payment);
           
