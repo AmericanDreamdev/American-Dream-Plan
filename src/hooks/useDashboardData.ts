@@ -33,6 +33,7 @@ export const useDashboardData = (): UseDashboardDataReturn => {
     totalPending: 0,
     totalNotPaid: 0,
     totalConsultationForms: 0,
+    totalPaidSecondPart: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,16 +70,30 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       const termAcceptance: RawTermAcceptance | null = lead.term_acceptance;
       const payments: RawPayment[] = lead.payments || [];
 
-      // Encontrar pagamento mais relevante
+      // Encontrar pagamento mais relevante (primeira parcela)
       const latestPayment = findRelevantPayment(payments, termAcceptance);
+      
+      // Encontrar pagamento da segunda parcela (payment_part: 2)
+      const secondPartPayments = payments.filter((p) => {
+        const metadata = p.metadata || {};
+        return metadata.payment_part === 2 || metadata.payment_part === '2';
+      });
+      const secondPartPayment = secondPartPayments.length > 0
+        ? secondPartPayments.sort((a, b) => 
+            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+          )[0]
+        : null;
       
       // Encontrar formulário de consulta mais recente para este lead
       const consultationForm = consultationForms
         .filter((form) => form.lead_id === lead.id)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
 
-      // Determinar se é confirmado como pago
+      // Determinar se é confirmado como pago (primeira parcela)
       const confirmedPago = isConfirmadoPago(latestPayment);
+      
+      // Determinar se é confirmado como pago (segunda parcela)
+      const confirmedPagoSegundaParte = isConfirmadoPago(secondPartPayment);
 
       // Data de geração do PDF (para brasileiros)
       const pdfGeneratedAt = termAcceptance?.pdf_url && isBrazilianPhone(lead.phone)
@@ -121,6 +136,21 @@ export const useDashboardData = (): UseDashboardDataReturn => {
         pdf_generated_at_formatted: pdfGeneratedAtFormatted,
         is_brazilian: isBrazilianPhone(lead.phone),
         consultation_form_id: consultationForm?.id || null,
+        // Segunda parcela
+        is_confirmado_pago_segunda_parte: confirmedPagoSegundaParte,
+        payment_id_segunda_parte: secondPartPayment?.id || null,
+        status_pagamento_segunda_parte_formatado: secondPartPayment 
+          ? getStatusPagamento(secondPartPayment.status || null, secondPartPayment)
+          : null,
+        valor_segunda_parte_formatado: secondPartPayment 
+          ? formatValue(secondPartPayment.amount || null, secondPartPayment.currency || null)
+          : null,
+        metodo_pagamento_segunda_parte_formatado: secondPartPayment 
+          ? getPaymentMethod(secondPartPayment, lead)
+          : null,
+        data_pagamento_segunda_parte_formatada: secondPartPayment 
+          ? formatDate(secondPartPayment.created_at)
+          : null,
       };
     });
   };
@@ -153,6 +183,10 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       return false;
     }).length;
 
+    // PAGOS SEGUNDA PARCELA: apenas os que estão CONFIRMADOS como pagos na segunda parcela
+    const paidSecondPartUsers = transformedData.filter((u) => u.is_confirmado_pago_segunda_parte === true);
+    const totalPaidSecondPart = paidSecondPartUsers.length;
+
     return {
       totalLeads,
       totalContracts,
@@ -160,6 +194,7 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       totalPending,
       totalNotPaid,
       totalConsultationForms: 0, // Will be updated in fetchData
+      totalPaidSecondPart,
     };
   };
 

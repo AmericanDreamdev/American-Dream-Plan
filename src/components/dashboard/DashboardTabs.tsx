@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Search } from "lucide-react";
 import { DashboardUser, DashboardStats } from "@/types/dashboard";
-import { DashboardFullTable, DashboardPaidTable, DashboardPendingTable, DashboardNotPaidTable } from "./DashboardTable";
+import { DashboardFullTable, DashboardPaidTable, DashboardPendingTable, DashboardNotPaidTable, DashboardSecondPaidTable } from "./DashboardTable";
 import { ConsultationFormsTable } from "./ConsultationFormsTable";
 import { RawConsultationForm } from "@/types/dashboard";
 
@@ -51,7 +51,7 @@ export const DashboardTabs = ({
       <CardContent className="p-0 overflow-x-auto">
         <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
             <div className="px-6 pt-4">
-            <TabsList className="grid w-full md:w-auto grid-cols-5 md:grid-cols-5 bg-gray-50 border border-gray-200">
+            <TabsList className="grid w-full md:w-auto grid-cols-6 md:grid-cols-6 bg-gray-50 border border-gray-200">
               <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 Todos
                 <Badge variant="secondary" className="ml-1 bg-gray-200 text-gray-700 text-xs">
@@ -82,6 +82,12 @@ export const DashboardTabs = ({
                   {stats.totalConsultationForms}
                 </Badge>
               </TabsTrigger>
+              <TabsTrigger value="paid-second" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
+                2ª Parcela
+                <Badge variant="secondary" className="ml-1 bg-emerald-100 text-emerald-700 text-xs">
+                  {stats.totalPaidSecondPart}
+                </Badge>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -103,6 +109,10 @@ export const DashboardTabs = ({
 
           <TabsContent value="consultation" className="mt-4 space-y-0">
             <ConsultationFormsTable forms={consultationForms} searchTerm={searchTerm} />
+          </TabsContent>
+
+          <TabsContent value="paid-second" className="mt-4 space-y-0">
+            <DashboardSecondPaidTable users={filteredUsers} onUpdate={onUpdate} />
           </TabsContent>
         </Tabs>
       </CardContent>

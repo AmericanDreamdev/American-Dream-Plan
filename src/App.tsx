@@ -12,6 +12,7 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
 import PaymentOptions from "./pages/PaymentOptions";
+import SecondPayment from "./pages/SecondPayment";
 import ZelleCheckout from "./pages/ZelleCheckout";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/analysis-form" element={<AnalysisForm />} />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/payment-options" element={<PaymentOptions />} />
+          <Route path="/parcela-2-2" element={<SecondPayment />} />
           <Route path="/zelle-checkout" element={<ZelleCheckout />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />

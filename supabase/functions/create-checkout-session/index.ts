@@ -13,6 +13,7 @@ interface RequestBody {
   term_acceptance_id: string;
   payment_method?: "card" | "pix"; // Método de pagamento específico (opcional)
   exchange_rate?: number; // Taxa de câmbio USD → BRL (opcional, do frontend)
+  payment_part?: number; // Parte do pagamento: 1 (primeira parte) ou 2 (segunda parte)
 }
 
 Deno.serve(async (req: Request) => {
@@ -22,7 +23,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { lead_id, term_acceptance_id, payment_method, exchange_rate: frontendExchangeRate }: RequestBody = await req.json();
+    const { lead_id, term_acceptance_id, payment_method, exchange_rate: frontendExchangeRate, payment_part = 1 }: RequestBody = await req.json();
 
     if (!lead_id || !term_acceptance_id) {
       return new Response(
@@ -58,52 +59,98 @@ Deno.serve(async (req: Request) => {
     }
 
     // Detectar ambiente baseado na URL
+    // PRIORIDADE: referer/origin > SITE_URL (para garantir que localhost sempre use teste)
     // Se estiver em americandream.323network.com → produção
     // Se estiver em localhost → teste
     const referer = req.headers.get("referer") || req.headers.get("origin");
-    let siteUrl = Deno.env.get("SITE_URL");
+    let siteUrl: string | null = null;
+    let detectedFromReferer = false;
     
-    if (!siteUrl && referer) {
+    // PRIORIDADE 1: Usar referer/origin se disponível (detecta ambiente real)
+    if (referer) {
       try {
         const url = new URL(referer);
         siteUrl = `${url.protocol}//${url.host}`;
+        detectedFromReferer = true;
+        console.log("Using siteUrl from referer/origin:", siteUrl);
       } catch {
-        // Se falhar, usar fallback
+        // Se falhar, continuar para próxima prioridade
       }
     }
     
+    // PRIORIDADE 2: Usar SITE_URL apenas se não tiver referer
     if (!siteUrl) {
-      siteUrl = "http://localhost:8081"; // Fallback para localhost
+      siteUrl = Deno.env.get("SITE_URL") || null;
+      if (siteUrl) {
+        console.log("Using siteUrl from SITE_URL env var:", siteUrl);
+      }
+    }
+    
+    // PRIORIDADE 3: Fallback para localhost
+    if (!siteUrl) {
+      siteUrl = "http://localhost:8081";
+      console.log("Using fallback siteUrl (localhost):", siteUrl);
     }
     
     // Normalizar siteUrl para comparação (remover barras finais e espaços)
     const normalizedSiteUrl = siteUrl.trim().toLowerCase().replace(/\/+$/, "");
     
     // Detectar se é produção ou teste baseado na URL normalizada
-    const isProduction = normalizedSiteUrl.includes("americandream.323network.com") || 
-                        normalizedSiteUrl.includes("323network.com");
+    // IMPORTANTE: Se detectado do referer e for localhost, SEMPRE usar teste
     const isLocalhost = normalizedSiteUrl.includes("localhost") || 
                        normalizedSiteUrl.includes("127.0.0.1") ||
                        normalizedSiteUrl.includes("0.0.0.0");
     
+    // Se for localhost (detectado do referer), SEMPRE usar modo de teste
+    // Mesmo que SITE_URL esteja configurado como produção
+    const isProduction = !isLocalhost && (
+      normalizedSiteUrl.includes("americandream.323network.com") || 
+      normalizedSiteUrl.includes("323network.com")
+    );
+    
     // Escolher chave baseado no ambiente
+    // IMPORTANTE: Se for localhost, SEMPRE usar chave de teste, mesmo que outras estejam configuradas
     let stripeSecretKey: string | undefined;
     
-    if (isProduction) {
+    if (isLocalhost) {
+      // Teste (localhost): SEMPRE usar chave de teste
+      // Prioridade: STRIPE_SECRET_KEY_TEST > STRIPE_SECRET_KEY (se for sk_test_)
+      stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+      
+      // Se não tiver STRIPE_SECRET_KEY_TEST, tentar STRIPE_SECRET_KEY mas só se for sk_test_
+      if (!stripeSecretKey) {
+        const defaultKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (defaultKey && defaultKey.startsWith("sk_test_")) {
+          stripeSecretKey = defaultKey;
+        }
+      }
+      
+      // Se ainda não tiver, tentar qualquer chave que comece com sk_test_
+      if (!stripeSecretKey) {
+        const testKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (testKey && testKey.startsWith("sk_test_")) {
+          stripeSecretKey = testKey;
+        }
+      }
+      
+      // Se a chave não começar com sk_test_, avisar e tentar encontrar uma de teste
+      if (stripeSecretKey && !stripeSecretKey.startsWith("sk_test_")) {
+        console.warn("⚠️  WARNING: Localhost environment detected but key doesn't start with 'sk_test_'");
+        console.warn("⚠️  Attempting to find test key...");
+        // Tentar encontrar qualquer chave de teste disponível
+        const testKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+        if (testKey && testKey.startsWith("sk_test_")) {
+          stripeSecretKey = testKey;
+          console.log("✅ Found test key, using it instead");
+        }
+      }
+    } else if (isProduction) {
       // Produção: priorizar STRIPE_SECRET_KEY_LIVE, depois STRIPE_SECRET_KEY
       stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE") || Deno.env.get("STRIPE_SECRET_KEY");
       
       // Se a chave não começar com sk_live_, avisar
       if (stripeSecretKey && !stripeSecretKey.startsWith("sk_live_")) {
         console.warn("⚠️  WARNING: Production environment detected but key doesn't start with 'sk_live_'");
-      }
-    } else if (isLocalhost) {
-      // Teste (localhost): usar STRIPE_SECRET_KEY_TEST ou STRIPE_SECRET_KEY se for sk_test_
-      stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_TEST") || Deno.env.get("STRIPE_SECRET_KEY");
-      
-      // Se a chave não começar com sk_test_, avisar
-      if (stripeSecretKey && !stripeSecretKey.startsWith("sk_test_")) {
-        console.warn("⚠️  WARNING: Localhost environment detected but key doesn't start with 'sk_test_'");
       }
     } else {
       // Ambiente desconhecido: usar STRIPE_SECRET_KEY como padrão
@@ -129,14 +176,22 @@ Deno.serve(async (req: Request) => {
     }
     
     console.log("=== STRIPE ENVIRONMENT DETECTION ===");
-    console.log("Site URL:", siteUrl);
+    console.log("Referer/Origin:", referer || "not provided");
+    console.log("Site URL detected:", siteUrl);
+    console.log("Detected from:", detectedFromReferer ? "referer/origin" : "SITE_URL env var or fallback");
+    console.log("Normalized URL:", normalizedSiteUrl);
+    console.log("Is Localhost:", isLocalhost);
+    console.log("Is Production:", isProduction);
     console.log("Environment:", isProduction ? "🚨 PRODUCTION" : isLocalhost ? "✅ TEST (localhost)" : "❓ UNKNOWN");
     console.log("Stripe Key Type:", isLiveMode ? "LIVE (production)" : isTestMode ? "TEST" : "UNKNOWN");
+    console.log("Stripe Key Prefix:", stripeSecretKey ? stripeSecretKey.substring(0, 7) + "..." : "NOT FOUND");
     
     if (isLiveMode) {
       console.log("🚨 Using LIVE (production) Stripe key - Real payments will be processed");
     } else if (isTestMode) {
       console.log("✅ Using TEST Stripe key - Safe for testing");
+    } else {
+      console.warn("⚠️  WARNING: Could not determine Stripe key type!");
     }
 
     const stripe = new Stripe(stripeSecretKey, {
@@ -313,6 +368,7 @@ Deno.serve(async (req: Request) => {
         lead_id: lead_id,
         term_acceptance_id: term_acceptance_id,
         lead_name: lead.name,
+        payment_part: payment_part.toString(),
         base_usd_amount: (baseUsdAmount / 100).toString(),
         base_brl_amount: (baseBrlAmount / 100).toString(),
         final_usd_amount: (usdAmount / 100).toString(),
@@ -370,6 +426,7 @@ Deno.serve(async (req: Request) => {
         metadata: {
           payment_method: payment_method, // Salvar o método escolhido (card ou pix)
           requested_payment_method: payment_method, // Manter compatibilidade
+          payment_part: payment_part,
           base_usd_amount: (baseUsdAmount / 100).toString(),
           base_brl_amount: (baseBrlAmount / 100).toString(),
           final_usd_amount: (usdAmount / 100).toString(),

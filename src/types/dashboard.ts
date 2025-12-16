@@ -27,6 +27,13 @@ export interface DashboardUser {
   pdf_generated_at_formatted: string | null;
   is_brazilian: boolean;
   consultation_form_id: string | null;
+  // Segunda parcela
+  is_confirmado_pago_segunda_parte: boolean;
+  payment_id_segunda_parte: string | null;
+  status_pagamento_segunda_parte_formatado: string | null;
+  valor_segunda_parte_formatado: string | null;
+  metodo_pagamento_segunda_parte_formatado: string | null;
+  data_pagamento_segunda_parte_formatada: string | null;
 }
 
 export interface DashboardStats {
@@ -36,6 +43,7 @@ export interface DashboardStats {
   totalPending: number;
   totalNotPaid: number;
   totalConsultationForms: number;
+  totalPaidSecondPart: number;
 }
 
 export interface RawLead {
