@@ -1,7 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, Eye, Link2, Copy, Check, Edit, CheckCircle2 } from "lucide-react";
+import { Download, FileText, Eye, Link2, Copy, Check, Edit, CheckCircle2, DollarSign } from "lucide-react";
 import { DashboardUser } from "@/types/dashboard";
 import { getStatusBadge } from "./DashboardBadge";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +24,11 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // Estados para link da segunda parte
+  const [secondPaymentLink, setSecondPaymentLink] = useState<string | null>(null);
+  const [isSecondPaymentDialogOpen, setIsSecondPaymentDialogOpen] = useState(false);
+  const [secondPaymentLinkCopied, setSecondPaymentLinkCopied] = useState(false);
 
   const generateConsultationLink = async () => {
     setIsGeneratingLink(true);
@@ -111,6 +116,36 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
       setLinkCopied(true);
       toast.success("Link copiado para a área de transferência!");
       setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      console.error("Erro ao copiar link:", error);
+      toast.error("Erro ao copiar link");
+    }
+  };
+
+  // Gerar link da segunda parte do pagamento
+  const generateSecondPaymentLink = () => {
+    if (!user.lead_id || !user.term_acceptance_id) {
+      toast.error("Lead não possui term_acceptance_id. É necessário aceitar os termos primeiro.");
+      return;
+    }
+
+    // Construir URL da segunda parte
+    const baseUrl = window.location.origin;
+    const secondPaymentUrl = `${baseUrl}/parcela-2-2?lead_id=${user.lead_id}&term_acceptance_id=${user.term_acceptance_id}`;
+    
+    setSecondPaymentLink(secondPaymentUrl);
+    setIsSecondPaymentDialogOpen(true);
+    toast.success("Link da segunda parte gerado com sucesso!");
+  };
+
+  const copySecondPaymentLink = async () => {
+    if (!secondPaymentLink) return;
+    
+    try {
+      await navigator.clipboard.writeText(secondPaymentLink);
+      setSecondPaymentLinkCopied(true);
+      toast.success("Link copiado para a área de transferência!");
+      setTimeout(() => setSecondPaymentLinkCopied(false), 2000);
     } catch (error) {
       console.error("Erro ao copiar link:", error);
       toast.error("Erro ao copiar link");
@@ -271,6 +306,17 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
           >
             <Edit className="h-3 w-3" />
           </Button>
+          {user.term_acceptance_id && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 w-7 p-0 text-green-600 hover:bg-green-50 hover:text-green-700 border-green-200"
+              onClick={generateSecondPaymentLink}
+              title="Gerar link da segunda parte do pagamento"
+            >
+              <DollarSign className="h-3 w-3" />
+            </Button>
+          )}
           {user.url_contrato_pdf && (
             <Button
               size="sm"
@@ -300,6 +346,57 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
           )}
         </div>
       </TableCell>
+
+      {/* Dialog para link da segunda parte */}
+      <Dialog open={isSecondPaymentDialogOpen} onOpenChange={setIsSecondPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Link da Parcela 2/2 American Dream</DialogTitle>
+            <DialogDescription>
+              Envie este link para o usuário realizar o pagamento da segunda parcela (US$ 999,00).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Input
+                value={secondPaymentLink || ""}
+                readOnly
+                className="flex-1"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copySecondPaymentLink}
+                className="whitespace-nowrap"
+              >
+                {secondPaymentLinkCopied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1" />
+                    Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copiar
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-800 font-medium mb-1">Informações do Link:</p>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>• Valor: US$ 999,00 (segunda parte)</li>
+                <li>• Métodos disponíveis: Cartão, PIX, Zelle</li>
+                <li>• Válido para: {user.nome_completo}</li>
+                <li>• Email: {user.email}</li>
+              </ul>
+            </div>
+            <p className="text-xs text-gray-500">
+              Este link permite que o usuário acesse diretamente a página de pagamento da segunda parte.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <EditUserModal
         user={user}

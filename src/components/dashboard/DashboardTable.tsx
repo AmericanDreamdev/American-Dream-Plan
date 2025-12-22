@@ -261,3 +261,66 @@ export const DashboardNotPaidTable = ({ users, onUpdate }: { users: DashboardUse
   );
 };
 
+// Tabela simplificada para Pagos da Segunda Parcela
+export const DashboardSecondPaidTable = ({ users, onUpdate }: { users: DashboardUser[]; onUpdate?: () => void }) => {
+  const paidSecondPartUsers = users.filter((u) => u.is_confirmado_pago_segunda_parte === true);
+
+  return (
+    <div className="px-6 pb-6">
+      <div className="text-sm text-gray-500 mb-4">
+        Mostrando {paidSecondPartUsers.length} usuários que pagaram a segunda parcela
+      </div>
+      <div className="overflow-x-auto rounded-md border border-gray-200">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-gray-200 bg-gray-50">
+              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Nome</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Email</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Status Pagamento 2ª Parcela</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Valor 2ª Parcela</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Método</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Data Pagamento 2ª Parcela</TableHead>
+              <TableHead className="text-sm font-semibold text-gray-900 py-3 px-4">Confirmado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paidSecondPartUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-12 text-gray-600 bg-white">
+                  Nenhum pagamento da segunda parcela confirmado encontrado
+                </TableCell>
+              </TableRow>
+            ) : (
+              paidSecondPartUsers.map((user) => (
+                <TableRow key={user.lead_id} className="border-gray-200 bg-white hover:bg-gray-50">
+                  <TableCell className="font-semibold text-gray-900 py-3 px-4">{user.nome_completo}</TableCell>
+                  <TableCell className="text-gray-700 py-3 px-4">{user.email}</TableCell>
+                  <TableCell className="py-3 px-4">
+                    {user.status_pagamento_segunda_parte_formatado 
+                      ? getStatusBadge(user.status_pagamento_segunda_parte_formatado)
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="font-semibold text-green-600 py-3 px-4">
+                    {user.valor_segunda_parte_formatado || '-'}
+                  </TableCell>
+                  <TableCell className="text-gray-700 py-3 px-4">
+                    {user.metodo_pagamento_segunda_parte_formatado || '-'}
+                  </TableCell>
+                  <TableCell className="text-gray-600 py-3 px-4 text-sm">
+                    {user.data_pagamento_segunda_parte_formatada || '-'}
+                  </TableCell>
+                  <TableCell className="py-3 px-4">
+                    <Badge className="bg-green-600 text-white text-xs border-0">
+                      ✓ Confirmado
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
