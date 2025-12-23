@@ -947,32 +947,77 @@ const ConsultationForm = () => {
                 }
               />
               <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => navigate("/oferta")}
-                  style={{ 
-                    backgroundColor: '#ffffff',
-                    color: '#111827',
-                    border: '1px solid #d1d5db',
-                    padding: '0.625rem 1rem',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                  }}
-                >
-                  <span style={{ color: '#111827' }}>Voltar para a Página Inicial</span>
-                </button>
+                  <div className="mt-4 flex flex-col items-center gap-3">
+                    <button
+                      onClick={() => navigate("/oferta")}
+                      style={{ 
+                        backgroundColor: '#ffffff',
+                        color: '#111827',
+                        border: '1px solid #d1d5db',
+                        padding: '0.625rem 1rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                      }}
+                    >
+                      <span style={{ color: '#111827' }}>Voltar para a Página Inicial</span>
+                    </button>
+
+                    {/* Botão de Teste para Pular Agendamento */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          const { error } = await supabase
+                            .from('meetings')
+                            .insert({
+                              lead_id: leadData?.id || leadId,
+                              meeting_type: 'first',
+                              status: 'scheduled',
+                              scheduled_date: new Date(Date.now() + 86400000).toISOString(), // Amanhã
+                              meeting_url: 'https://meet.google.com/test-link'
+                            });
+
+                          if (error) throw error;
+
+                          toast.success("Agendamento simulado com sucesso! Redirecionando...");
+                          // Redireciona para o dashboard do cliente se estiver logado, ou home
+                          navigate("/client/dashboard");
+                        } catch (err: any) {
+                          console.error("Erro ao simular agendamento:", err);
+                          toast.error("Erro ao simular: " + err.message);
+                        }
+                      }}
+                      style={{ 
+                        backgroundColor: '#FEF3C7',
+                        color: '#92400E',
+                        border: '1px solid #D97706',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        marginTop: '1rem'
+                      }}
+                    >
+                      <span>🛠️ MODO TESTE: Pular Agendamento e Ir para Dashboard</span>
+                    </button>
+                  </div>
               </div>
             </CardContent>
           </Card>

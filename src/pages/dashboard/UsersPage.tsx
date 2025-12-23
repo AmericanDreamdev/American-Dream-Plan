@@ -29,6 +29,30 @@ export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPa
       noForm: users.filter(u => u.consultation_form_id === null).length,
       redirectedZelle: users.filter(u => u.status_pagamento_formatado === 'Redirecionado (Zelle)').length,
       redirectedInfinitePay: users.filter(u => u.status_pagamento_formatado === 'Redirecionado (InfinitePay)').length,
+      // SEGUNDA PARCELA
+      paidSecondPart: users.filter(u => u.is_confirmado_pago_segunda_parte).length,
+      awaitingSecondPart: users.filter(u => 
+        u.is_confirmado_pago && !u.is_confirmado_pago_segunda_parte
+      ).length,
+      // REUNIÕES - PRIMEIRA
+      firstMeetingScheduled: users.filter(u => 
+        u.first_meeting?.status === 'scheduled'
+      ).length,
+      firstMeetingCompleted: users.filter(u => 
+        u.first_meeting?.status === 'completed'
+      ).length,
+      // REUNIÕES - SEGUNDA
+      secondMeetingScheduled: users.filter(u => 
+        u.second_meeting?.status === 'scheduled'
+      ).length,
+      secondMeetingCompleted: users.filter(u => 
+        u.second_meeting?.status === 'completed'
+      ).length,
+      // PLANEJAMENTO
+      hasPlan: users.filter(u => u.client_plan !== null).length,
+      planInProgress: users.filter(u => 
+        u.client_plan?.status === 'in_progress'
+      ).length,
     };
   }, [users]);
 
@@ -90,6 +114,38 @@ export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPa
       }
       if (activeFilters.has('redirectedInfinitePay')) {
         passes = passes && user.status_pagamento_formatado === 'Redirecionado (InfinitePay)';
+      }
+      
+      // Segunda parcela
+      if (activeFilters.has('paidSecondPart')) {
+        passes = passes && user.is_confirmado_pago_segunda_parte === true;
+      }
+      if (activeFilters.has('awaitingSecondPart')) {
+        passes = passes && user.is_confirmado_pago && !user.is_confirmado_pago_segunda_parte;
+      }
+      
+      // Primeira reunião
+      if (activeFilters.has('firstMeetingScheduled')) {
+        passes = passes && user.first_meeting?.status === 'scheduled';
+      }
+      if (activeFilters.has('firstMeetingCompleted')) {
+        passes = passes && user.first_meeting?.status === 'completed';
+      }
+      
+      // Segunda reunião
+      if (activeFilters.has('secondMeetingScheduled')) {
+        passes = passes && user.second_meeting?.status === 'scheduled';
+      }
+      if (activeFilters.has('secondMeetingCompleted')) {
+        passes = passes && user.second_meeting?.status === 'completed';
+      }
+      
+      // Planejamento
+      if (activeFilters.has('hasPlan')) {
+        passes = passes && user.client_plan !== null;
+      }
+      if (activeFilters.has('planInProgress')) {
+        passes = passes && user.client_plan?.status === 'in_progress';
       }
 
       return passes;
@@ -203,6 +259,102 @@ export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPa
             onClick={() => toggleFilter('redirectedInfinitePay')}
           >
             Redirecionado InfinitePay ({filterCounts.redirectedInfinitePay})
+          </Badge>
+          
+          {/* Segunda Parcela */}
+          <Badge
+            variant={activeFilters.has('paidSecondPart') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('paidSecondPart')
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('paidSecondPart')}
+          >
+            2ª Parcela Paga ({filterCounts.paidSecondPart})
+          </Badge>
+          <Badge
+            variant={activeFilters.has('awaitingSecondPart') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('awaitingSecondPart')
+                ? 'bg-amber-600 text-white border-amber-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('awaitingSecondPart')}
+          >
+            Aguardando 2ª Parcela ({filterCounts.awaitingSecondPart})
+          </Badge>
+          
+          {/* Reuniões - Primeira */}
+          <Badge
+            variant={activeFilters.has('firstMeetingScheduled') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('firstMeetingScheduled')
+                ? 'bg-sky-600 text-white border-sky-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('firstMeetingScheduled')}
+          >
+            1ª Reunião Agendada ({filterCounts.firstMeetingScheduled})
+          </Badge>
+          <Badge
+            variant={activeFilters.has('firstMeetingCompleted') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('firstMeetingCompleted')
+                ? 'bg-teal-600 text-white border-teal-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('firstMeetingCompleted')}
+          >
+            1ª Reunião Realizada ({filterCounts.firstMeetingCompleted})
+          </Badge>
+          
+          {/* Reuniões - Segunda */}
+          <Badge
+            variant={activeFilters.has('secondMeetingScheduled') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('secondMeetingScheduled')
+                ? 'bg-violet-600 text-white border-violet-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('secondMeetingScheduled')}
+          >
+            2ª Reunião Agendada ({filterCounts.secondMeetingScheduled})
+          </Badge>
+          <Badge
+            variant={activeFilters.has('secondMeetingCompleted') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('secondMeetingCompleted')
+                ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('secondMeetingCompleted')}
+          >
+            2ª Reunião Realizada ({filterCounts.secondMeetingCompleted})
+          </Badge>
+          
+          {/* Planejamento */}
+          <Badge
+            variant={activeFilters.has('hasPlan') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('hasPlan')
+                ? 'bg-rose-600 text-white border-rose-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('hasPlan')}
+          >
+            Com Planejamento ({filterCounts.hasPlan})
+          </Badge>
+          <Badge
+            variant={activeFilters.has('planInProgress') ? 'default' : 'outline'}
+            className={`cursor-pointer transition-colors ${
+              activeFilters.has('planInProgress')
+                ? 'bg-lime-600 text-white border-lime-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+            onClick={() => toggleFilter('planInProgress')}
+          >
+            Plano em Execução ({filterCounts.planInProgress})
           </Badge>
         </div>
         {activeFilters.size > 0 && (

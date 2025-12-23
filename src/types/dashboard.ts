@@ -34,6 +34,11 @@ export interface DashboardUser {
   valor_segunda_parte_formatado: string | null;
   metodo_pagamento_segunda_parte_formatado: string | null;
   data_pagamento_segunda_parte_formatada: string | null;
+  // Reuniões
+  first_meeting: Meeting | null;
+  second_meeting: Meeting | null;
+  // Planejamento
+  client_plan: ClientPlan | null;
 }
 
 export interface DashboardStats {
@@ -44,6 +49,12 @@ export interface DashboardStats {
   totalNotPaid: number;
   totalConsultationForms: number;
   totalPaidSecondPart: number;
+  totalFirstMeetingsScheduled: number;
+  totalFirstMeetingsCompleted: number;
+  totalSecondMeetingsScheduled: number;
+  totalSecondMeetingsCompleted: number;
+  totalPlansCreated: number;
+  totalPlansInProgress: number;
 }
 
 export interface RawLead {
@@ -91,5 +102,54 @@ export interface RawConsultationForm {
   created_at: string;
   lead_name?: string;
   lead_email?: string;
+}
+
+export interface Meeting {
+  id: string;
+  lead_id: string;
+  meeting_type: 'first' | 'second';
+  scheduled_date: string | null;
+  completed_date: string | null;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  meeting_link: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanStep {
+  step_number: number;
+  title: string;
+  description: string;
+  responsible_partner: string;
+  responsible_partners?: string[];
+  estimated_duration: string;
+  estimated_cost: number;
+  status: 'pending' | 'in_progress' | 'completed';
+}
+
+export interface ClientPlan {
+  id: string;
+  lead_id: string;
+  plan_title: string;
+  plan_summary: string;
+  plan_steps: PlanStep[];
+  estimated_duration: string;
+  estimated_investment: number;
+  status: 'draft' | 'presented' | 'in_progress' | 'completed';
+  pdf_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Partner {
+  id: string;
+  name: string;
+  specialty: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 

@@ -69,18 +69,18 @@ export const isBrazilianPhone = (phone: string | null): boolean => {
  */
 export const getPaymentMethod = (payment: RawPayment | null, lead: RawLead): string | null => {
   if (!payment) return null;
-  
+
   const metadata = payment.metadata || {};
-  
+
   // 1. Verificar status do payment primeiro
   if (payment.status === 'redirected_to_infinitepay') {
     return 'InfinitePay';
   }
-  
+
   if (payment.status === 'redirected_to_zelle') {
     return 'Zelle';
   }
-  
+
   // 2. Verificar metadata do payment
   if (metadata.payment_method) {
     const method = metadata.payment_method;
@@ -90,20 +90,20 @@ export const getPaymentMethod = (payment: RawPayment | null, lead: RawLead): str
     if (method === 'infinitepay') return 'InfinitePay';
     return method;
   }
-  
+
   // 3. Verificar requested_payment_method
   if (metadata.requested_payment_method) {
     const method = metadata.requested_payment_method;
     if (method === 'pix') return 'PIX';
     if (method === 'card') return 'Cartão de Crédito';
   }
-  
+
   // 4. Verificar se é brasileiro e foi para InfinitePay
-  const isBrazilian = lead?.country_code === 'BR' || 
-                    lead?.country_code === '+55' ||
-                    lead?.phone?.startsWith('+55') ||
-                    lead?.phone?.startsWith('55');
-  
+  const isBrazilian = lead?.country_code === 'BR' ||
+    lead?.country_code === '+55' ||
+    lead?.phone?.startsWith('+55') ||
+    lead?.phone?.startsWith('55');
+
   if (isBrazilian && payment.status === 'pending') {
     if (metadata.infinitepay_url) {
       return 'InfinitePay';
@@ -112,12 +112,12 @@ export const getPaymentMethod = (payment: RawPayment | null, lead: RawLead): str
       return 'InfinitePay';
     }
   }
-  
+
   // 5. Verificar checkout_url do Stripe
   if (metadata.checkout_url && metadata.checkout_url.includes('stripe.com')) {
     return 'Cartão de Crédito';
   }
-  
+
   return null;
 };
 
@@ -129,14 +129,14 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
   if (!payment) {
     return 'Não pagou';
   }
-  
+
   // Se tem payment mas não tem status, usar o status do payment
   const actualStatus = status || payment.status || null;
-  
+
   if (!actualStatus) {
     return 'Não pagou';
   }
-  
+
   // Pagamentos CONFIRMADOS
   if (actualStatus === 'completed') {
     const method = payment?.metadata?.payment_method || payment?.metadata?.requested_payment_method;
@@ -146,7 +146,7 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
   if (actualStatus === 'zelle_confirmed') {
     return 'Pago (Zelle)';
   }
-  
+
   // IMPORTANTE: redirected_to_infinitepay significa APENAS que foi redirecionado
   if (actualStatus === 'redirected_to_infinitepay') {
     const metadata = payment?.metadata || {};
@@ -155,7 +155,7 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
     }
     return 'Redirecionado (InfinitePay)';
   }
-  
+
   // IMPORTANTE: redirected_to_zelle significa APENAS que foi redirecionado
   if (actualStatus === 'redirected_to_zelle') {
     const metadata = payment?.metadata || {};
@@ -164,7 +164,7 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
     }
     return 'Redirecionado (Zelle)';
   }
-  
+
   // Pagamentos PENDENTES
   if (actualStatus === 'pending') {
     const metadata = payment?.metadata || {};
@@ -176,7 +176,7 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
     }
     return 'Pendente';
   }
-  
+
   return actualStatus;
 };
 
@@ -192,23 +192,23 @@ export const getStatusGeral = (
   if (leadStatusGeral) {
     return leadStatusGeral;
   }
-  
+
   // Fallback: calcular se não tiver no banco
   const isConfirmadoPago = latestPayment && (
-    latestPayment.status === 'completed' || 
+    latestPayment.status === 'completed' ||
     latestPayment.status === 'zelle_confirmed' ||
-    (latestPayment.status === 'redirected_to_infinitepay' && 
-     (latestPayment.metadata?.infinitepay_confirmed === true || 
-      latestPayment.metadata?.infinitepay_paid === true)) ||
-    (latestPayment.status === 'redirected_to_zelle' && 
-     (latestPayment.metadata?.zelle_confirmed === true || 
-      latestPayment.metadata?.zelle_paid === true))
+    (latestPayment.status === 'redirected_to_infinitepay' &&
+      (latestPayment.metadata?.infinitepay_confirmed === true ||
+        latestPayment.metadata?.infinitepay_paid === true)) ||
+    (latestPayment.status === 'redirected_to_zelle' &&
+      (latestPayment.metadata?.zelle_confirmed === true ||
+        latestPayment.metadata?.zelle_paid === true))
   );
-  
+
   if (termAcceptance && isConfirmadoPago) {
     return 'Completo (Contrato + Pagamento)';
   }
-  
+
   if (termAcceptance && latestPayment?.status === 'pending') {
     const metadata = latestPayment.metadata || {};
     if (metadata.infinitepay_url) {
@@ -219,23 +219,23 @@ export const getStatusGeral = (
     }
     return 'Contrato Aceito (Iniciou Pagamento - Aguardando)';
   }
-  
+
   if (termAcceptance && latestPayment?.status === 'redirected_to_infinitepay' && !isConfirmadoPago) {
     return 'Contrato Aceito (Foi para InfinitePay - Aguardando Confirmação)';
   }
-  
+
   if (termAcceptance && latestPayment?.status === 'redirected_to_zelle' && !isConfirmadoPago) {
     return 'Contrato Aceito (Foi para Zelle - Aguardando Confirmação)';
   }
-  
+
   if (termAcceptance && !latestPayment) {
     return 'Contrato Aceito (Não iniciou pagamento)';
   }
-  
+
   if (!termAcceptance) {
     return 'Apenas Formulário (Sem Contrato)';
   }
-  
+
   return 'Status Desconhecido';
 };
 
@@ -244,21 +244,21 @@ export const getStatusGeral = (
  */
 export const isConfirmadoPago = (payment: RawPayment | null): boolean => {
   if (!payment) return false;
-  
+
   if (payment.status === 'completed' || payment.status === 'zelle_confirmed') {
     return true;
   }
-  
+
   if (payment.status === 'redirected_to_infinitepay') {
     const metadata = payment.metadata || {};
     return metadata.infinitepay_confirmed === true || metadata.infinitepay_paid === true;
   }
-  
+
   if (payment.status === 'redirected_to_zelle') {
     const metadata = payment.metadata || {};
     return metadata.zelle_confirmed === true || metadata.zelle_paid === true;
   }
-  
+
   return false;
 };
 
@@ -270,46 +270,46 @@ export const findRelevantPayment = (
   termAcceptance: RawTermAcceptance | null
 ): RawPayment | null => {
   if (!payments || payments.length === 0) return null;
-  
+
   const paidStatuses = ['completed', 'zelle_confirmed', 'redirected_to_infinitepay', 'redirected_to_zelle'];
-  
+
   // PASSO 1: Buscar TODOS os pagamentos completos
-  const allCompletedPayments = payments.filter((p) => 
+  const allCompletedPayments = payments.filter((p) =>
     p.status && paidStatuses.includes(p.status)
   );
-  
+
   // PASSO 2: Se tem term_acceptance, filtrar por ele
   let relevantCompletedPayment = null;
   if (termAcceptance && allCompletedPayments.length > 0) {
     // Primeiro tenta encontrar com term_acceptance_id correspondente
-    relevantCompletedPayment = allCompletedPayments.find((p) => 
+    relevantCompletedPayment = allCompletedPayments.find((p) =>
       p.term_acceptance_id === termAcceptance.id
     );
-    
+
     // Se não encontrou, pega qualquer pagamento completo
     if (!relevantCompletedPayment && allCompletedPayments.length > 0) {
-      relevantCompletedPayment = allCompletedPayments.sort((a, b) => 
+      relevantCompletedPayment = allCompletedPayments.sort((a, b) =>
         new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       )[0];
     }
   } else if (allCompletedPayments.length > 0) {
     // Se não tem term_acceptance, pega o mais recente completo
-    relevantCompletedPayment = allCompletedPayments.sort((a, b) => 
+    relevantCompletedPayment = allCompletedPayments.sort((a, b) =>
       new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
     )[0];
   }
-  
+
   // PASSO 3: Se não encontrou pagamento completo, buscar pendentes
   const relevantPendingPayments = payments.filter((p) => {
     if (!termAcceptance) return p.status === 'pending' || !p.status;
-    return (p.status === 'pending' || !p.status) && 
-           (p.term_acceptance_id === termAcceptance.id || !p.term_acceptance_id);
+    return (p.status === 'pending' || !p.status) &&
+      (p.term_acceptance_id === termAcceptance.id || !p.term_acceptance_id);
   });
-  
-  const latestPending = relevantPendingPayments.sort((a, b) => 
+
+  const latestPending = relevantPendingPayments.sort((a, b) =>
     new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
   )[0] || null;
-  
+
   // RESULTADO FINAL: Prioriza pagamento completo sobre pendente
   return relevantCompletedPayment || latestPending;
 };

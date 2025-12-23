@@ -11,6 +11,7 @@ const ZelleCheckout = () => {
   const [searchParams] = useSearchParams();
   const leadId = searchParams.get("lead_id");
   const termAcceptanceId = searchParams.get("term_acceptance_id");
+  const paymentPart = searchParams.get("payment_part");
   
   const [leadData, setLeadData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,11 @@ const ZelleCheckout = () => {
 
   useEffect(() => {
     if (!leadId || !termAcceptanceId) {
-      navigate("/payment-options", { replace: true });
+      if (paymentPart === '2') {
+         navigate("/second-payment", { replace: true });
+      } else {
+         navigate("/payment-options", { replace: true });
+      }
       return;
     }
 
@@ -42,7 +47,8 @@ const ZelleCheckout = () => {
     };
 
     fetchLeadData();
-  }, [leadId, termAcceptanceId, navigate]);
+    fetchLeadData();
+  }, [leadId, termAcceptanceId, navigate, paymentPart]);
 
   // Forçar fundo branco na página
   useEffect(() => {
@@ -180,7 +186,10 @@ const ZelleCheckout = () => {
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
                 <strong>Importante:</strong> Certifique-se de enviar o pagamento para o email correto ({zelleEmail}). 
-                Após realizar o pagamento, você receberá um link para preencher o formulário de consulta.
+                {paymentPart === '2' 
+                  ? " Após realizar o pagamento, a confirmação será feita manualmente pela nossa equipe e seu processo seguirá normalmente."
+                  : " Após realizar o pagamento, você receberá um link para preencher o formulário de consulta."
+                }
               </p>
             </div>
 
@@ -188,19 +197,62 @@ const ZelleCheckout = () => {
             <div className="flex gap-4 pt-4">
               <Button
                 variant="outline"
-                onClick={() => navigate(`/payment-options?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`)}
+                onClick={() => {
+                    if (paymentPart === '2') {
+                        navigate(`/parcela-2-2?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
+                    } else {
+                        navigate(`/payment-options?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
+                    }
+                }}
                 className="flex-1"
               >
                 Escolher outro método
               </Button>
               <Button
-                onClick={() => {
-                  toast.success("Após realizar o pagamento, você receberá um link para preencher o formulário de consulta.");
-                  navigate(`/payment-options?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
+                disabled={loading}
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    // Registrar intenção de pagamento via RPC (bypass RLS)
+                    const { error } = await supabase.rpc('register_zelle_payment', {
+                      p_lead_id: leadId,
+                      p_term_acceptance_id: termAcceptanceId,
+                      p_amount: amountUSD,
+                      p_metadata: {
+                        payment_method: "zelle",
+                        zelle_email: zelleEmail,
+                        confirmed_by_client_at: new Date().toISOString(),
+                      },
+                      p_part: paymentPart === '2' ? 2 : 1
+                    });
+                    
+                    if (error) {
+                         console.error("Erro RPC:", error);
+                         // Fallback try direct insert if RPC fails? No, RPC is safer.
+                         throw error;
+                    }
+
+                    const message = paymentPart === '2'
+                        ? "Pagamento registrado! Aguarde a confirmação da nossa equipe."
+                        : "Após realizar o pagamento, você receberá um link para preencher o formulário de consulta.";
+                    
+                    toast.success(message);
+                    
+                    if (paymentPart === '2') {
+                        navigate(`/parcela-2-2?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
+                    } else {
+                        navigate(`/payment-options?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
+                    }
+                  } catch (err) {
+                    console.error("Erro no processamento:", err);
+                    toast.error("Erro ao registrar confirmação.");
+                  } finally {
+                    setLoading(false);
+                  }
                 }}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                Entendi, já realizei o pagamento
+                {loading ? "Processando..." : "Entendi, já realizei o pagamento"}
               </Button>
             </div>
 
