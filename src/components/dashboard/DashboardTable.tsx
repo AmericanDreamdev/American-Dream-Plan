@@ -60,11 +60,11 @@ interface DashboardFullTableProps {
 
 export const DashboardFullTable = ({ users, totalUsers, searchTerm, onUpdate }: DashboardFullTableProps) => {
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {users.length} de {totalUsers} usuários
       </div>
-      <div className="overflow-x-auto rounded-lg border-0 shadow-md -mx-6 px-6 bg-white">
+      <div className="overflow-x-auto border-0 -mx-6 px-6 bg-white">
         <Table className="table-hover">
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50 hover:bg-gray-50">
@@ -108,11 +108,11 @@ export const DashboardPaidTable = ({ users, onUpdate }: { users: DashboardUser[]
   const paidUsers = users.filter((u) => u.is_confirmado_pago === true);
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {paidUsers.length} usuários que pagaram
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
@@ -168,11 +168,11 @@ export const DashboardPendingTable = ({ users, onUpdate }: { users: DashboardUse
   const pendingUsers = users.filter((u) => u.status_pagamento_formatado === "Pendente");
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {pendingUsers.length} pagamentos pendentes
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
@@ -217,11 +217,11 @@ export const DashboardNotPaidTable = ({ users, onUpdate }: { users: DashboardUse
   });
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {notPaidUsers.length} usuários que não pagaram
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
@@ -267,11 +267,11 @@ export const DashboardSecondPaidTable = ({ users, onUpdate }: { users: Dashboard
   const paidSecondPartUsers = users.filter((u) => u.is_confirmado_pago_segunda_parte === true);
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {paidSecondPartUsers.length} usuários que pagaram a segunda parcela
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
