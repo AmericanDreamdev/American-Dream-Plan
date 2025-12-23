@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DashboardUser, DashboardStats } from "@/types/dashboard";
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs";
 import { useDashboardFilters } from "@/hooks/useDashboardFilters";
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DashboardPagination } from "@/components/dashboard/DashboardPagination";
 
 interface UsersPageProps {
   users: DashboardUser[];
@@ -25,6 +26,15 @@ export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPa
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Reset page when context changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, activeFilters, searchTerm]);
 
   // Calcular contadores para os filtros
   const filterCounts = useMemo(() => {
@@ -160,6 +170,46 @@ export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPa
     });
   }, [baseFilteredUsers, activeFilters]);
 
+  // Filter Consultation Forms
+  const filteredForms = useMemo(() => {
+    return consultationForms.filter((form) => {
+        if (!searchTerm) return true;
+        const search = searchTerm.toLowerCase();
+        const nome = form.nome_completo || form.lead_name || "";
+        const email = form.email || form.lead_email || "";
+        const telefone = form.telefone || "";
+
+        return (
+          nome.toLowerCase().includes(search) ||
+          email.toLowerCase().includes(search) ||
+          telefone.toLowerCase().includes(search)
+        );
+      });
+  }, [consultationForms, searchTerm]);
+
+  // Pagination Logic
+  const isConsultationTab = activeTab === 'consultation';
+  const currentDataCount = isConsultationTab ? filteredForms.length : filteredUsers.length;
+  const totalPages = Math.ceil(currentDataCount / itemsPerPage);
+
+  const paginatedResults = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    
+    if (isConsultationTab) {
+        return {
+            users: [],
+            forms: filteredForms.slice(startIndex, endIndex)
+        };
+    } else {
+        return {
+            users: filteredUsers.slice(startIndex, endIndex),
+            forms: []
+        };
+    }
+  }, [isConsultationTab, currentPage, itemsPerPage, filteredUsers, filteredForms]);
+
+
   const filterGroups = [
     {
       id: "contract",
@@ -262,7 +312,7 @@ export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPa
                     </Button>
                 )}
                  <div className="text-xs text-gray-500 whitespace-nowrap bg-gray-50 px-2 py-1 rounded-md border">
-                    {filteredUsers.length} resultado(s)
+                    {currentDataCount} resultado(s)
                 </div>
             </div>
         </div>
@@ -284,17 +334,25 @@ export const UsersPage = ({ users, stats, consultationForms, onUpdate }: UsersPa
 
       {/* Users Table */}
       <DashboardTabs
-        users={users}
-        filteredUsers={filteredUsers}
-        consultationForms={consultationForms}
+        users={users} // Passes full users for badges logic inside DashboardTabs (if it used them for calculating) - wait, badges usually use 'stats' prop.
+        filteredUsers={paginatedResults.users}
+        consultationForms={paginatedResults.forms}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         stats={stats}
         onUpdate={onUpdate}
-      />
+      >
+        <DashboardPagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setItemsPerPage}
+          totalItems={currentDataCount}
+        />
+      </DashboardTabs>
     </div>
   );
 };
-

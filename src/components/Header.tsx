@@ -1,9 +1,28 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { User } from "@supabase/supabase-js";
+import { LogIn, LayoutDashboard } from "lucide-react";
 
 export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -11,6 +30,14 @@ export const Header = () => {
   };
 
   const whatsappLink = 'https://chat.whatsapp.com/C5k7GQN1N5L0qmkDZgUlMn';
+
+  const handleAuthAction = () => {
+    if (user) {
+       navigate('/client/dashboard');
+    } else {
+      navigate('/client/login');
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/20 backdrop-blur-lg bg-gradient-to-r from-[#023E8A]/95 to-[#012A5E]/95 shadow-lg">
@@ -47,6 +74,25 @@ export const Header = () => {
                 Sobre
               </button>
             )}
+
+            {/* Auth Button */}
+            <button
+                onClick={handleAuthAction}
+                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors font-medium mr-2"
+            >
+                {user ? (
+                    <>
+                        <LayoutDashboard className="h-4 w-4" />
+                        Meu Painel
+                    </>
+                ) : (
+                    <>
+                        <LogIn className="h-4 w-4" />
+                        Entrar
+                    </>
+                )}
+            </button>
+
             <button
               onClick={() => {
                 if (isHomePage) {
@@ -62,21 +108,30 @@ export const Header = () => {
           </nav>
 
           {/* Mobile CTA Button */}
-          <button
-            onClick={() => {
-              if (isHomePage) {
-                window.open(whatsappLink, '_blank');
-              } else {
-                navigate('/lead-form');
-              }
-            }}
-            className="md:hidden px-4 py-2 bg-white text-[#0575E6] rounded-lg font-semibold text-sm transition-all hover:bg-white/90"
-          >
-            Começar
-          </button>
+          <div className="flex items-center gap-3 md:hidden">
+              <button
+                  onClick={handleAuthAction}
+                  className="p-2 text-white/90 hover:text-white"
+                  title={user ? "Meu Painel" : "Entrar"}
+              >
+                  {user ? <LayoutDashboard className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (isHomePage) {
+                    window.open(whatsappLink, '_blank');
+                  } else {
+                    navigate('/lead-form');
+                  }
+                }}
+                className="px-4 py-2 bg-white text-[#0575E6] rounded-lg font-semibold text-sm transition-all hover:bg-white/90"
+              >
+                Começar
+              </button>
+          </div>
         </div>
       </div>
     </header>
   );
 };
-

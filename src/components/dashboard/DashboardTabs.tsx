@@ -31,7 +31,8 @@ export const DashboardTabs = ({
   onTabChange,
   stats,
   onUpdate,
-}: DashboardTabsProps) => {
+  children
+}: DashboardTabsProps & { children?: React.ReactNode }) => {
   return (
     <Card className="border-0 bg-white shadow-md overflow-hidden">
       <CardHeader className="pb-4">
@@ -116,6 +117,7 @@ export const DashboardTabs = ({
           </TabsContent>
         </Tabs>
       </CardContent>
+      {children}
     </Card>
   );
 };

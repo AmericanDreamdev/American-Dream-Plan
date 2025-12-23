@@ -52,11 +52,11 @@ export const ConsultationFormsTable = ({ forms, searchTerm }: ConsultationFormsT
   };
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {filteredForms.length} de {forms.length} formulários
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
@@ -146,4 +146,3 @@ export const ConsultationFormsTable = ({ forms, searchTerm }: ConsultationFormsT
     </div>
   );
 };
-
