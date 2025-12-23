@@ -280,6 +280,9 @@ const PaymentSuccess = () => {
   const isPix = payment?.metadata?.payment_method === 'pix' || 
                 payment?.metadata?.requested_payment_method === 'pix';
 
+  // Determinar se é segunda parcela
+  const isSecondPayment = payment?.metadata?.payment_part == 2 || payment?.metadata?.payment_part === '2';
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-white z-0">
@@ -301,7 +304,20 @@ const PaymentSuccess = () => {
         <Card className="bg-white p-4 sm:p-6 md:p-8 max-w-2xl w-full shadow-2xl border border-gray-200">
           <div className="text-center space-y-4 sm:space-y-6">
           {isPaymentConfirmed ? (
-            <>
+            isSecondPayment ? (
+              <>
+                <div className="flex justify-center">
+                  <CheckCircle2 className="w-16 h-16 sm:w-20 sm:h-20 text-[#0575E6] mx-auto" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 px-2">
+                  Pagamento Recebido
+                </h1>
+                <p className="text-base sm:text-lg md:text-xl text-gray-700 px-2">
+                  A administração entrará em contato para agendar a apresentação do seu plano American Dream personalizado.
+                </p>
+              </>
+            ) : (
+              <>
                 <div className="flex justify-center">
                   <CheckCircle2 className="w-16 h-16 sm:w-20 sm:h-20 text-[#0575E6] mx-auto" />
                 </div>
@@ -309,9 +325,10 @@ const PaymentSuccess = () => {
                   Pagamento Confirmado!
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl text-gray-700 px-2">
-                Obrigado pelo seu pagamento. Seu contrato foi processado com sucesso.
-              </p>
-            </>
+                  Obrigado pelo seu pagamento. Seu contrato foi processado com sucesso.
+                </p>
+              </>
+            )
           ) : isPix && isPolling ? (
             <>
                 <div className="flex justify-center">
@@ -347,7 +364,8 @@ const PaymentSuccess = () => {
             {/* Botões de ação - Formulário de Consultoria primeiro (mais importante) */}
             <div className="mt-6 sm:mt-8 space-y-3 sm:space-y-4 px-2">
             {/* Mostrar botão apenas se o pagamento estiver confirmado */}
-            {isPaymentConfirmed && (sessionId || searchParams.get("lead_id")) && searchParams.get("lead_id") && (
+            {/* Mostrar botão apenas se o pagamento estiver confirmado e não for a segunda parcela */}
+            {isPaymentConfirmed && !isSecondPayment && (sessionId || searchParams.get("lead_id")) && searchParams.get("lead_id") && (
               <Button
                 onClick={() => {
                   const leadId = searchParams.get("lead_id");
@@ -362,11 +380,11 @@ const PaymentSuccess = () => {
               </Button>
             )}
             <Button
-              onClick={() => navigate("/oferta")}
+              onClick={() => navigate("/client/login")}
               variant="outline"
                 className="w-full border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-600 shadow-none text-sm sm:text-base py-6 sm:py-7"
             >
-              Voltar para o Início
+              Acessar Área do Cliente
             </Button>
           </div>
 
