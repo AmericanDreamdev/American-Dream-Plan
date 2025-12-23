@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabase";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { countries } from "@/data/countries";
 import { parsePhoneNumber, isValidPhoneNumber, AsYouType } from "libphonenumber-js";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
@@ -81,6 +81,7 @@ const createLeadFormSchema = (phoneCountryCode: string) => {
     termsAccepted: z.boolean().refine((val) => val === true, {
       message: "Você precisa aceitar os termos e condições para continuar",
     }),
+    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
   });
 };
 
@@ -90,6 +91,7 @@ type LeadFormValues = {
   phone: string;
   phoneCountryCode: string;
   termsAccepted: boolean;
+  password?: string;
 };
 
 const LeadForm = () => {
@@ -98,6 +100,7 @@ const LeadForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTerm, setActiveTerm] = useState<Term | null>(null);
   const [loadingTerms, setLoadingTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { recordTermAcceptance } = useTermsAcceptance();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -151,8 +154,26 @@ const LeadForm = () => {
       phone: cachedData.phone || "",
       phoneCountryCode: initialPhoneCountryCode, // Default phone country code
       termsAccepted: cachedData.termsAccepted || false, // Carregar do cache
+      password: "",
     },
   });
+
+  // Verificar se email já existe
+  const checkEmailExists = async (email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+      
+      if (error) throw error;
+      return !!data;
+    } catch (err) {
+      console.error("Error checking email:", err);
+      return false;
+    }
+  };
 
   // Carregar termos na montagem do componente (necessário para validar e registrar aceitação)
   useEffect(() => {
@@ -238,8 +259,50 @@ const LeadForm = () => {
     setError(null);
 
     try {
+      // 0. Verificar duplicidade de email na tabela de leads
+      const emailExists = await checkEmailExists(values.email);
+      if (emailExists) {
+        setError("Este email já possui um cadastro. Por favor, faça login para continuar seu processo.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 1. Criar conta no Supabase Auth
+      let userId = null;
+      let session = null;
+      
+      if (values.password) {
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: values.email,
+          password: values.password,
+          options: {
+            data: {
+              nome_completo: values.name,
+              telefone: values.phone,
+              role: 'client'
+            }
+          }
+        });
+
+        if (signUpError) {
+          if (signUpError.message.includes("already registered")) {
+            setError("Este email já está cadastrado. Por favor, faça login.");
+            setIsSubmitting(false);
+            return;
+          }
+          console.error("SignUp error:", signUpError);
+          throw signUpError;
+        }
+
+        userId = authData.user?.id;
+        session = authData.session;
+        console.log("SignUp successful", { userId, hasSession: !!session });
+      }
+
       // Código do país do telefone
-      const selectedPhoneCountry = countries.find((c) => c.code === values.phoneCountryCode);
+      // Safe access to countries
+      const validCountries = Array.isArray(countries) ? countries : [];
+      const selectedPhoneCountry = validCountries.find((c) => c.code === values.phoneCountryCode);
       const phoneCountryCode = selectedPhoneCountry?.dialCode || "+55";
       
       // Remover qualquer código que já exista e garantir formato correto
@@ -270,22 +333,32 @@ const LeadForm = () => {
       try {
         const parsed = parsePhoneNumber(fullPhone, selectedPhoneCountry?.code as any);
         if (parsed.isValid()) {
-          formattedPhone = parsed.formatInternational(); // Formato: +55 11 98765-4321
+          formattedPhone = parsed.formatInternational();
         }
       } catch (formatError) {
-        // Se não conseguir formatar, usar o número limpo
         formattedPhone = `${phoneCountryCode}${cleanPhone}`;
       }
+
+      // Preparar payload do lead
+      const leadPayload: any = {
+        name: values.name,
+        email: values.email,
+        phone: formattedPhone,
+        country_code: phoneCountryCode,
+        status_geral: 'cadastrado'
+      };
+      
+      // Só adicionar user_id se tivermos um
+      if (userId) {
+        leadPayload.user_id = userId;
+      }
+
+      console.log("Inserting lead:", leadPayload);
 
       // Inserir lead no Supabase
       const { data, error: insertError } = await supabase
         .from("leads")
-        .insert({
-          name: values.name,
-          email: values.email,
-          phone: formattedPhone,
-          country_code: phoneCountryCode, // Código do país do telefone
-        })
+        .insert(leadPayload)
         .select()
         .single();
 
@@ -406,7 +479,7 @@ const LeadForm = () => {
       }
     } catch (err) {
       console.error("Erro ao salvar lead:", err);
-      setError("Ocorreu um erro inesperado. Por favor, tente novamente.");
+      setError("Ocorreu um erro inesperado e não foi possível realizar o cadastro. " + (err instanceof Error ? err.message : ""));
       setIsSubmitting(false);
     }
   };
@@ -466,6 +539,38 @@ const LeadForm = () => {
                         {...field}
                         className="bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-[#0575E6] focus:ring-[#0575E6]"
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-semibold">Crie uma Senha</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Mínimo 6 caracteres"
+                          {...field}
+                          className="bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-[#0575E6] focus:ring-[#0575E6] pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
