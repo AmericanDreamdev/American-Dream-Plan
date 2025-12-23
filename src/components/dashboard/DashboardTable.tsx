@@ -68,6 +68,7 @@ export const DashboardFullTable = ({ users, totalUsers, searchTerm, onUpdate }: 
         <Table className="table-hover">
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50 hover:bg-gray-50">
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 w-10"></TableHead>
               <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[140px]">Nome</TableHead>
               <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[150px] hidden lg:table-cell">Email</TableHead>
               <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[100px] hidden xl:table-cell">Telefone</TableHead>
@@ -82,7 +83,7 @@ export const DashboardFullTable = ({ users, totalUsers, searchTerm, onUpdate }: 
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-gray-600 bg-white">
+                <TableCell colSpan={10} className="text-center py-12 text-gray-600 bg-white">
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-base font-medium text-gray-900">Nenhum usuário encontrado</p>
                   <p className="text-sm text-gray-500 mt-1">

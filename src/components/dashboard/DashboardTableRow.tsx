@@ -1,7 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, Eye, Link2, Copy, Check, Edit, CheckCircle2, DollarSign } from "lucide-react";
+import { Download, FileText, Eye, Link2, Copy, Check, Edit, CheckCircle2, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
 import { DashboardUser } from "@/types/dashboard";
 import { getStatusBadge } from "./DashboardBadge";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { EditUserModal } from "./EditUserModal";
+import { ClientPlanView } from "./ClientPlanView";
+import { MeetingManager } from "./MeetingManager";
+import { ClientPlanForm } from "./ClientPlanForm";
 
 interface DashboardTableRowProps {
   user: DashboardUser;
@@ -29,6 +32,10 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
   const [secondPaymentLink, setSecondPaymentLink] = useState<string | null>(null);
   const [isSecondPaymentDialogOpen, setIsSecondPaymentDialogOpen] = useState(false);
   const [secondPaymentLinkCopied, setSecondPaymentLinkCopied] = useState(false);
+  
+  // Estado para expansão da linha
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isPlanFormOpen, setIsPlanFormOpen] = useState(false);
 
   const generateConsultationLink = async () => {
     setIsGeneratingLink(true);
@@ -172,11 +179,32 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
     return dateStr;
   };
 
+  // Permitir expandir sempre para que o admin possa gerenciar reuniões e planos
+  const hasExpandableContent = true;
+
   return (
-    <TableRow key={user.lead_id} className="border-gray-200 bg-white hover:bg-blue-50/30 transition-colors">
-      <TableCell className="font-medium text-gray-900 py-2 px-2 text-sm truncate" title={user.nome_completo}>
-        {user.nome_completo}
-      </TableCell>
+    <>
+      <TableRow key={user.lead_id} className="border-gray-200 bg-white hover:bg-blue-50/30 transition-colors">
+        {/* Botão de expansão */}
+        <TableCell className="py-2 px-2 w-10">
+          {hasExpandableContent && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-6 w-6 p-0"
+            >
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+        </TableCell>
+        <TableCell className="font-medium text-gray-900 py-2 px-2 text-sm truncate" title={user.nome_completo}>
+          {user.nome_completo}
+        </TableCell>
       <TableCell className="text-gray-700 py-2 px-2 text-sm truncate hidden lg:table-cell" title={user.email}>
         {user.email}
       </TableCell>
@@ -204,14 +232,44 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
         )}
       </TableCell>
       <TableCell className="py-2 px-2">
-        <div className="flex flex-col gap-1">
-          {getStatusBadge(user.status_pagamento_formatado)}
-          {user.valor_formatado && (
-            <span className="text-xs font-medium text-gray-900">{user.valor_formatado}</span>
-          )}
-          {user.metodo_pagamento_formatado && (
-            <span className="text-[10px] text-gray-500">{user.metodo_pagamento_formatado}</span>
-          )}
+        <div className="flex flex-col gap-2 min-w-[140px]">
+          {/* 1ª Parcela */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+              1ª Parcela
+              {user.metodo_pagamento_formatado && (
+                 <span className="font-normal text-[9px] text-gray-300">{user.metodo_pagamento_formatado}</span>
+              )}
+            </span>
+            <div className="flex items-center gap-2">
+              {getStatusBadge(user.status_pagamento_formatado)}
+              {user.valor_formatado && (
+                <span className="text-xs font-semibold text-gray-700">{user.valor_formatado}</span>
+              )}
+            </div>
+          </div>
+
+          {/* 2ª Parcela */}
+          <div className="flex flex-col gap-1 border-t border-dashed border-gray-200 pt-2">
+             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+              2ª Parcela
+              {user.metodo_pagamento_segunda_parte_formatado && (
+                 <span className="font-normal text-[9px] text-gray-300">{user.metodo_pagamento_segunda_parte_formatado}</span>
+              )}
+            </span>
+            <div className="flex items-center gap-2">
+              {user.status_pagamento_segunda_parte_formatado ? (
+                <>
+                  {getStatusBadge(user.status_pagamento_segunda_parte_formatado)}
+                  {user.valor_segunda_parte_formatado && (
+                    <span className="text-xs font-semibold text-gray-700">{user.valor_segunda_parte_formatado}</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-xs text-gray-400 italic">Pendente</span>
+              )}
+            </div>
+          </div>
         </div>
       </TableCell>
       <TableCell className="py-2 px-2">
@@ -409,6 +467,79 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
         }}
       />
     </TableRow>
+    
+    {/* Linha expandida com reuniões e planejamento */}
+    <TableRow className="bg-gray-50" aria-hidden={!isExpanded}>
+      <TableCell colSpan={10} className="p-6">
+        <div
+          className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
+          style={{ maxHeight: isExpanded ? '5000px' : '0px', opacity: isExpanded ? 1 : 0 }}
+        >
+          <div className="space-y-6">
+            {/* Reuniões */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Reuniões</h3>
+              <MeetingManager
+                leadId={user.lead_id}
+                firstMeeting={user.first_meeting}
+                secondMeeting={user.second_meeting}
+                onUpdate={onUpdate}
+                leadName={user.nome_completo}
+                leadEmail={user.email}
+              />
+            </div>
+
+            {/* Planejamento */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">Planejamento Individualizado</h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsPlanFormOpen(true)}
+                  className="h-8 text-xs"
+                >
+                  <Edit className="h-3 w-3 mr-1" />
+                  {user.client_plan ? "Editar Plano" : "Criar Plano"}
+                </Button>
+              </div>
+
+              {user.client_plan ? (
+                <ClientPlanView 
+                  plan={user.client_plan} 
+                  leadId={user.lead_id} 
+                  onUpdate={onUpdate}
+                />
+              ) : (
+                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg bg-white">
+                  <FileText className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">Nenhum planejamento criado para este cliente.</p>
+                  <Button
+                    variant="link"
+                    className="text-blue-600 font-semibold"
+                    onClick={() => setIsPlanFormOpen(true)}
+                  >
+                    Clique aqui para começar o planejamento
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </TableCell>
+    </TableRow>
+
+    {/* Modal de Formulário de Plano */}
+    <ClientPlanForm
+      leadId={user.lead_id}
+      plan={user.client_plan}
+      open={isPlanFormOpen}
+      onOpenChange={setIsPlanFormOpen}
+      onSuccess={() => {
+        if (onUpdate) onUpdate();
+      }}
+    />
+    </>
   );
 };
 

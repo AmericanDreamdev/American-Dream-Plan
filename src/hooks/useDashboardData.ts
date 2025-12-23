@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { DashboardUser, DashboardStats, RawLead, RawTermAcceptance, RawPayment, RawConsultationForm } from "@/types/dashboard";
+import { DashboardUser, DashboardStats, RawLead, RawTermAcceptance, RawPayment, RawConsultationForm, Meeting, ClientPlan } from "@/types/dashboard";
 import {
   formatDate,
   formatValue,
@@ -42,7 +42,9 @@ export const useDashboardData = (): UseDashboardDataReturn => {
     leadsData: RawLead[],
     termAcceptancesData: RawTermAcceptance[],
     allPaymentsData: RawPayment[],
-    consultationForms: RawConsultationForm[]
+    consultationForms: RawConsultationForm[],
+    meetingsData: Meeting[],
+    clientPlansData: ClientPlan[]
   ): DashboardUser[] => {
     // Combinar os dados manualmente
     const leadsWithData = leadsData.map((lead) => {
@@ -50,9 +52,9 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       const termAcceptances = termAcceptancesData.filter((ta) => ta.lead_id === lead.id) || [];
       const termAcceptance = termAcceptances.length > 0
         ? termAcceptances.sort((a, b) =>
-            new Date(b.accepted_at || b.created_at || 0).getTime() -
-            new Date(a.accepted_at || a.created_at || 0).getTime()
-          )[0]
+          new Date(b.accepted_at || b.created_at || 0).getTime() -
+          new Date(a.accepted_at || a.created_at || 0).getTime()
+        )[0]
         : null;
 
       // Encontrar TODOS os pagamentos do lead
@@ -70,28 +72,48 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       const termAcceptance: RawTermAcceptance | null = lead.term_acceptance;
       const payments: RawPayment[] = lead.payments || [];
 
+      // Filtrar pagamentos para a primeira parcela (excluir explicitamente parte 2)
+      const paymentsPart1 = payments.filter((p) => {
+        const metadata = p.metadata || {};
+        return metadata.payment_part !== 2 && metadata.payment_part !== '2';
+      });
+
       // Encontrar pagamento mais relevante (primeira parcela)
-      const latestPayment = findRelevantPayment(payments, termAcceptance);
-      
+      const latestPayment = findRelevantPayment(paymentsPart1, termAcceptance);
+
       // Encontrar pagamento da segunda parcela (payment_part: 2)
       const secondPartPayments = payments.filter((p) => {
         const metadata = p.metadata || {};
         return metadata.payment_part === 2 || metadata.payment_part === '2';
       });
       const secondPartPayment = secondPartPayments.length > 0
-        ? secondPartPayments.sort((a, b) => 
-            new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-          )[0]
+        ? secondPartPayments.sort((a, b) =>
+          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        )[0]
         : null;
-      
+
       // Encontrar formulário de consulta mais recente para este lead
       const consultationForm = consultationForms
         .filter((form) => form.lead_id === lead.id)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
 
+      // Encontrar reuniões do lead
+      const firstMeeting = meetingsData?.find(m =>
+        m.lead_id === lead.id && m.meeting_type === 'first'
+      ) || null;
+
+      const secondMeeting = meetingsData?.find(m =>
+        m.lead_id === lead.id && m.meeting_type === 'second'
+      ) || null;
+
+      // Encontrar plano do lead
+      const clientPlan = clientPlansData?.find(p =>
+        p.lead_id === lead.id
+      ) || null;
+
       // Determinar se é confirmado como pago (primeira parcela)
       const confirmedPago = isConfirmadoPago(latestPayment);
-      
+
       // Determinar se é confirmado como pago (segunda parcela)
       const confirmedPagoSegundaParte = isConfirmadoPago(secondPartPayment);
 
@@ -136,19 +158,24 @@ export const useDashboardData = (): UseDashboardDataReturn => {
         pdf_generated_at_formatted: pdfGeneratedAtFormatted,
         is_brazilian: isBrazilianPhone(lead.phone),
         consultation_form_id: consultationForm?.id || null,
+        // Reuniões
+        first_meeting: firstMeeting,
+        second_meeting: secondMeeting,
+        // Planejamento
+        client_plan: clientPlan,
         // Segunda parcela
         is_confirmado_pago_segunda_parte: confirmedPagoSegundaParte,
         payment_id_segunda_parte: secondPartPayment?.id || null,
-        status_pagamento_segunda_parte_formatado: secondPartPayment 
+        status_pagamento_segunda_parte_formatado: secondPartPayment
           ? getStatusPagamento(secondPartPayment.status || null, secondPartPayment)
           : null,
-        valor_segunda_parte_formatado: secondPartPayment 
+        valor_segunda_parte_formatado: secondPartPayment
           ? formatValue(secondPartPayment.amount || null, secondPartPayment.currency || null)
           : null,
-        metodo_pagamento_segunda_parte_formatado: secondPartPayment 
+        metodo_pagamento_segunda_parte_formatado: secondPartPayment
           ? getPaymentMethod(secondPartPayment, lead)
           : null,
-        data_pagamento_segunda_parte_formatada: secondPartPayment 
+        data_pagamento_segunda_parte_formatada: secondPartPayment
           ? formatDate(secondPartPayment.created_at)
           : null,
       };
@@ -187,6 +214,32 @@ export const useDashboardData = (): UseDashboardDataReturn => {
     const paidSecondPartUsers = transformedData.filter((u) => u.is_confirmado_pago_segunda_parte === true);
     const totalPaidSecondPart = paidSecondPartUsers.length;
 
+    // ESTATÍSTICAS DE REUNIÕES
+    const totalFirstMeetingsScheduled = transformedData.filter((u) =>
+      u.first_meeting?.status === 'scheduled'
+    ).length;
+
+    const totalFirstMeetingsCompleted = transformedData.filter((u) =>
+      u.first_meeting?.status === 'completed'
+    ).length;
+
+    const totalSecondMeetingsScheduled = transformedData.filter((u) =>
+      u.second_meeting?.status === 'scheduled'
+    ).length;
+
+    const totalSecondMeetingsCompleted = transformedData.filter((u) =>
+      u.second_meeting?.status === 'completed'
+    ).length;
+
+    // ESTATÍSTICAS DE PLANEJAMENTOS
+    const totalPlansCreated = transformedData.filter((u) =>
+      u.client_plan !== null
+    ).length;
+
+    const totalPlansInProgress = transformedData.filter((u) =>
+      u.client_plan?.status === 'in_progress'
+    ).length;
+
     return {
       totalLeads,
       totalContracts,
@@ -195,6 +248,12 @@ export const useDashboardData = (): UseDashboardDataReturn => {
       totalNotPaid,
       totalConsultationForms: 0, // Will be updated in fetchData
       totalPaidSecondPart,
+      totalFirstMeetingsScheduled,
+      totalFirstMeetingsCompleted,
+      totalSecondMeetingsScheduled,
+      totalSecondMeetingsCompleted,
+      totalPlansCreated,
+      totalPlansInProgress,
     };
   };
 
@@ -259,6 +318,28 @@ export const useDashboardData = (): UseDashboardDataReturn => {
         // Não falhar, apenas logar o erro
       }
 
+      // 5. Buscar reuniões
+      const { data: meetingsData, error: meetingsError } = await supabase
+        .from("meetings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (meetingsError) {
+        console.error("Erro ao buscar meetings:", meetingsError);
+        // Não falhar, apenas logar o erro
+      }
+
+      // 6. Buscar planejamentos de clientes
+      const { data: clientPlansData, error: clientPlansError } = await supabase
+        .from("client_plans")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (clientPlansError) {
+        console.error("Erro ao buscar client_plans:", clientPlansError);
+        // Não falhar, apenas logar o erro
+      }
+
       // Enriquecer formulários com dados do lead
       const enrichedForms = (consultationFormsData || []).map((form) => {
         const lead = leadsData?.find((l) => l.id === form.lead_id);
@@ -276,7 +357,9 @@ export const useDashboardData = (): UseDashboardDataReturn => {
         leadsData || [],
         termAcceptancesData || [],
         allPaymentsData || [],
-        enrichedForms
+        enrichedForms,
+        meetingsData || [],
+        clientPlansData || []
       );
 
       setUsers(transformedData);
