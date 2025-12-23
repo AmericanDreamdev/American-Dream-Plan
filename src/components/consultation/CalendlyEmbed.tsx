@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 interface CalendlyEmbedProps {
@@ -7,80 +7,107 @@ interface CalendlyEmbedProps {
     name?: string;
     email?: string;
   };
+  onSchedule?: (payload: any) => void;
 }
 
 export const CalendlyEmbed = ({ 
   url = "https://calendly.com/contato-brantimmigration/30min",
-  prefill 
+  prefill,
+  onSchedule
 }: CalendlyEmbedProps) => {
   const [isLoading, setIsLoading] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Carregar script do Calendly se ainda não estiver carregado
-    if (!document.querySelector('script[src*="calendly.com"]')) {
-      const script = document.createElement("script");
-      script.src = "https://assets.calendly.com/assets/external/widget.js";
-      script.async = true;
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  // Construir URL com parâmetros de prefill se disponíveis
+  // Construir URL com parâmetros de prefill
   const buildCalendlyUrl = () => {
-    if (!url) return "";
-    
     try {
-      const calendlyUrl = new URL(url);
-      
-      if (prefill) {
-        // Garantir que name seja uma string válida antes de usar
-        const name = prefill.name;
-        if (name && typeof name === 'string' && name.trim()) {
-          calendlyUrl.searchParams.set("name", name.trim());
-        }
-        
-        // Garantir que email seja uma string válida antes de usar
-        const email = prefill.email;
-        if (email && typeof email === 'string' && email.trim()) {
-          calendlyUrl.searchParams.set("email", email.trim());
-        }
+      const urlObj = new URL(url);
+      if (prefill?.name && prefill.name.trim()) {
+        urlObj.searchParams.set("name", prefill.name.trim());
       }
-      
-      return calendlyUrl.toString();
+      if (prefill?.email && prefill.email.trim()) {
+        urlObj.searchParams.set("email", prefill.email.trim());
+      }
+      return urlObj.toString();
     } catch (error) {
       console.error("[CalendlyEmbed] Erro ao construir URL:", error);
-      return url; // Retornar URL original em caso de erro
+      return url;
     }
   };
 
   const calendlyUrl = buildCalendlyUrl();
 
-  const handleIframeLoad = () => {
-    // Adicionar um pequeno delay para garantir que o conteúdo esteja totalmente renderizado
-    setTimeout(() => {
+  // Carregar script do Calendly e CSS
+  useEffect(() => {
+    // Adicionar CSS do Calendly se não existir
+    if (!document.querySelector('link[href*="calendly.com/assets/external/widget.css"]')) {
+      const link = document.createElement("link");
+      link.href = "https://assets.calendly.com/assets/external/widget.css";
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+
+    // Adicionar script do Calendly se não existir
+    if (!document.querySelector('script[src*="calendly.com/assets/external/widget.js"]')) {
+      const script = document.createElement("script");
+      script.src = "https://assets.calendly.com/assets/external/widget.js";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    // Remover loading após um tempo
+    const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 500);
-  };
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Listener para eventos do Calendly
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      // Verificar se a mensagem é do Calendly
+      if (!e.data || typeof e.data !== 'object') {
+        return;
+      }
+
+      const eventType = e.data.event;
+      
+      // Filtrar apenas eventos do Calendly
+      if (!eventType || typeof eventType !== 'string' || !eventType.startsWith('calendly.')) {
+        return;
+      }
+      
+      if (eventType === "calendly.event_scheduled") {
+        if (onSchedule) {
+          onSchedule(e.data.payload);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [onSchedule]);
 
   return (
     <div className="w-full relative">
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10 rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10 rounded-lg" style={{ minHeight: "400px" }}>
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
             <p className="text-sm text-gray-600 font-medium">Carregando calendário...</p>
           </div>
         </div>
       )}
-      <iframe
-        src={calendlyUrl}
-        width="100%"
-        height="700"
-        frameBorder="0"
-        title="Calendly Scheduling"
+      {/* Elemento padrão do Calendly com data-url */}
+      <div 
+        ref={containerRef}
         className="calendly-inline-widget"
-        style={{ minHeight: "700px" }}
-        onLoad={handleIframeLoad}
+        data-url={calendlyUrl}
+        style={{ minWidth: "320px", height: "700px" }}
       />
     </div>
   );
@@ -97,8 +124,8 @@ declare global {
           name?: string;
           email?: string;
         };
+        utm?: Record<string, string>;
       }) => void;
     };
   }
 }
-

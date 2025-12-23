@@ -75,10 +75,23 @@ export const Header = () => {
               </button>
             )}
 
+            <button
+              onClick={() => {
+                if (isHomePage) {
+                  window.open(whatsappLink, '_blank');
+                } else {
+                  navigate('/lead-form');
+                }
+              }}
+              className="px-6 py-2 bg-white text-[#023E8A] rounded-lg font-semibold transition-all hover:bg-white/90 hover:shadow-lg hover:scale-105"
+            >
+              Começar Agora
+            </button>
+
             {/* Auth Button */}
             <button
                 onClick={handleAuthAction}
-                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors font-medium mr-2"
+                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors font-medium ml-2"
             >
                 {user ? (
                     <>
@@ -92,31 +105,10 @@ export const Header = () => {
                     </>
                 )}
             </button>
-
-            <button
-              onClick={() => {
-                if (isHomePage) {
-                  window.open(whatsappLink, '_blank');
-                } else {
-                  navigate('/lead-form');
-                }
-              }}
-              className="px-6 py-2 bg-white text-[#023E8A] rounded-lg font-semibold transition-all hover:bg-white/90 hover:shadow-lg hover:scale-105"
-            >
-              Começar Agora
-            </button>
           </nav>
 
           {/* Mobile CTA Button */}
           <div className="flex items-center gap-3 md:hidden">
-              <button
-                  onClick={handleAuthAction}
-                  className="p-2 text-white/90 hover:text-white"
-                  title={user ? "Meu Painel" : "Entrar"}
-              >
-                  {user ? <LayoutDashboard className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
-              </button>
-              
               <button
                 onClick={() => {
                   if (isHomePage) {
@@ -128,6 +120,14 @@ export const Header = () => {
                 className="px-4 py-2 bg-white text-[#0575E6] rounded-lg font-semibold text-sm transition-all hover:bg-white/90"
               >
                 Começar
+              </button>
+
+              <button
+                  onClick={handleAuthAction}
+                  className="p-2 text-white/90 hover:text-white"
+                  title={user ? "Meu Painel" : "Entrar"}
+              >
+                  {user ? <LayoutDashboard className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
               </button>
           </div>
         </div>

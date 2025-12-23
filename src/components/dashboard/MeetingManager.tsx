@@ -398,7 +398,10 @@ export const MeetingManager = ({ leadId, firstMeeting, secondMeeting, onUpdate, 
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setShowCalendlyDialog(true)}
+                    onClick={() => {
+                      setSelectedMeetingType(type);
+                      setShowCalendlyDialog(true);
+                    }}
                   >
                     Agendar via Calendly
                   </Button>
@@ -474,10 +477,41 @@ export const MeetingManager = ({ leadId, firstMeeting, secondMeeting, onUpdate, 
           </DialogHeader>
           <div className="py-4">
             <CalendlyEmbed
-              url={undefined}
+              // Se for segunda reunião, idealmente teríamos outro link. Por enquanto usa o padrão (undefined aciona o default)
+              url="https://calendly.com/contato-brantimmigration/30min"
               prefill={{
                 name: leadName || undefined,
                 email: leadEmail || undefined,
+              }}
+              onSchedule={async (payload) => {
+                try {
+                  const eventUri = payload?.event?.uri || payload?.uri || "";
+                  const inviteeUri = payload?.invitee?.uri || "";
+                  const scheduledTime = payload?.event?.start_time || payload?.scheduled_event?.start_time || null;
+                  
+                  const meetingData = {
+                    lead_id: leadId,
+                    meeting_type: selectedMeetingType,
+                    status: 'scheduled',
+                    scheduled_date: scheduledTime || new Date().toISOString(),
+                    meeting_url: eventUri || 'https://calendly.com/app/scheduled_events/user/me',
+                    notes: 'Agendado via Calendly pelo administrador.'
+                  };
+                  
+                  const { error } = await supabase
+                    .from('meetings')
+                    .insert(meetingData);
+
+                  if (error) {
+                    toast({ title: "Erro", description: "Erro ao registrar agendamento no sistema.", variant: "destructive" });
+                  } else {
+                    toast({ title: "Sucesso", description: "Agendamento salvo com sucesso!" });
+                    setShowCalendlyDialog(false);
+                    onUpdate?.();
+                  }
+                } catch (err) {
+                  // Error handling
+                }
               }}
             />
           </div>

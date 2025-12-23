@@ -945,6 +945,64 @@ const ConsultationForm = () => {
                       }
                     : undefined
                 }
+                onSchedule={async (payload) => {
+                  try {
+                    // Determinar o lead_id correto
+                    const finalLeadId = leadData?.id || leadId;
+                    
+                    if (!finalLeadId) {
+                      toast.error("Erro: não foi possível identificar o usuário. Agendamento no Calendly foi confirmado, mas não foi registrado no sistema.");
+                      return;
+                    }
+
+                    const eventUri = payload?.event?.uri || payload?.uri || "";
+                    
+                    // Tentar múltiplos caminhos para a data da reunião
+                    const scheduledTime = 
+                      payload?.event?.start_time ||
+                      payload?.event?.start ||
+                      payload?.scheduled_event?.start_time ||
+                      payload?.invitee?.scheduled_event?.start_time ||
+                      payload?.scheduled_at ||
+                      payload?.start_time ||
+                      null;
+                    
+                    // Se não encontrar a data, adicionar nota para o admin
+                    const notesText = scheduledTime 
+                      ? 'Agendado automaticamente via Calendly pelo cliente.'
+                      : 'Agendado automaticamente via Calendly pelo cliente. (Data/hora da reunião precisa ser verificada no Calendly)';
+                    
+                    const meetingData = {
+                      lead_id: finalLeadId,
+                      meeting_type: 'first',
+                      status: 'scheduled',
+                      scheduled_date: scheduledTime || new Date().toISOString(),
+                      meeting_url: eventUri || 'https://calendly.com/app/scheduled_events/user/me',
+                      notes: notesText
+                    };
+                    
+                    // Salvar na tabela meetings
+                    const { data, error } = await supabase
+                      .from('meetings')
+                      .insert(meetingData)
+                      .select();
+
+                    if (error) {
+                      toast.error("Erro ao registrar agendamento no sistema, mas seu horário no Calendly está confirmado.");
+                    } else {
+                      toast.success("Agendamento confirmado com sucesso!");
+                      // Redirecionar para dashboard se logado ou home após alguns segundos
+                      setTimeout(() => {
+                         navigate("/client/dashboard");
+                      }, 2000);
+                    }
+                  } catch (err) {
+                    console.error("[ConsultationForm] ❌ Exceção ao processar agendamento:", err);
+                    toast.error("Ocorreu um erro inesperado ao salvar o agendamento.");
+                  }
+                  
+                  console.log("[ConsultationForm] ========= FIM DO PROCESSAMENTO =========");
+                }}
               />
               <div className="mt-6 flex justify-center">
                   <div className="mt-4 flex flex-col items-center gap-3">
@@ -973,49 +1031,6 @@ const ConsultationForm = () => {
                       }}
                     >
                       <span style={{ color: '#111827' }}>Voltar para a Página Inicial</span>
-                    </button>
-
-                    {/* Botão de Teste para Pular Agendamento */}
-                    <button
-                      onClick={async () => {
-                        try {
-                          const { error } = await supabase
-                            .from('meetings')
-                            .insert({
-                              lead_id: leadData?.id || leadId,
-                              meeting_type: 'first',
-                              status: 'scheduled',
-                              scheduled_date: new Date(Date.now() + 86400000).toISOString(), // Amanhã
-                              meeting_url: 'https://meet.google.com/test-link'
-                            });
-
-                          if (error) throw error;
-
-                          toast.success("Agendamento simulado com sucesso! Redirecionando...");
-                          // Redireciona para o dashboard do cliente se estiver logado, ou home
-                          navigate("/client/dashboard");
-                        } catch (err: any) {
-                          console.error("Erro ao simular agendamento:", err);
-                          toast.error("Erro ao simular: " + err.message);
-                        }
-                      }}
-                      style={{ 
-                        backgroundColor: '#FEF3C7',
-                        color: '#92400E',
-                        border: '1px solid #D97706',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                        marginTop: '1rem'
-                      }}
-                    >
-                      <span>🛠️ MODO TESTE: Pular Agendamento e Ir para Dashboard</span>
                     </button>
                   </div>
               </div>

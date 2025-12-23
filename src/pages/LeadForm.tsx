@@ -503,15 +503,6 @@ const LeadForm = () => {
           <p className="text-xl text-white/80">
             Preencha seus dados para dar início ao processo de visto
           </p>
-          <div className="flex items-center justify-center gap-2 text-white/80 mt-4">
-            <span>Já tem uma conta?</span>
-            <button 
-              onClick={() => navigate("/client/login")}
-              className="font-semibold text-white underline hover:text-blue-100 transition-colors"
-            >
-              Faça Login
-            </button>
-          </div>
         </div>
 
         <div className="bg-white rounded-xl p-8 md:p-10 shadow-2xl border border-white/20">
@@ -756,6 +747,17 @@ const LeadForm = () => {
                   "Continuar"
                 )}
               </Button>
+
+              <div className="flex items-center justify-center gap-2 text-gray-600 mt-6 pt-4 border-t border-gray-100">
+                <span>Já tem uma conta?</span>
+                <button 
+                  type="button"
+                  onClick={() => navigate("/client/login")}
+                  className="font-semibold text-[#0575E6] hover:text-[#021B79] underline transition-colors"
+                >
+                  Faça Login
+                </button>
+              </div>
             </form>
           </Form>
         </div>
