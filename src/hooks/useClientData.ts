@@ -242,7 +242,8 @@ export const useClientData = () => {
                 .from('consultation_forms')
                 .select('id')
                 .eq('lead_id', leadData.id)
-                .single();
+                .limit(1)
+                .maybeSingle();
 
             // Buscar reuniões
             const { data: meetingsData } = await supabase
