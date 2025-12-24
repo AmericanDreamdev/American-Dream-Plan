@@ -28,7 +28,7 @@ const ClientDashboard = () => {
     if (clientData?.clientPlan?.id) {
       const storageKey = `plan_congrats_seen_${clientData.clientPlan.id}`;
       const hasSeen = localStorage.getItem(storageKey);
-      
+
       if (!hasSeen) {
         setShowCongrats(true);
         // Mark as seen immediately so it doesn't show on next reload/visit
@@ -80,9 +80,9 @@ const ClientDashboard = () => {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img 
-                src="/logo.png" 
-                alt="American Dream" 
+              <img
+                src="/logo.png"
+                alt="American Dream"
                 className="h-10"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
@@ -94,17 +94,17 @@ const ClientDashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button 
-                onClick={refetch} 
-                variant="ghost" 
+              <Button
+                onClick={refetch}
+                variant="ghost"
                 size="sm"
                 className="text-gray-600"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
-              <Button 
-                onClick={handleLogout} 
-                variant="outline" 
+              <Button
+                onClick={handleLogout}
+                variant="outline"
                 size="sm"
                 className="text-gray-600"
               >
@@ -129,39 +129,39 @@ const ClientDashboard = () => {
         </div>
 
         {/* Progresso ou Plano */}
-        {clientData.clientPlan && (clientData.clientPlan.status === 'presented' || clientData.clientPlan.status === 'in_progress' || clientData.clientPlan.status === 'completed') ? (
-            <div className="space-y-6">
-                 {showCongrats && (
-                   <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center animate-in fade-in slide-in-from-top-4 duration-700">
-                      <h3 className="text-lg font-semibold text-green-800 mb-2">Parabéns! Seu planejamento está pronto.</h3>
-                      <p className="text-green-700">Abaixo você pode visualizar todas as etapas detalhadas do seu American Dream.</p>
-                   </div>
-                 )}
-                 <ClientPlanView plan={clientData.clientPlan} />
-            </div>
+        {clientData.clientPlan && clientData.secondMeetingCompleted ? (
+          <div className="space-y-6">
+            {showCongrats && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center animate-in fade-in slide-in-from-top-4 duration-700">
+                <h3 className="text-lg font-semibold text-green-800 mb-2">Parabéns! Seu planejamento está pronto.</h3>
+                <p className="text-green-700">Abaixo você pode visualizar todas as etapas detalhadas do seu American Dream.</p>
+              </div>
+            )}
+            <ClientPlanView plan={clientData.clientPlan} />
+          </div>
         ) : (
-            <>
-                {/* Progresso */}
-                <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-lg text-gray-800">Seu Progresso</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ProgressTracker 
-                    stages={clientData.stages} 
-                    currentStage={clientData.currentStage} 
-                    />
-                </CardContent>
-                </Card>
-
-                {/* Ação Atual */}
-                <CurrentAction 
-                stages={clientData.stages}
-                currentStage={clientData.currentStage}
-                firstMeetingDate={clientData.firstMeetingDate}
-                planStatus={clientData.planStatus}
+          <>
+            {/* Progresso */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-800">Seu Progresso</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ProgressTracker
+                  stages={clientData.stages}
+                  currentStage={clientData.currentStage}
                 />
-            </>
+              </CardContent>
+            </Card>
+
+            {/* Ação Atual */}
+            <CurrentAction
+              stages={clientData.stages}
+              currentStage={clientData.currentStage}
+              firstMeetingDate={clientData.firstMeetingDate}
+              planStatus={clientData.planStatus}
+            />
+          </>
         )}
 
         {/* Informações do Cliente */}
