@@ -33,7 +33,7 @@ export const Header = () => {
           </button>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-4">
             {!isHomePage && (
               <button
                 onClick={() => {
@@ -49,6 +49,38 @@ export const Header = () => {
             )}
             <button
               onClick={() => {
+                // Redirecionar para 323 Network
+                const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
+                const callbackUrl = new URL("/auth/callback", window.location.origin);
+                callbackUrl.searchParams.set("country", "US"); // Padrão, pode ser detectado depois
+                const returnTo = encodeURIComponent(callbackUrl.toString());
+                
+                const redirectUrl = new URL("/login", network323Url);
+                redirectUrl.searchParams.set("source", "american-dream");
+                redirectUrl.searchParams.set("returnTo", returnTo);
+                
+                window.location.href = redirectUrl.toString();
+              }}
+              className="flex items-center gap-2 text-white/90 hover:text-white transition-colors font-medium"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className="w-4 h-4"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+              Entrar
+            </button>
+            <button
+              onClick={() => {
                 if (isHomePage) {
                   window.open(whatsappLink, '_blank');
                 } else {
@@ -61,19 +93,53 @@ export const Header = () => {
             </button>
           </nav>
 
-          {/* Mobile CTA Button */}
-          <button
-            onClick={() => {
-              if (isHomePage) {
-                window.open(whatsappLink, '_blank');
-              } else {
-                navigate('/lead-form');
-              }
-            }}
-            className="md:hidden px-4 py-2 bg-white text-[#0575E6] rounded-lg font-semibold text-sm transition-all hover:bg-white/90"
-          >
-            Começar
-          </button>
+          {/* Mobile Buttons */}
+          <div className="md:hidden flex items-center gap-2">
+            <button
+              onClick={() => {
+                // Redirecionar para 323 Network
+                const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
+                const callbackUrl = new URL("/auth/callback", window.location.origin);
+                callbackUrl.searchParams.set("country", "US");
+                const returnTo = encodeURIComponent(callbackUrl.toString());
+                
+                const redirectUrl = new URL("/login", network323Url);
+                redirectUrl.searchParams.set("source", "american-dream");
+                redirectUrl.searchParams.set("returnTo", returnTo);
+                
+                window.location.href = redirectUrl.toString();
+              }}
+              className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors font-medium text-sm"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="14" 
+                height="14" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+              Entrar
+            </button>
+            <button
+              onClick={() => {
+                if (isHomePage) {
+                  window.open(whatsappLink, '_blank');
+                } else {
+                  navigate('/lead-form');
+                }
+              }}
+              className="px-4 py-2 bg-white text-[#0575E6] rounded-lg font-semibold text-sm transition-all hover:bg-white/90"
+            >
+              Começar
+            </button>
+          </div>
         </div>
       </div>
     </header>

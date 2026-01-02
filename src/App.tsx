@@ -18,6 +18,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import ConsultationForm from "./pages/ConsultationForm";
 import ConsultationFormDetails from "./pages/ConsultationFormDetails";
+import AuthCallback from "./pages/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ScrollToTop } from "./components/ScrollToTop";
 
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/payment/cancel" element={<PaymentCancel />} />
           <Route path="/consultation-form" element={<ConsultationForm />} />
           <Route path="/consultation-form/:token" element={<ConsultationForm />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/login" element={<Login />} />
           <Route 
             path="/dashboard/*" 

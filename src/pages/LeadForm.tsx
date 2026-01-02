@@ -100,6 +100,7 @@ const LeadForm = () => {
   const [loadingTerms, setLoadingTerms] = useState(false);
   const { recordTermAcceptance } = useTermsAcceptance();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [redirecting, setRedirecting] = useState(true);
 
   // Função para carregar dados do cache
   const loadCachedData = (): Partial<LeadFormValues> => {
@@ -154,7 +155,51 @@ const LeadForm = () => {
     },
   });
 
-  // Carregar termos na montagem do componente (necessário para validar e registrar aceitação)
+  // Redirecionar automaticamente para 323 Network ao carregar a página
+  useEffect(() => {
+    const redirectTo323Network = async () => {
+      setRedirecting(true);
+      
+      try {
+        // Detectar país do usuário por IP
+        let userCountry = "US"; // Padrão: EUA
+        try {
+          const ipResponse = await fetch("https://ipapi.co/json/");
+          if (ipResponse.ok) {
+            const ipData = await ipResponse.json();
+            userCountry = ipData.country_code || "US";
+            console.log("User country detected:", userCountry);
+          }
+        } catch (ipError) {
+          console.warn("Could not detect user country by IP:", ipError);
+        }
+
+        // Construir URL de retorno (callback do American Dream)
+        const callbackUrl = new URL("/auth/callback", window.location.origin);
+        callbackUrl.searchParams.set("country", userCountry);
+        const returnTo = encodeURIComponent(callbackUrl.toString());
+
+        // Construir URL de redirecionamento para 323 Network
+        const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
+        const redirectUrl = new URL("/login", network323Url);
+        redirectUrl.searchParams.set("source", "american-dream");
+        redirectUrl.searchParams.set("returnTo", returnTo);
+
+        console.log("[LeadForm] Redirecting to 323 Network:", redirectUrl.toString());
+        
+        // Redirecionar para 323 Network
+        window.location.href = redirectUrl.toString();
+      } catch (err) {
+        console.error("Erro ao redirecionar para 323 Network:", err);
+        setError("Erro ao redirecionar. Por favor, tente novamente.");
+        setRedirecting(false);
+      }
+    };
+
+    redirectTo323Network();
+  }, []);
+
+  // Carregar termos na montagem do componente (mantido para compatibilidade, mas não será usado)
   useEffect(() => {
     const loadActiveTerm = async () => {
       setLoadingTerms(true);
@@ -178,8 +223,6 @@ const LeadForm = () => {
         }
       } catch (err: any) {
         console.error("Error loading term:", err);
-        // Não mostrar erro aqui para não bloquear o formulário
-        // O erro será mostrado apenas se tentar submeter sem termos
       } finally {
         setLoadingTerms(false);
       }
@@ -277,38 +320,9 @@ const LeadForm = () => {
         formattedPhone = `${phoneCountryCode}${cleanPhone}`;
       }
 
-      // Inserir lead no Supabase
-      const { data, error: insertError } = await supabase
-        .from("leads")
-        .insert({
-          name: values.name,
-          email: values.email,
-          phone: formattedPhone,
-          country_code: phoneCountryCode, // Código do país do telefone
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error("Erro ao inserir lead:", insertError);
-        if (insertError.code === "PGRST301" || insertError.message?.includes("JWT")) {
-          setError("Ocorreu um problema de conexão. Por favor, verifique sua internet e tente novamente.");
-        } else {
-          setError("Não foi possível processar seus dados. Por favor, verifique as informações e tente novamente.");
-        }
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Verificar se os termos foram aceitos e se estão disponíveis
+      // Verificar se os termos foram aceitos
       if (!values.termsAccepted) {
         setError("Por favor, aceite os termos e condições para continuar.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!activeTerm) {
-        setError("Termos não disponíveis. Por favor, recarregue a página e tente novamente.");
         setIsSubmitting(false);
         return;
       }
@@ -327,83 +341,28 @@ const LeadForm = () => {
         // Usar padrão (US) se falhar
       }
 
-      // Registrar aceitação de termos e gerar PDF antes de redirecionar
-      try {
-        const acceptanceId = await recordTermAcceptance(
-          data.id,
-          activeTerm.id,
-          "lead_contract"
-        );
+      // Limpar cache após validação bem-sucedida
+      clearCache();
 
-        if (acceptanceId) {
-          // Limpar cache após submit bem-sucedido
-          clearCache();
+      // Construir URL de retorno (callback do American Dream)
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      callbackUrl.searchParams.set("country", userCountry);
+      const returnTo = encodeURIComponent(callbackUrl.toString());
 
-          // Gerar PDF em segundo plano (não aguardar a geração)
-          // Isso permite que o usuário seja redirecionado imediatamente
-          console.log("[LeadForm] Calling PDF generation function in background...", {
-            lead_id: data.id,
-            term_acceptance_id: acceptanceId,
-          });
-          
-          // Usar fetch diretamente com keepalive para evitar cancelamento na navegação
-          const { data: { session } } = await supabase.auth.getSession();
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-          
-          const functionUrl = `${supabaseUrl}/functions/v1/generate-contract-pdf`;
-          
-          // Preparar headers
-          const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-            "apikey": supabaseAnonKey,
-          };
-          
-          // Usar token da sessão se disponível, senão usar anon key
-          if (session?.access_token) {
-            headers["Authorization"] = `Bearer ${session.access_token}`;
-          } else {
-            headers["Authorization"] = `Bearer ${supabaseAnonKey}`;
-          }
-          
-          // Fazer fetch com keepalive para não ser cancelado na navegação
-          fetch(functionUrl, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              lead_id: data.id,
-              term_acceptance_id: acceptanceId,
-            }),
-            keepalive: true, // Mantém a requisição mesmo após navegação
-          })
-          .then(async (response) => {
-            try {
-              const result = await response.json();
-              console.log("[LeadForm] PDF generation completed (background):", result);
-              if (!response.ok) {
-                console.error("[LeadForm] PDF generation error:", result);
-              }
-            } catch (e) {
-              console.error("[LeadForm] Error parsing PDF response:", e);
-            }
-          })
-          .catch((pdfErr: any) => {
-            // Log do erro mas não bloquear o fluxo
-            console.error("[LeadForm] Error calling PDF generation (background):", pdfErr);
-          });
+      // Construir URL de redirecionamento para 323 Network
+      const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
+      const redirectUrl = new URL("/login", network323Url);
+      redirectUrl.searchParams.set("source", "american-dream");
+      redirectUrl.searchParams.set("returnTo", returnTo);
+      redirectUrl.searchParams.set("email", values.email);
+      redirectUrl.searchParams.set("name", values.name);
+      redirectUrl.searchParams.set("phone", formattedPhone);
+      redirectUrl.searchParams.set("phoneCountryCode", values.phoneCountryCode);
 
-          // Redirecionar imediatamente para página de opções de pagamento com país detectado
-          console.log("[LeadForm] Redirecting immediately to payment options...");
-          navigate(`/payment-options?lead_id=${data.id}&term_acceptance_id=${acceptanceId}&country=${userCountry}`);
-        } else {
-          setError("Erro ao registrar aceitação dos termos. Tente novamente.");
-          setIsSubmitting(false);
-        }
-      } catch (termsError) {
-        console.error("Error accepting terms:", termsError);
-        setError("Erro ao processar aceitação dos termos. Tente novamente.");
-        setIsSubmitting(false);
-      }
+      console.log("[LeadForm] Redirecting to 323 Network:", redirectUrl.toString());
+      
+      // Redirecionar para 323 Network
+      window.location.href = redirectUrl.toString();
     } catch (err) {
       console.error("Erro ao salvar lead:", err);
       setError("Ocorreu um erro inesperado. Por favor, tente novamente.");
@@ -411,6 +370,20 @@ const LeadForm = () => {
     }
   };
 
+  // Mostrar tela de loading enquanto redireciona
+  if (redirecting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-r from-[#0575E6] to-[#021B79] flex items-center justify-center p-6">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-white mb-4" />
+          <h1 className="text-2xl font-bold text-white mb-2">Redirecionando...</h1>
+          <p className="text-white/80">Você será redirecionado para a página de registro em instantes.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se houver erro no redirecionamento, mostrar formulário como fallback
   return (
     <div className="min-h-screen bg-gradient-to-r from-[#0575E6] to-[#021B79] flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">
