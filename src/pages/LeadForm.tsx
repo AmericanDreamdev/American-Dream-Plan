@@ -100,7 +100,6 @@ const LeadForm = () => {
   const [loadingTerms, setLoadingTerms] = useState(false);
   const { recordTermAcceptance } = useTermsAcceptance();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [redirecting, setRedirecting] = useState(true);
 
   // Função para carregar dados do cache
   const loadCachedData = (): Partial<LeadFormValues> => {
@@ -155,51 +154,7 @@ const LeadForm = () => {
     },
   });
 
-  // Redirecionar automaticamente para 323 Network ao carregar a página
-  useEffect(() => {
-    const redirectTo323Network = async () => {
-      setRedirecting(true);
-      
-      try {
-        // Detectar país do usuário por IP
-        let userCountry = "US"; // Padrão: EUA
-        try {
-          const ipResponse = await fetch("https://ipapi.co/json/");
-          if (ipResponse.ok) {
-            const ipData = await ipResponse.json();
-            userCountry = ipData.country_code || "US";
-            console.log("User country detected:", userCountry);
-          }
-        } catch (ipError) {
-          console.warn("Could not detect user country by IP:", ipError);
-        }
-
-        // Construir URL de retorno (callback do American Dream)
-        const callbackUrl = new URL("/auth/callback", window.location.origin);
-        callbackUrl.searchParams.set("country", userCountry);
-        const returnTo = encodeURIComponent(callbackUrl.toString());
-
-        // Construir URL de redirecionamento para 323 Network
-        const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
-        const redirectUrl = new URL("/login", network323Url);
-        redirectUrl.searchParams.set("source", "american-dream");
-        redirectUrl.searchParams.set("returnTo", returnTo);
-
-        console.log("[LeadForm] Redirecting to 323 Network:", redirectUrl.toString());
-        
-        // Redirecionar para 323 Network
-        window.location.href = redirectUrl.toString();
-      } catch (err) {
-        console.error("Erro ao redirecionar para 323 Network:", err);
-        setError("Erro ao redirecionar. Por favor, tente novamente.");
-        setRedirecting(false);
-      }
-    };
-
-    redirectTo323Network();
-  }, []);
-
-  // Carregar termos na montagem do componente (mantido para compatibilidade, mas não será usado)
+  // Carregar termos na montagem do componente
   useEffect(() => {
     const loadActiveTerm = async () => {
       setLoadingTerms(true);
@@ -364,26 +319,12 @@ const LeadForm = () => {
       // Redirecionar para 323 Network
       window.location.href = redirectUrl.toString();
     } catch (err) {
-      console.error("Erro ao salvar lead:", err);
-      setError("Ocorreu um erro inesperado. Por favor, tente novamente.");
+      console.error("Erro ao redirecionar:", err);
+      setError("Ocorreu um erro ao redirecionar. Por favor, tente novamente.");
       setIsSubmitting(false);
     }
   };
 
-  // Mostrar tela de loading enquanto redireciona
-  if (redirecting) {
-    return (
-      <div className="min-h-screen bg-gradient-to-r from-[#0575E6] to-[#021B79] flex items-center justify-center p-6">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-white mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">Redirecionando...</h1>
-          <p className="text-white/80">Você será redirecionado para a página de registro em instantes.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Se houver erro no redirecionamento, mostrar formulário como fallback
   return (
     <div className="min-h-screen bg-gradient-to-r from-[#0575E6] to-[#021B79] flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">

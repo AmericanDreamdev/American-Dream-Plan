@@ -31,6 +31,24 @@ export const Header = () => {
 
   const whatsappLink = 'https://chat.whatsapp.com/C5k7GQN1N5L0qmkDZgUlMn';
 
+  const handleAuthAction = () => {
+    if (user) {
+      navigate('/client/dashboard');
+    } else {
+      // Redirecionar para 323 Network
+      const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      callbackUrl.searchParams.set("country", "US");
+      const returnTo = encodeURIComponent(callbackUrl.toString());
+      
+      const redirectUrl = new URL("/login", network323Url);
+      redirectUrl.searchParams.set("source", "american-dream");
+      redirectUrl.searchParams.set("returnTo", returnTo);
+      
+      window.location.href = redirectUrl.toString();
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] border-b border-white/20 backdrop-blur-lg bg-gradient-to-r from-[#023E8A]/95 to-[#012A5E]/95 shadow-lg">
       <div className="container mx-auto px-6">
