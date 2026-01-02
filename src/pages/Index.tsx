@@ -245,7 +245,7 @@ const Index = () => {
               </div>
               <div className="p-8">
                 <h3 className="text-2xl font-bold mb-2 text-gray-900">Ceme Suaiden</h3>
-                <p className="text-primary mb-4">Especialista em Vistos F1</p>
+                <p className="text-primary mb-4">The Future Immigration Inc.</p>
                 <p className="text-gray-700">
                   Ceme Suaiden é um empresário cuja atuação se destaca justamente por conectar o Brasil e os Estados Unidos. Ele fundou, em 2014, uma consultoria criada para ser uma ponte robusta entre os dois países, auxiliando brasileiros interessados em internacionalizar negócios, investir ou imigrar para os EUA. Suaiden identificou as dificuldades enfrentadas por brasileiros ao tentarem abrir empresas ou conquistar espaço no mercado americano — por isso, sua empresa oferece suporte prático durante todas as etapas do processo. Suaiden também é proprietário da holding Suaiden Inc. e dos grupos The Future of English e The Future Immigration Inc., atuando com foco em internacionalização e desenvolvimento de oportunidades bilaterais. Seu trabalho é reconhecido por transformar sonhos de empreendedores e investidores brasileiros em ativos tangíveis nos EUA, facilitando a entrada legal de pessoas físicas e jurídicas, promovendo investimentos, educação e crescimento mútuo.
                 </p>
@@ -270,7 +270,7 @@ const Index = () => {
               </div>
               <div className="p-8">
                 <h3 className="text-2xl font-bold mb-2 text-gray-900">Matheus Brant</h3>
-                <p className="text-primary mb-4">Especialista em B1/B2 e COS</p>
+                <p className="text-primary mb-4">Brant Immigration Inc.</p>
                 <p className="text-gray-700">
                   Matheus Brant é a prova viva de que o sonho americano é possível. Depois de ter seu visto negado em 2016, ele voltou aprovado, estudou Business nos EUA e começou do zero — até fundar a Brant Immigration, hoje referência no mercado com mais de 7.000 vidas dolarizadas. Empresário, mentor e sócio da 323 Network em Hollywood, Matheus transforma histórias de brasileiros em estratégias reais de entrada, permanência e crescimento nos Estados Unidos. No American Dream, ele mostra o caminho que viveu — do sonho à conquista.
                 </p>
@@ -463,20 +463,33 @@ const Index = () => {
 
               <div className="space-y-4">
                 <div className="text-center">
-                  <div className="inline-flex items-center gap-2 bg-red-500 border-4 border-red-600 rounded-xl px-8 py-4 mb-4 shadow-lg">
-                    <span className="text-white font-black text-2xl md:text-3xl">50% DE DESCONTO</span>
-                  </div>
-                  <div className="text-xl md:text-2xl text-gray-700 mb-4">
-                    <span className="line-through text-gray-400 mr-3">De US$ 1.998</span>
-                    <span className="text-gray-900 font-bold">por apenas US$ 999</span>
+                  <div className="bg-slate-50 rounded-3xl p-6 md:p-8 border border-slate-100 w-full max-w-xl mx-auto mb-8 hover:border-[#0575E6]/30 transition-all duration-300 group">
+                    <span className="inline-block py-2 px-5 rounded-full bg-white border border-slate-200 text-[#0575E6] text-xs font-extrabold uppercase tracking-[0.2em] mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                      Entrada Facilitada
+                    </span>
+                    
+                    <div className="flex items-start justify-center gap-1 mb-6">
+                      <span className="text-3xl text-gray-400 font-bold mt-2 select-none">US$</span>
+                      <span className="text-7xl md:text-8xl font-black text-gray-900 tracking-tighter leading-none">999</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="text-lg md:text-xl text-gray-900 font-bold">
+                        Entrada de 50% para iniciar a mentoria
+                      </p>
+                      <div className="w-12 h-1 bg-gray-200 mx-auto rounded-full"></div>
+                      <p className="text-gray-500 font-medium">
+                        Segunda Parcela paga após a primeira sessão estratégica
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <Button 
                   size="lg" 
-                  className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white text-2xl md:text-3xl py-8 md:py-10 font-bold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105"
+                  className="w-full bg-[#0575E6] hover:bg-[#035bb3] text-white text-xl md:text-2xl py-8 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 rounded-xl border-b-4 border-[#03449e]"
                   onClick={() => navigate("/lead-form")}
                 >
-                  Garantir Minha Vaga Agora por US$ 999
+                  Garantir minha vaga agora
                 </Button>
               </div>
             </Card>

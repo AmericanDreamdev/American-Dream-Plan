@@ -60,14 +60,15 @@ interface DashboardFullTableProps {
 
 export const DashboardFullTable = ({ users, totalUsers, searchTerm, onUpdate }: DashboardFullTableProps) => {
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {users.length} de {totalUsers} usuários
       </div>
-      <div className="overflow-x-auto rounded-lg border-0 shadow-md -mx-6 px-6 bg-white">
+      <div className="overflow-x-auto border-0 -mx-6 px-6 bg-white">
         <Table className="table-hover">
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50 hover:bg-gray-50">
+              <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 w-10"></TableHead>
               <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[140px]">Nome</TableHead>
               <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[150px] hidden lg:table-cell">Email</TableHead>
               <TableHead className="text-xs font-semibold text-gray-900 py-2 px-2 whitespace-nowrap min-w-[100px] hidden xl:table-cell">Telefone</TableHead>
@@ -82,7 +83,7 @@ export const DashboardFullTable = ({ users, totalUsers, searchTerm, onUpdate }: 
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12 text-gray-600 bg-white">
+                <TableCell colSpan={10} className="text-center py-12 text-gray-600 bg-white">
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-base font-medium text-gray-900">Nenhum usuário encontrado</p>
                   <p className="text-sm text-gray-500 mt-1">
@@ -107,11 +108,11 @@ export const DashboardPaidTable = ({ users, onUpdate }: { users: DashboardUser[]
   const paidUsers = users.filter((u) => u.is_confirmado_pago === true);
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {paidUsers.length} usuários que pagaram
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
@@ -167,11 +168,11 @@ export const DashboardPendingTable = ({ users, onUpdate }: { users: DashboardUse
   const pendingUsers = users.filter((u) => u.status_pagamento_formatado === "Pendente");
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {pendingUsers.length} pagamentos pendentes
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
@@ -216,11 +217,11 @@ export const DashboardNotPaidTable = ({ users, onUpdate }: { users: DashboardUse
   });
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {notPaidUsers.length} usuários que não pagaram
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">
@@ -266,11 +267,11 @@ export const DashboardSecondPaidTable = ({ users, onUpdate }: { users: Dashboard
   const paidSecondPartUsers = users.filter((u) => u.is_confirmado_pago_segunda_parte === true);
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6">
       <div className="text-sm text-gray-500 mb-4">
         Mostrando {paidSecondPartUsers.length} usuários que pagaram a segunda parcela
       </div>
-      <div className="overflow-x-auto rounded-md border border-gray-200">
+      <div className="overflow-x-auto border-0 bg-white">
         <Table>
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50">

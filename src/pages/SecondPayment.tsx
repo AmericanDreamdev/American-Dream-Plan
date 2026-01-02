@@ -61,22 +61,7 @@ const ZelleIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Componente SVG do Infinite Pay
-const InfinitePayIcon = ({ className }: { className?: string }) => (
-  <svg 
-    className={className}
-    xmlns="http://www.w3.org/2000/svg" 
-    x="0px" 
-    y="0px" 
-    width="100" 
-    height="100" 
-    viewBox="0 0 48 48"
-  >
-    <path fill="#00A8FF" d="M24,4C12.954,4,4,12.954,4,24s8.954,20,20,20s20-8.954,20-20S35.046,4,24,4z"></path>
-    <path fill="#fff" d="M24,12c-6.627,0-12,5.373-12,12s5.373,12,12,12s12-5.373,12-12S30.627,12,24,12z M24,32	c-4.418,0-8-3.582-8-8s3.582-8,8-8s8,3.582,8,8S28.418,32,24,32z"></path>
-    <path fill="#00A8FF" d="M24,20c-2.209,0-4,1.791-4,4s1.791,4,4,4s4-1.791,4-4S26.209,20,24,20z"></path>
-  </svg>
-);
+
 
 const SecondPayment = () => {
   const navigate = useNavigate();
@@ -88,10 +73,7 @@ const SecondPayment = () => {
   const [loadingCard, setLoadingCard] = useState(false);
   const [loadingPix, setLoadingPix] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userCountry, setUserCountry] = useState<string>(countryParam.toUpperCase());
-  
-  // Determinar se é Brasil
-  const isBrazil = userCountry === "BR";
+
 
   // Valores base (sem taxas)
   const baseUsdAmount = 999.00; // US$ 999,00
@@ -295,212 +277,149 @@ const SecondPayment = () => {
     navigate(`/zelle-checkout?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}&payment_part=2`);
   };
 
-  const handleInfinitePayCheckout = async () => {
-    if (!leadId || !termAcceptanceId) return;
-    
-    // Registrar redirecionamento para InfinitePay (segunda parte)
-    try {
-      const { error } = await supabase.from("payments").insert({
-        lead_id: leadId,
-        term_acceptance_id: termAcceptanceId,
-        amount: 5776.00,
-        currency: "BRL",
-        status: "redirected_to_infinitepay",
-        metadata: {
-          payment_method: "infinitepay",
-          payment_part: 2, // SEGUNDA PARTE
-          infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
-          redirected_at: new Date().toISOString(),
-        },
-      });
-      
-      if (error) {
-        console.error("Error registering InfinitePay redirect:", error);
-      }
-    } catch (err) {
-      console.error("Error registering InfinitePay redirect:", err);
-    }
-    
-    // Redirecionar diretamente para o link da InfinitePay
-    window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
-  };
+
 
   if (!leadId || !termAcceptanceId) {
     return null;
   }
 
-  // Renderizar métodos de pagamento baseado no país
+  // Renderizar métodos de pagamento
   const renderPaymentMethods = () => {
-    if (isBrazil) {
-      // Brasil: apenas Infinite Pay
-      return (
-        <div className="grid md:grid-cols-1 gap-4 max-w-md mx-auto">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white"
-            onClick={handleInfinitePayCheckout}
-          >
-            <CardContent className="p-6 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-20 h-20">
-                  <InfinitePayIcon className="w-full h-full" />
-                </div>
+    return (
+      <div className="grid md:grid-cols-3 gap-4">
+        {/* Zelle */}
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
+          onClick={handleZelleCheckout}
+        >
+          <CardContent className="p-6 text-center flex flex-col flex-grow">
+            <div className="flex justify-center mb-4">
+              <div className="flex items-center justify-center w-20 h-20">
+                <ZelleIcon className="w-full h-full" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Infinite Pay</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Pagamento via Infinite Pay
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">Zelle</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">
+              Pagamento rápido e seguro via Zelle
+            </p>
+            <div className="mb-4">
+              <p className="text-base sm:text-lg font-bold text-blue-600">
+                ${zelleAmount.toFixed(2)}
               </p>
-              <Button 
-                className="w-full"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleInfinitePayCheckout();
-                }}
-              >
-                Pagar com Infinite Pay
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    } else {
-      // Qualquer país que NÃO seja Brasil: Zelle, Stripe Card e Stripe PIX
-      return (
-        <div className="grid md:grid-cols-3 gap-4">
-          {/* Zelle */}
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
-            onClick={handleZelleCheckout}
-          >
-            <CardContent className="p-6 text-center flex flex-col flex-grow">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-20 h-20">
-                  <ZelleIcon className="w-full h-full" />
-                </div>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">Zelle</h3>
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                Pagamento rápido e seguro via Zelle
-              </p>
-              <div className="mb-4">
-                <p className="text-base sm:text-lg font-bold text-blue-600">
-                  ${zelleAmount.toFixed(2)}
-                </p>
-              </div>
-              <div className="flex-grow"></div>
-              <Button 
-                className="w-full mt-auto"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleZelleCheckout();
-                }}
-              >
-                Pagar com Zelle
-              </Button>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="flex-grow"></div>
+            <Button 
+              className="w-full mt-auto"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleZelleCheckout();
+              }}
+            >
+              Pagar com Zelle
+            </Button>
+          </CardContent>
+        </Card>
 
-          {/* Stripe Card */}
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
-            onClick={() => handleStripeCheckout("card")}
-          >
-            <CardContent className="p-6 text-center flex flex-col flex-grow">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-full max-w-[200px] h-20">
-                  <StripeIcon className="w-full h-full" />
-                </div>
+        {/* Stripe Card */}
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
+          onClick={() => handleStripeCheckout("card")}
+        >
+          <CardContent className="p-6 text-center flex flex-col flex-grow">
+            <div className="flex justify-center mb-4">
+              <div className="flex items-center justify-center w-full max-w-[200px] h-20">
+                <StripeIcon className="w-full h-full" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">Cartão de Crédito</h3>
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                Visa, Mastercard, American Express
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">Cartão de Crédito</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">
+              Visa, Mastercard, American Express
+            </p>
+            <div className="mb-2">
+              <p className="text-base sm:text-lg font-bold text-blue-600">
+                ${cardFinalAmount.toFixed(2)}
               </p>
-              <div className="mb-2">
-                <p className="text-base sm:text-lg font-bold text-blue-600">
-                  ${cardFinalAmount.toFixed(2)}
-                </p>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
-                  * Taxa de processamento incluída
-                </p>
-              </div>
-              <div className="flex-grow"></div>
-              <Button 
-                className="w-full mt-auto"
-                variant="outline"
-                disabled={loadingCard}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStripeCheckout("card");
-                }}
-              >
-                {loadingCard ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  "Pagar com Cartão"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                * Taxa de processamento incluída
+              </p>
+            </div>
+            <div className="flex-grow"></div>
+            <Button 
+              className="w-full mt-auto"
+              variant="outline"
+              disabled={loadingCard}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStripeCheckout("card");
+              }}
+            >
+              {loadingCard ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                "Pagar com Cartão"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
 
-          {/* Stripe PIX */}
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
-            onClick={() => handleStripeCheckout("pix")}
-          >
-            <CardContent className="p-6 text-center flex flex-col flex-grow">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-20 h-20">
-                  <PixIcon className="w-full h-full" />
-                </div>
+        {/* Stripe PIX */}
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
+          onClick={() => handleStripeCheckout("pix")}
+        >
+          <CardContent className="p-6 text-center flex flex-col flex-grow">
+            <div className="flex justify-center mb-4">
+              <div className="flex items-center justify-center w-20 h-20">
+                <PixIcon className="w-full h-full" />
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">PIX</h3>
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                Pagamento instantâneo via PIX
-              </p>
-              <div className="mb-4">
-                {loadingExchangeRate || pixFinalAmount === null ? (
-                  <p className="text-base sm:text-lg font-bold text-gray-400">
-                    Carregando...
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">PIX</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">
+              Pagamento instantâneo via PIX
+            </p>
+            <div className="mb-4">
+              {loadingExchangeRate || pixFinalAmount === null ? (
+                <p className="text-base sm:text-lg font-bold text-gray-400">
+                  Carregando...
+                </p>
+              ) : (
+                <>
+                  <p className="text-base sm:text-lg font-bold text-blue-600">
+                    R$ {pixFinalAmount.toFixed(2)}
                   </p>
-                ) : (
-                  <>
-                    <p className="text-base sm:text-lg font-bold text-blue-600">
-                      R$ {pixFinalAmount.toFixed(2)}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
-                      * Taxa de processamento incluída
-                    </p>
-                  </>
-                )}
-              </div>
-              <div className="flex-grow"></div>
-              <Button 
-                className="w-full mt-auto"
-                variant="outline"
-                disabled={loadingPix}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStripeCheckout("pix");
-                }}
-              >
-                {loadingPix ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  "Pagar com PIX"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                    * Taxa de processamento incluída
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="flex-grow"></div>
+            <Button 
+              className="w-full mt-auto"
+              variant="outline"
+              disabled={loadingPix}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleStripeCheckout("pix");
+              }}
+            >
+              {loadingPix ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                "Pagar com PIX"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   };
 
   return (

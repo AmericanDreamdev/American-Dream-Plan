@@ -615,6 +615,17 @@ const LeadForm = () => {
                   "Continuar"
                 )}
               </Button>
+
+              <div className="flex items-center justify-center gap-2 text-gray-600 mt-6 pt-4 border-t border-gray-100">
+                <span>Já tem uma conta?</span>
+                <button 
+                  type="button"
+                  onClick={() => navigate("/client/login")}
+                  className="font-semibold text-[#0575E6] hover:text-[#021B79] underline transition-colors"
+                >
+                  Faça Login
+                </button>
+              </div>
             </form>
           </Form>
         </div>
@@ -624,4 +635,3 @@ const LeadForm = () => {
 };
 
 export default LeadForm;
-

@@ -1,9 +1,28 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { User } from "@supabase/supabase-js";
+import { LogIn, LayoutDashboard } from "lucide-react";
 
 export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -91,6 +110,24 @@ export const Header = () => {
             >
               Começar Agora
             </button>
+
+            {/* Auth Button */}
+            <button
+                onClick={handleAuthAction}
+                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors font-medium ml-2"
+            >
+                {user ? (
+                    <>
+                        <LayoutDashboard className="h-4 w-4" />
+                        Meu Painel
+                    </>
+                ) : (
+                    <>
+                        <LogIn className="h-4 w-4" />
+                        Entrar
+                    </>
+                )}
+            </button>
           </nav>
 
           {/* Mobile Buttons */}
@@ -145,4 +182,3 @@ export const Header = () => {
     </header>
   );
 };
-

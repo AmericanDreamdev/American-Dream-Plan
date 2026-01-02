@@ -945,34 +945,94 @@ const ConsultationForm = () => {
                       }
                     : undefined
                 }
+                onSchedule={async (payload) => {
+                  try {
+                    // Determinar o lead_id correto
+                    const finalLeadId = leadData?.id || leadId;
+                    
+                    if (!finalLeadId) {
+                      toast.error("Erro: não foi possível identificar o usuário. Agendamento no Calendly foi confirmado, mas não foi registrado no sistema.");
+                      return;
+                    }
+
+                    const eventUri = payload?.event?.uri || payload?.uri || "";
+                    
+                    // Tentar múltiplos caminhos para a data da reunião
+                    const scheduledTime = 
+                      payload?.event?.start_time ||
+                      payload?.event?.start ||
+                      payload?.scheduled_event?.start_time ||
+                      payload?.invitee?.scheduled_event?.start_time ||
+                      payload?.scheduled_at ||
+                      payload?.start_time ||
+                      null;
+                    
+                    // Se não encontrar a data, adicionar nota para o admin
+                    const notesText = scheduledTime 
+                      ? 'Agendado automaticamente via Calendly pelo cliente.'
+                      : 'Agendado automaticamente via Calendly pelo cliente. (Data/hora da reunião precisa ser verificada no Calendly)';
+                    
+                    const meetingData = {
+                      lead_id: finalLeadId,
+                      meeting_type: 'first',
+                      status: 'scheduled',
+                      scheduled_date: scheduledTime || new Date().toISOString(),
+                      meeting_url: eventUri || 'https://calendly.com/app/scheduled_events/user/me',
+                      notes: notesText
+                    };
+                    
+                    // Salvar na tabela meetings
+                    const { data, error } = await supabase
+                      .from('meetings')
+                      .insert(meetingData)
+                      .select();
+
+                    if (error) {
+                      toast.error("Erro ao registrar agendamento no sistema, mas seu horário no Calendly está confirmado.");
+                    } else {
+                      toast.success("Agendamento confirmado com sucesso!");
+                      // Redirecionar para dashboard se logado ou home após alguns segundos
+                      setTimeout(() => {
+                         navigate("/client/dashboard");
+                      }, 2000);
+                    }
+                  } catch (err) {
+                    console.error("[ConsultationForm] ❌ Exceção ao processar agendamento:", err);
+                    toast.error("Ocorreu um erro inesperado ao salvar o agendamento.");
+                  }
+                  
+                  console.log("[ConsultationForm] ========= FIM DO PROCESSAMENTO =========");
+                }}
               />
               <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => navigate("/oferta")}
-                  style={{ 
-                    backgroundColor: '#ffffff',
-                    color: '#111827',
-                    border: '1px solid #d1d5db',
-                    padding: '0.625rem 1rem',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                  }}
-                >
-                  <span style={{ color: '#111827' }}>Voltar para a Página Inicial</span>
-                </button>
+                  <div className="mt-4 flex flex-col items-center gap-3">
+                    <button
+                      onClick={() => navigate("/oferta")}
+                      style={{ 
+                        backgroundColor: '#ffffff',
+                        color: '#111827',
+                        border: '1px solid #d1d5db',
+                        padding: '0.625rem 1rem',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                      }}
+                    >
+                      <span style={{ color: '#111827' }}>Voltar para a Página Inicial</span>
+                    </button>
+                  </div>
               </div>
             </CardContent>
           </Card>
