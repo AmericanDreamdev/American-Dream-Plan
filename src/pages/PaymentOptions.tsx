@@ -156,6 +156,66 @@ const PaymentOptions = () => {
   
   // Estado para forçar re-avaliação quando página é restaurada do bfcache
   const [pageShowTrigger, setPageShowTrigger] = useState(0);
+
+  // Verificar e processar token de autenticação se presente na URL
+  useEffect(() => {
+    const checkAuthToken = async () => {
+      const token = searchParams.get("token");
+      
+      if (token) {
+        try {
+          console.log("[PaymentOptions] Token encontrado na URL, autenticando...");
+          
+          // Tentar autenticar com o token
+          const { data: { session }, error: authError } = await supabase.auth.setSession({
+            access_token: token,
+            refresh_token: token, // Fallback: usar o mesmo token como refresh
+          });
+
+          if (!authError && session?.user) {
+            console.log("[PaymentOptions] Autenticação bem-sucedida:", session.user.id);
+            
+            // Vincular lead ao user_id se necessário
+            if (leadId) {
+              const { data: lead, error: leadError } = await supabase
+                .from("leads")
+                .select("user_id")
+                .eq("id", leadId)
+                .single();
+
+              if (!leadError && lead && !lead.user_id) {
+                console.log("[PaymentOptions] Vinculando lead ao user_id...");
+                const { error: updateError } = await supabase
+                  .from("leads")
+                  .update({ user_id: session.user.id })
+                  .eq("id", leadId);
+
+                if (updateError) {
+                  console.error("[PaymentOptions] Erro ao vincular lead:", updateError);
+                } else {
+                  console.log("[PaymentOptions] Lead vinculado com sucesso");
+                }
+              }
+            }
+            
+            // Remover token da URL após processar
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.delete("token");
+            const newUrl = `${window.location.pathname}${newSearchParams.toString() ? `?${newSearchParams.toString()}` : ""}`;
+            window.history.replaceState({}, "", newUrl);
+            
+            console.log("[PaymentOptions] Token removido da URL");
+          } else {
+            console.error("[PaymentOptions] Erro na autenticação:", authError);
+          }
+        } catch (error) {
+          console.error("[PaymentOptions] Erro ao processar token:", error);
+        }
+      }
+    };
+
+    checkAuthToken();
+  }, [searchParams, leadId]);
   
   // Determinar se é Brasil
   // Qualquer país que NÃO seja Brasil recebe: Zelle, Stripe Card e Stripe PIX
