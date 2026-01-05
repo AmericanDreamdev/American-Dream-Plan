@@ -353,13 +353,13 @@ const Index = () => {
                 
                 <div className="mb-6">
                   <div className="text-gray-400 line-through text-2xl mb-2">
-                    De US$ 19.997,00
+                    De US$ 6.000,00
                   </div>
                   <div className="text-6xl font-bold bg-gradient-to-r from-[#0575E6] to-[#021B79] bg-clip-text text-transparent mb-2">
-                    US$ 1.998
+                    US$ 3.998
                   </div>
                   <div className="text-xl text-gray-700 font-medium">
-                    Economize US$ 18.000 na sua consultoria completa
+                    Economize US$ 2.002 na sua consultoria completa
                   </div>
                 </div>
               </div>
@@ -470,7 +470,7 @@ const Index = () => {
                     
                     <div className="flex items-start justify-center gap-1 mb-6">
                       <span className="text-3xl text-gray-400 font-bold mt-2 select-none">US$</span>
-                      <span className="text-7xl md:text-8xl font-black text-gray-900 tracking-tighter leading-none">999</span>
+                      <span className="text-7xl md:text-8xl font-black text-gray-900 tracking-tighter leading-none">1999</span>
                     </div>
 
                     <div className="space-y-3">

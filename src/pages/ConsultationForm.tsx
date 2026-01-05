@@ -914,6 +914,67 @@ const ConsultationForm = () => {
     );
   }
 
+  // Função para processar o agendamento da reunião
+  const handleMeetingScheduled = async (payload: any) => {
+    try {
+      console.log("[ConsultationForm] processing schedule:", payload);
+      // Determinar o lead_id correto
+      const finalLeadId = leadData?.id || leadId;
+      
+      if (!finalLeadId) {
+        toast.error("Erro: não foi possível identificar o usuário. Agendamento no Calendly foi confirmado, mas não foi registrado no sistema.");
+        return;
+      }
+
+      const eventUri = payload?.event?.uri || payload?.uri || "";
+      
+      // Tentar múltiplos caminhos para a data da reunião
+      const scheduledTime = 
+        payload?.event?.start_time ||
+        payload?.event?.start ||
+        payload?.scheduled_event?.start_time ||
+        payload?.invitee?.scheduled_event?.start_time ||
+        payload?.scheduled_at ||
+        payload?.start_time ||
+        null;
+      
+      // Se não encontrar a data, adicionar nota para o admin
+      const notesText = scheduledTime 
+        ? 'Agendado automaticamente via Calendly pelo cliente.'
+        : 'Agendado automaticamente via Calendly pelo cliente. (Data/hora da reunião precisa ser verificada no Calendly)';
+      
+      const meetingData = {
+        lead_id: finalLeadId,
+        meeting_type: 'first',
+        status: 'scheduled',
+        scheduled_date: scheduledTime || new Date().toISOString(),
+        meeting_url: eventUri || 'https://calendly.com/app/scheduled_events/user/me',
+        notes: notesText
+      };
+      
+      // Salvar na tabela meetings
+      const { data, error } = await supabase
+        .from('meetings')
+        .insert(meetingData)
+        .select();
+
+      if (error) {
+        toast.error("Erro ao registrar agendamento no sistema, mas seu horário no Calendly está confirmado.");
+      } else {
+        toast.success("Agendamento confirmado com sucesso!");
+        // Redirecionar para dashboard se logado ou home após alguns segundos
+        setTimeout(() => {
+           navigate("/client/dashboard");
+        }, 2000);
+      }
+    } catch (err) {
+      console.error("[ConsultationForm] ❌ Exceção ao processar agendamento:", err);
+      toast.error("Ocorreu um erro inesperado ao salvar o agendamento.");
+    }
+    
+    console.log("[ConsultationForm] ========= FIM DO PROCESSAMENTO =========");
+  };
+
   if (isFormSubmitted) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 consultation-form-page">
@@ -945,65 +1006,36 @@ const ConsultationForm = () => {
                       }
                     : undefined
                 }
-                onSchedule={async (payload) => {
-                  try {
-                    // Determinar o lead_id correto
-                    const finalLeadId = leadData?.id || leadId;
-                    
-                    if (!finalLeadId) {
-                      toast.error("Erro: não foi possível identificar o usuário. Agendamento no Calendly foi confirmado, mas não foi registrado no sistema.");
-                      return;
-                    }
-
-                    const eventUri = payload?.event?.uri || payload?.uri || "";
-                    
-                    // Tentar múltiplos caminhos para a data da reunião
-                    const scheduledTime = 
-                      payload?.event?.start_time ||
-                      payload?.event?.start ||
-                      payload?.scheduled_event?.start_time ||
-                      payload?.invitee?.scheduled_event?.start_time ||
-                      payload?.scheduled_at ||
-                      payload?.start_time ||
-                      null;
-                    
-                    // Se não encontrar a data, adicionar nota para o admin
-                    const notesText = scheduledTime 
-                      ? 'Agendado automaticamente via Calendly pelo cliente.'
-                      : 'Agendado automaticamente via Calendly pelo cliente. (Data/hora da reunião precisa ser verificada no Calendly)';
-                    
-                    const meetingData = {
-                      lead_id: finalLeadId,
-                      meeting_type: 'first',
-                      status: 'scheduled',
-                      scheduled_date: scheduledTime || new Date().toISOString(),
-                      meeting_url: eventUri || 'https://calendly.com/app/scheduled_events/user/me',
-                      notes: notesText
-                    };
-                    
-                    // Salvar na tabela meetings
-                    const { data, error } = await supabase
-                      .from('meetings')
-                      .insert(meetingData)
-                      .select();
-
-                    if (error) {
-                      toast.error("Erro ao registrar agendamento no sistema, mas seu horário no Calendly está confirmado.");
-                    } else {
-                      toast.success("Agendamento confirmado com sucesso!");
-                      // Redirecionar para dashboard se logado ou home após alguns segundos
-                      setTimeout(() => {
-                         navigate("/client/dashboard");
-                      }, 2000);
-                    }
-                  } catch (err) {
-                    console.error("[ConsultationForm] ❌ Exceção ao processar agendamento:", err);
-                    toast.error("Ocorreu um erro inesperado ao salvar o agendamento.");
-                  }
-                  
-                  console.log("[ConsultationForm] ========= FIM DO PROCESSAMENTO =========");
-                }}
+                onSchedule={handleMeetingScheduled}
               />
+
+              {window.location.hostname === "localhost" && (
+                <div className="mt-8 p-4 border-2 border-dashed border-amber-200 rounded-xl bg-amber-50/50 flex flex-col items-center gap-4">
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <AlertCircle className="w-5 h-5" />
+                    <span className="font-semibold text-sm uppercase tracking-wider">Ambiente de Desenvolvimento</span>
+                  </div>
+                  <p className="text-center text-sm text-amber-600 max-w-md">
+                    Para evitar agendamentos reais na agenda do Brant durante os testes, utilize o botão abaixo para simular a confirmação do Calendly.
+                  </p>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="bg-white border-amber-300 text-amber-700 hover:bg-amber-100 hover:text-amber-800 transition-all shadow-sm"
+                    onClick={() => {
+                      handleMeetingScheduled({
+                        event: {
+                          uri: "https://calendly.com/simulated-event",
+                          start_time: new Date().toISOString()
+                        },
+                        uri: "https://calendly.com/simulated-event"
+                      });
+                    }}
+                  >
+                    Simular Agendamento
+                  </Button>
+                </div>
+              )}
               <div className="mt-6 flex justify-center">
                   <div className="mt-4 flex flex-col items-center gap-3">
                     <button
@@ -1445,16 +1477,16 @@ const ConsultationForm = () => {
                             <Label htmlFor="visto-f1">Estudante (F1)</Label>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="cos" id="visto-cos" />
-                            <Label htmlFor="visto-cos">Troca de status (COS)</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
                             <RadioGroupItem value="trabalho" id="visto-trabalho" />
                             <Label htmlFor="visto-trabalho">Visto de trabalho (EB3, EB2, L1, etc.)</Label>
                           </div>
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="nao_sei" id="visto-nao-sei" />
                             <Label htmlFor="visto-nao-sei">Não sei</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="nao_preciso" id="visto-nao-preciso" />
+                            <Label htmlFor="visto-nao-preciso">Não preciso de visto</Label>
                           </div>
                         </RadioGroup>
                       </FormControl>

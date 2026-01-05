@@ -59,7 +59,7 @@ const CurrentAction = ({ stages, currentStage, firstMeetingDate, planStatus }: C
         return {
           icon: <CreditCard className="w-8 h-8 text-blue-600" />,
           title: "Realize seu Pagamento Inicial",
-          description: "Para iniciar seu processo, é necessário realizar o pagamento da primeira parcela de US$ 999,00. Oferecemos diversas formas de pagamento.",
+          description: "Para iniciar seu processo, é necessário realizar o pagamento da primeira parcela de US$ 1.999,00. Oferecemos diversas formas de pagamento.",
           showAction: true
         };
       case 2:
@@ -97,7 +97,7 @@ const CurrentAction = ({ stages, currentStage, firstMeetingDate, planStatus }: C
         return {
           icon: <Banknote className="w-8 h-8 text-blue-600" />,
           title: "Segunda Parcela do Investimento",
-          description: "Para dar continuidade ao seu processo e agendar a apresentação do plano, realize o pagamento da segunda parcela de US$ 999,00.",
+          description: "Para dar continuidade ao seu processo e agendar a apresentação do plano, realize o pagamento da segunda parcela de US$ 1.999,00.",
           showAction: true
         };
       case 6:

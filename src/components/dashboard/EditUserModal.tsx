@@ -68,7 +68,7 @@ export const EditUserModal = ({ user, open, onOpenChange, onSuccess }: EditUserM
         if (user.valor_segunda_parte_formatado.includes("R$")) currency = "BRL";
       } else {
         // Default amount for 2nd part if empty
-        amount = "999.00"; 
+        amount = "1999.00"; 
       }
       method = user.metodo_pagamento_segunda_parte_formatado || "";
       if (user.data_pagamento_segunda_parte_formatada) { 
@@ -120,6 +120,9 @@ export const EditUserModal = ({ user, open, onOpenChange, onSuccess }: EditUserM
         paymentStatus = "completed"; // Or specific status like 'zelle_confirmed'
         if (formData.paymentStatus.includes("Zelle")) paymentStatus = "zelle_confirmed";
         isCompleted = true;
+      } else if (formData.paymentStatus === "Pago Parcelow") {
+        paymentStatus = "completed";
+        isCompleted = true;
       } else if (formData.paymentStatus.includes("Redirecionado")) {
          if (formData.paymentStatus.includes("Zelle")) paymentStatus = "redirected_to_zelle";
          else paymentStatus = "redirected_to_infinitepay";
@@ -136,6 +139,16 @@ export const EditUserModal = ({ user, open, onOpenChange, onSuccess }: EditUserM
       else if (formData.paymentMethod === "PIX") paymentMethod = "pix";
       else if (formData.paymentMethod === "Zelle") paymentMethod = "zelle";
       else if (formData.paymentMethod === "InfinitePay") paymentMethod = "infinitepay";
+      else if (formData.paymentMethod === "Parcelow") paymentMethod = "parcelow";
+
+      // Inferred method from status if not explicitly set in method dropdown
+      if (!paymentMethod) {
+        if (formData.paymentStatus.includes("PIX")) paymentMethod = "pix";
+        else if (formData.paymentStatus.includes("Cartão")) paymentMethod = "card";
+        else if (formData.paymentStatus.includes("Zelle")) paymentMethod = "zelle";
+        else if (formData.paymentStatus.includes("InfinitePay")) paymentMethod = "infinitepay";
+        else if (formData.paymentStatus.includes("Parcelow")) paymentMethod = "parcelow";
+      }
 
       let paymentDateTime = null;
       if (formData.paymentDate) {
@@ -156,6 +169,7 @@ export const EditUserModal = ({ user, open, onOpenChange, onSuccess }: EditUserM
       if (isCompleted) {
           if (paymentMethod === 'zelle') metadata.zelle_paid = true;
           if (paymentMethod === 'infinitepay') metadata.infinitepay_paid = true;
+          if (paymentMethod === 'parcelow') metadata.parcelow_paid = true;
       }
 
       if (formData.notes) metadata.notes = formData.notes;
@@ -246,9 +260,11 @@ export const EditUserModal = ({ user, open, onOpenChange, onSuccess }: EditUserM
                         <SelectItem value="Pago (PIX)">Pago (PIX)</SelectItem>
                         <SelectItem value="Pago (Zelle)">Pago (Zelle)</SelectItem>
                         <SelectItem value="Pago (InfinitePay)">Pago (InfinitePay)</SelectItem>
+                        <SelectItem value="Pago Parcelow">Pago Parcelow</SelectItem>
                         <SelectItem value="Pendente">Pendente</SelectItem>
                         <SelectItem value="Pendente (Stripe)">Pendente (Stripe)</SelectItem>
                         <SelectItem value="Pendente (InfinitePay)">Pendente (InfinitePay)</SelectItem>
+                        <SelectItem value="Pendente Parcelow">Pendente Parcelow</SelectItem>
                         <SelectItem value="Redirecionado (Zelle)">Redirecionado (Zelle)</SelectItem>
                         <SelectItem value="Redirecionado (InfinitePay)">Redirecionado (InfinitePay)</SelectItem>
                         <SelectItem value="Não pagou">Não pagou</SelectItem>
@@ -299,6 +315,7 @@ export const EditUserModal = ({ user, open, onOpenChange, onSuccess }: EditUserM
                         <SelectItem value="PIX">PIX</SelectItem>
                         <SelectItem value="Zelle">Zelle</SelectItem>
                         <SelectItem value="InfinitePay">InfinitePay</SelectItem>
+                        <SelectItem value="Parcelow">Parcelow</SelectItem>
                     </SelectContent>
                     </Select>
                 </div>

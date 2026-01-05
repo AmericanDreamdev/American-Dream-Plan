@@ -222,7 +222,7 @@ const PaymentOptions = () => {
   const isBrazil = userCountry === "BR";
 
   // Valores base (sem taxas)
-  const baseUsdAmount = 999.00; // US$ 999,00
+  const baseUsdAmount = 1999.00; // US$ 1.999,00
   
   // Taxas de processamento
   const cardFeePercentage = 0.039; // 3.9%
@@ -268,7 +268,7 @@ const PaymentOptions = () => {
   
   // Calcular valores finais com taxas
   const cardFinalAmount = baseUsdAmount + (baseUsdAmount * cardFeePercentage) + cardFeeFixed; // US$ 1,038.26
-  const zelleAmount = baseUsdAmount; // US$ 999,00 (sem taxas)
+  const zelleAmount = baseUsdAmount; // US$ 1.999,00 (sem taxas)
   
   // Calcular valor PIX com conversão dinâmica (se taxa disponível)
   const calculatePIXAmount = (netAmountUSD: number, rate: number): number => {
@@ -754,7 +754,7 @@ const PaymentOptions = () => {
       const { error } = await supabase.from("payments").insert({
         lead_id: leadId,
         term_acceptance_id: termAcceptanceId,
-        amount: 999.00, // Valor do Zelle em USD (US$ 999.00)
+        amount: 1999.00, // Valor do Zelle em USD (US$ 1.999,00)
         currency: "USD",
         status: "redirected_to_zelle",
         metadata: {

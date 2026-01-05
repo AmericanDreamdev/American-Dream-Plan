@@ -411,7 +411,7 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
           <DialogHeader>
             <DialogTitle>Link da Parcela 2/2 American Dream</DialogTitle>
             <DialogDescription>
-              Envie este link para o usuário realizar o pagamento da segunda parcela (US$ 999,00).
+              Envie este link para o usuário realizar o pagamento da segunda parcela (US$ 1.999,00).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -443,7 +443,7 @@ export const DashboardTableRow = ({ user, onUpdate }: DashboardTableRowProps) =>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-xs text-blue-800 font-medium mb-1">Informações do Link:</p>
               <ul className="text-xs text-blue-700 space-y-1">
-                <li>• Valor: US$ 999,00 (segunda parte)</li>
+                <li>• Valor: US$ 1.999,00 (segunda parte)</li>
                 <li>• Métodos disponíveis: Cartão, PIX, Zelle</li>
                 <li>• Válido para: {user.nome_completo}</li>
                 <li>• Email: {user.email}</li>
