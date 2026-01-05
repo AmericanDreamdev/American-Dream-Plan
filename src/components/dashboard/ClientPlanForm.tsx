@@ -300,7 +300,7 @@ export const ClientPlanForm = ({ leadId, plan, open, onOpenChange, onSuccess }: 
                     <p className="text-xs text-gray-500">Adicione e edite as tarefas do plano</p>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={addStep}>
-                  <Plus className="h-4 w-4 mr-1" /> Add Etapa
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar Etapa
                 </Button>
               </div>
 

@@ -104,7 +104,7 @@ serve(async (req) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sua 2ª Sessão - American Dream</title>
+  <title>Segundo Pagamento - American Dream</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px 0;">
@@ -131,7 +131,7 @@ serve(async (req) => {
               </p>
               
               <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-                <strong>O Próximo Passo: A Segunda Sessão</strong><br>
+                <strong>O Próximo Passo: Segundo Pagamento e Apresentação do Plano</strong><br>
                 Agora, avançaremos para a fase mais importante: a <strong>Apresentação do seu Plano Personalizado</strong>. Nesta segunda sessão, detalharemos todas as etapas, custos e prazos para o seu projeto de vida nos EUA.
               </p>
 
@@ -145,7 +145,7 @@ serve(async (req) => {
                   <td align="center">
                     <a href="${secondPaymentUrl}" 
                        style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 18px; font-weight: bold; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">
-                      Agendar 2ª Sessão e Pagar
+                      Realizar Segundo Pagamento
                     </a>
                   </td>
                 </tr>
@@ -193,7 +193,7 @@ serve(async (req) => {
     await transporter.sendMail({
       from: `"${smtpFromName}" <${smtpFrom}>`,
       to: lead.email,
-      subject: 'Próximo Passo: Agendamento da 2ª Sessão - American Dream',
+      subject: 'Próximo Passo: Segundo Pagamento e Apresentação do Plano - American Dream',
       html: htmlContent,
     });
 

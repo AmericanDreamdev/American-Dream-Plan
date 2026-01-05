@@ -88,6 +88,7 @@ export const getPaymentMethod = (payment: RawPayment | null, lead: RawLead): str
     if (method === 'pix') return 'PIX';
     if (method === 'zelle') return 'Zelle';
     if (method === 'infinitepay') return 'InfinitePay';
+    if (method === 'parcelow') return 'Parcelow';
     return method;
   }
 
@@ -140,6 +141,7 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
   // Pagamentos CONFIRMADOS
   if (actualStatus === 'completed') {
     const method = payment?.metadata?.payment_method || payment?.metadata?.requested_payment_method;
+    if (method === 'parcelow') return 'Pago Parcelow';
     const result = method === 'pix' ? 'Pago (PIX)' : method === 'card' ? 'Pago (Cartão)' : 'Pago (Stripe)';
     return result;
   }
@@ -173,6 +175,9 @@ export const getStatusPagamento = (status: string | null, payment: RawPayment | 
     }
     if (metadata.infinitepay_url) {
       return 'Pendente (InfinitePay)';
+    }
+    if (metadata.payment_method === 'parcelow') {
+      return 'Pendente Parcelow';
     }
     return 'Pendente';
   }

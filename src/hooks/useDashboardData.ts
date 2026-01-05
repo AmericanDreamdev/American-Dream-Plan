@@ -34,6 +34,12 @@ export const useDashboardData = (): UseDashboardDataReturn => {
     totalNotPaid: 0,
     totalConsultationForms: 0,
     totalPaidSecondPart: 0,
+    totalFirstMeetingsScheduled: 0,
+    totalFirstMeetingsCompleted: 0,
+    totalSecondMeetingsScheduled: 0,
+    totalSecondMeetingsCompleted: 0,
+    totalPlansCreated: 0,
+    totalPlansInProgress: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -194,7 +200,8 @@ export const useDashboardData = (): UseDashboardDataReturn => {
     const totalPending = transformedData.filter((u) =>
       u.status_pagamento_formatado === 'Pendente' ||
       u.status_pagamento_formatado === 'Pendente (Stripe)' ||
-      u.status_pagamento_formatado === 'Pendente (InfinitePay)'
+      u.status_pagamento_formatado === 'Pendente (InfinitePay)' ||
+      u.status_pagamento_formatado === 'Pendente Parcelow'
     ).length;
 
     // NÃO PAGARAM

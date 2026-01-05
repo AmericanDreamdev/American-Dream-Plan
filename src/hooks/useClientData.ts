@@ -214,13 +214,64 @@ export const useClientData = () => {
             }
 
             // Buscar term_acceptance
-            const { data: termData } = await supabase
+            let { data: termData } = await supabase
                 .from('term_acceptance')
                 .select('id')
                 .eq('lead_id', leadData.id)
                 .order('created_at', { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle();
+
+            // Se não encontrou term_acceptance, tentar criar um automaticamente para o contrato de lead
+            if (!termData) {
+                console.log("Term acceptance não encontrado para o lead, tentando buscar termo ativo...");
+
+                // Buscar o termo ativo tipo lead_contract
+                const { data: activeTerm } = await supabase
+                    .from('application_terms')
+                    .select('id')
+                    .eq('term_type', 'lead_contract')
+                    .eq('is_active', true)
+                    .order('version', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (activeTerm) {
+                    console.log("Criando term_acceptance automático para o lead...");
+                    const { data: newTermId, error: rpcError } = await supabase.rpc(
+                        "record_term_acceptance",
+                        {
+                            p_lead_id: leadData.id,
+                            p_term_id: activeTerm.id,
+                            p_term_type: "lead_contract",
+                            p_ip_address: null,
+                            p_user_agent: navigator.userAgent
+                        }
+                    );
+
+                    if (!rpcError && newTermId) {
+                        termData = { id: newTermId };
+                    } else {
+                        console.error("Erro ao criar term_acceptance via RPC:", rpcError);
+                        // Fallback manual insert se o RPC falhar
+                        const { data: manualTerm, error: manualError } = await supabase
+                            .from('term_acceptance')
+                            .insert({
+                                lead_id: leadData.id,
+                                term_id: activeTerm.id,
+                                accepted_at: new Date().toISOString(),
+                                ip_address: null,
+                                user_agent: navigator.userAgent
+                            })
+                            .select('id')
+                            .single();
+
+                        if (!manualError && manualTerm) {
+                            termData = manualTerm;
+                        }
+                    }
+                }
+            }
 
             // Buscar pagamentos
             const { data: paymentsData } = await supabase

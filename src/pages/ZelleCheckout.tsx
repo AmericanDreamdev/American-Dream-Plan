@@ -17,7 +17,7 @@ const ZelleCheckout = () => {
   const [loading, setLoading] = useState(true);
 
   const zelleEmail = "adm@migmainc.com";
-  const amountUSD = 999.00;
+  const amountUSD = 1999.00;
 
   useEffect(() => {
     if (!leadId || !termAcceptanceId) {
