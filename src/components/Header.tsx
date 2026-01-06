@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import { LogIn, LayoutDashboard } from "lucide-react";
+import { buildCallbackUrl, get323NetworkUrl } from "@/lib/env";
 
 export const Header = () => {
   const navigate = useNavigate();
@@ -36,14 +37,14 @@ export const Header = () => {
       navigate('/client/dashboard');
     } else {
       // Redirecionar para 323 Network
-      const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
-      const callbackUrl = new URL("/auth/callback", window.location.origin);
-      callbackUrl.searchParams.set("country", "US");
-      const returnTo = encodeURIComponent(callbackUrl.toString());
+      // Usa URL dinâmica baseada no ambiente (localhost em dev, 323network.com em prod)
+      const network323Url = get323NetworkUrl();
+      const callbackUrl = buildCallbackUrl("/auth/callback", { country: "US" });
+      // Não usar encodeURIComponent aqui - searchParams.set() já faz o encoding automaticamente
       
       const redirectUrl = new URL("/login", network323Url);
       redirectUrl.searchParams.set("source", "american-dream");
-      redirectUrl.searchParams.set("returnTo", returnTo);
+      redirectUrl.searchParams.set("returnTo", callbackUrl);
       
       window.location.href = redirectUrl.toString();
     }
@@ -86,38 +87,6 @@ export const Header = () => {
             )}
             <button
               onClick={() => {
-                // Redirecionar para 323 Network
-                const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
-                const callbackUrl = new URL("/auth/callback", window.location.origin);
-                callbackUrl.searchParams.set("country", "US"); // Padrão, pode ser detectado depois
-                const returnTo = encodeURIComponent(callbackUrl.toString());
-                
-                const redirectUrl = new URL("/login", network323Url);
-                redirectUrl.searchParams.set("source", "american-dream");
-                redirectUrl.searchParams.set("returnTo", returnTo);
-                
-                window.location.href = redirectUrl.toString();
-              }}
-              className="flex items-center gap-2 text-white/90 hover:text-white transition-colors font-medium"
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                className="w-4 h-4"
-              >
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-              Entrar
-            </button>
-            <button
-              onClick={() => {
                 if (isHomePage) {
                   window.open(whatsappLink, '_blank');
                 } else {
@@ -153,14 +122,14 @@ export const Header = () => {
             <button
               onClick={() => {
                 // Redirecionar para 323 Network
-                const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
-                const callbackUrl = new URL("/auth/callback", window.location.origin);
-                callbackUrl.searchParams.set("country", "US");
-                const returnTo = encodeURIComponent(callbackUrl.toString());
+                // Usa URL dinâmica baseada no ambiente (localhost em dev, 323network.com em prod)
+                const network323Url = get323NetworkUrl();
+                const callbackUrl = buildCallbackUrl("/auth/callback", { country: "US" });
+                // Não usar encodeURIComponent aqui - searchParams.set() já faz o encoding automaticamente
                 
                 const redirectUrl = new URL("/login", network323Url);
                 redirectUrl.searchParams.set("source", "american-dream");
-                redirectUrl.searchParams.set("returnTo", returnTo);
+                redirectUrl.searchParams.set("returnTo", callbackUrl);
                 
                 window.location.href = redirectUrl.toString();
               }}

@@ -434,25 +434,38 @@ const PaymentOptions = () => {
 
               if (result?.found && result?.payment) {
                 const pixPayment = result.payment;
-                console.log("[PaymentOptions] ✅ PIX payment found via edge function, redirecting to success page", {
+                console.log("[PaymentOptions] ✅ PIX payment found via edge function", {
                   paymentId: pixPayment.id,
                   sessionId: pixPayment.stripe_session_id || tracker.session_id,
                   status: pixPayment.status,
                 });
                 
-                // Limpar tracker antes de redirecionar
-                sessionStorage.removeItem(pixTrackerKey);
-                console.log("[PaymentOptions] 🗑️ Tracker cleared before redirect");
-                
-                // Redirecionar para PaymentSuccess
-                const sessionId = pixPayment.stripe_session_id || tracker.session_id;
-                const successUrl = sessionId 
-                  ? `/payment/success?session_id=${sessionId}&lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`
-                  : `/payment/success?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`;
-                
-                console.log("[PaymentOptions] 🔀 Redirecting to:", successUrl);
-                navigate(successUrl, { replace: true });
-                return;
+                // Apenas redirecionar se o pagamento foi PAGO ou APROVADO
+                // Se ainda está pending, limpar o tracker e deixar o usuário escolher outro método
+                if (pixPayment.status === 'paid' || pixPayment.status === 'approved' || pixPayment.status === 'succeeded') {
+                  console.log("[PaymentOptions] ✅ Payment is complete, redirecting to success page");
+                  
+                  // Limpar tracker antes de redirecionar
+                  sessionStorage.removeItem(pixTrackerKey);
+                  console.log("[PaymentOptions] 🗑️ Tracker cleared before redirect");
+                  
+                  // Redirecionar para PaymentSuccess
+                  const sessionId = pixPayment.stripe_session_id || tracker.session_id;
+                  const successUrl = sessionId 
+                    ? `/payment/success?session_id=${sessionId}&lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`
+                    : `/payment/success?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`;
+                  
+                  console.log("[PaymentOptions] 🔀 Redirecting to:", successUrl);
+                  navigate(successUrl, { replace: true });
+                  return;
+                } else {
+                  console.log("[PaymentOptions] ⏳ Payment is still pending, clearing tracker and letting user choose another method", {
+                    status: pixPayment.status,
+                  });
+                  // Limpar tracker - usuário pode escolher outro método
+                  sessionStorage.removeItem(pixTrackerKey);
+                  return;
+                }
               } else {
                 // Se não encontrou e ainda tem tentativas, tentar novamente
                 if (retryCount < 2) {

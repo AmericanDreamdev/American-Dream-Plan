@@ -17,6 +17,19 @@ const PaymentCancel = () => {
 
   useEffect(() => {
     const fetchPaymentInfo = async () => {
+      // Limpar tracker do PIX se existir (usuário cancelou o pagamento)
+      if (urlLeadId && urlTermAcceptanceId) {
+        const pixTrackerKey = `pix_checkout_${urlLeadId}_${urlTermAcceptanceId}`;
+        const hadTracker = sessionStorage.getItem(pixTrackerKey);
+        if (hadTracker) {
+          console.log("[PaymentCancel] Clearing PIX tracker - payment was cancelled", {
+            key: pixTrackerKey,
+            hadTracker: true,
+          });
+          sessionStorage.removeItem(pixTrackerKey);
+        }
+      }
+      
       // Se já temos os IDs da URL, usar eles
       if (urlLeadId && urlTermAcceptanceId) {
         setLeadId(urlLeadId);
