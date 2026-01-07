@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+﻿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@^17.3.1";
 import { syncPaymentTo323Network } from "../utils/syncPaymentTo323Network.ts";
@@ -10,7 +10,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-// Função auxiliar para enviar email via SMTP
+// FunÃ§Ã£o auxiliar para enviar email via SMTP
 async function sendEmail(
   to: string,
   toName: string,
@@ -19,7 +19,7 @@ async function sendEmail(
   textContent?: string
 ): Promise<boolean> {
   try {
-    // Obter chave de autenticação do endpoint de email
+    // Obter chave de autenticaÃ§Ã£o do endpoint de email
     const emailApiKey = Deno.env.get("EMAIL_API_KEY");
     
     if (!emailApiKey) {
@@ -27,10 +27,10 @@ async function sendEmail(
       return false;
     }
     
-    // Construir URL com chave de autenticação
+    // Construir URL com chave de autenticaÃ§Ã£o
     const emailEndpoint = `http://212.1.213.163:3000/send-smtp?key=${encodeURIComponent(emailApiKey)}`;
     
-    // Obter credenciais SMTP das variáveis de ambiente
+    // Obter credenciais SMTP das variÃ¡veis de ambiente
     const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
     const smtpSecure = Deno.env.get("SMTP_SECURE") === "true";
@@ -77,7 +77,7 @@ async function sendEmail(
     }
 
     // Log detalhado de sucesso
-    console.log("✅ Email sent successfully:", {
+    console.log("âœ… Email sent successfully:", {
       to: to,
       subject: subject,
       status: response.status,
@@ -91,7 +91,7 @@ async function sendEmail(
   }
 }
 
-// Função auxiliar para gerar token de consulta
+// FunÃ§Ã£o auxiliar para gerar token de consulta
 function generateShortToken(): string {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let token = "app-";
@@ -101,7 +101,7 @@ function generateShortToken(): string {
   return token;
 }
 
-// Função para gerar ou buscar token de consulta
+// FunÃ§Ã£o para gerar ou buscar token de consulta
 async function getOrCreateConsultationToken(
   supabase: any,
   leadId: string,
@@ -109,7 +109,7 @@ async function getOrCreateConsultationToken(
   paymentId: string | null
 ): Promise<string | null> {
   try {
-    // Verificar se já existe token válido
+    // Verificar se jÃ¡ existe token vÃ¡lido
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     
@@ -121,7 +121,7 @@ async function getOrCreateConsultationToken(
       .is("used_at", null)
       .gt("expires_at", new Date().toISOString());
     
-    // Se termAcceptanceId for null, usar .is(), senão usar .eq()
+    // Se termAcceptanceId for null, usar .is(), senÃ£o usar .eq()
     if (termAcceptanceId === null) {
       query = query.is("term_acceptance_id", null);
     } else {
@@ -201,11 +201,11 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Initialize Stripe - Detectar ambiente e escolher chaves corretas
-    // Primeiro, tentar detectar se estamos em test ou production baseado nas chaves disponíveis
+    // Primeiro, tentar detectar se estamos em test ou production baseado nas chaves disponÃ­veis
     let stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     let stripeWebhookSecret: string | undefined;
     
-    // Verificar se a chave é de teste ou produção
+    // Verificar se a chave Ã© de teste ou produÃ§Ã£o
     const isTestMode = stripeSecretKey?.startsWith("sk_test_");
     const isLiveMode = stripeSecretKey?.startsWith("sk_live_");
     
@@ -213,27 +213,27 @@ Deno.serve(async (req: Request) => {
     if (isTestMode) {
       // Modo teste: priorizar STRIPE_WEBHOOK_SECRET_TEST, depois STRIPE_WEBHOOK_SECRET
       stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST") || Deno.env.get("STRIPE_WEBHOOK_SECRET");
-      console.log("🧪 TEST MODE detected - Using test webhook secret");
+      console.log("ðŸ§ª TEST MODE detected - Using test webhook secret");
     } else if (isLiveMode) {
-      // Modo produção: usar STRIPE_WEBHOOK_SECRET (ou STRIPE_WEBHOOK_SECRET_LIVE se existir)
+      // Modo produÃ§Ã£o: usar STRIPE_WEBHOOK_SECRET (ou STRIPE_WEBHOOK_SECRET_LIVE se existir)
       stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET_LIVE") || Deno.env.get("STRIPE_WEBHOOK_SECRET");
-      console.log("🚨 PRODUCTION MODE detected - Using production webhook secret");
+      console.log("ðŸš¨ PRODUCTION MODE detected - Using production webhook secret");
     } else {
-      // Modo desconhecido: tentar STRIPE_WEBHOOK_SECRET como padrão
+      // Modo desconhecido: tentar STRIPE_WEBHOOK_SECRET como padrÃ£o
       stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-      console.warn("⚠️ UNKNOWN MODE - Using default webhook secret");
+      console.warn("âš ï¸ UNKNOWN MODE - Using default webhook secret");
     }
     
-    // Se não encontrou chave secreta, tentar alternativas
+    // Se nÃ£o encontrou chave secreta, tentar alternativas
     if (!stripeSecretKey) {
       stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_TEST") || Deno.env.get("STRIPE_SECRET_KEY_LIVE");
     }
 
     if (!stripeSecretKey || !stripeWebhookSecret) {
       console.error("Stripe keys not configured");
-      console.error("STRIPE_SECRET_KEY:", stripeSecretKey ? "✅ Found" : "❌ Missing");
-      console.error("STRIPE_WEBHOOK_SECRET:", stripeWebhookSecret ? "✅ Found" : "❌ Missing");
-      console.error("STRIPE_WEBHOOK_SECRET_TEST:", Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST") ? "✅ Found" : "❌ Missing");
+      console.error("STRIPE_SECRET_KEY:", stripeSecretKey ? "âœ… Found" : "âŒ Missing");
+      console.error("STRIPE_WEBHOOK_SECRET:", stripeWebhookSecret ? "âœ… Found" : "âŒ Missing");
+      console.error("STRIPE_WEBHOOK_SECRET_TEST:", Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST") ? "âœ… Found" : "âŒ Missing");
       return new Response(
         JSON.stringify({ error: "Stripe keys not configured" }),
         {
@@ -253,17 +253,17 @@ Deno.serve(async (req: Request) => {
       apiVersion: "2024-12-18.acacia",
     });
 
-    // IMPORTANTE: Obter o corpo da requisição como RAW TEXT (não parseado)
+    // IMPORTANTE: Obter o corpo da requisiÃ§Ã£o como RAW TEXT (nÃ£o parseado)
     // O Stripe precisa do corpo exato como recebido para verificar a assinatura
     // Tentar obter o body de forma que preserve exatamente como o Stripe enviou
     const signature = req.headers.get("stripe-signature");
     
     // Obter body como arrayBuffer primeiro e depois converter para string
-    // Isso garante que não há modificações no body
+    // Isso garante que nÃ£o hÃ¡ modificaÃ§Ãµes no body
     const bodyArrayBuffer = await req.arrayBuffer();
     const body = new TextDecoder().decode(bodyArrayBuffer);
     
-    // Coletar informações da requisição para rastreamento
+    // Coletar informaÃ§Ãµes da requisiÃ§Ã£o para rastreamento
     const requestInfo = {
       method: req.method,
       url: req.url,
@@ -271,7 +271,7 @@ Deno.serve(async (req: Request) => {
       timestamp: new Date().toISOString(),
     };
     
-    // Tentar extrair informações do evento mesmo se a assinatura falhar
+    // Tentar extrair informaÃ§Ãµes do evento mesmo se a assinatura falhar
     let eventId: string | null = null;
     let eventType: string | null = null;
     try {
@@ -279,10 +279,10 @@ Deno.serve(async (req: Request) => {
       eventId = bodyParsed.id || null;
       eventType = bodyParsed.type || null;
     } catch {
-      // Ignorar erro de parsing - não é crítico
+      // Ignorar erro de parsing - nÃ£o Ã© crÃ­tico
     }
 
-    // Log para debug (remover em produção se necessário)
+    // Log para debug (remover em produÃ§Ã£o se necessÃ¡rio)
     console.log("Webhook received - Signature present:", !!signature);
     console.log("Webhook secret configured:", !!stripeWebhookSecret);
     console.log("Body length:", body.length);
@@ -320,15 +320,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Verificar se o webhook secret parece válido (deve começar com whsec_)
+    // Verificar se o webhook secret parece vÃ¡lido (deve comeÃ§ar com whsec_)
     // NOTA: Secrets do Stripe podem ter diferentes comprimentos (geralmente 38-50+ caracteres)
     const isWebhookSecretInvalid = !stripeWebhookSecret.startsWith("whsec_");
     if (isWebhookSecretInvalid) {
-      console.error("⚠️ WARNING: Webhook secret seems invalid. Expected format: whsec_...");
+      console.error("âš ï¸ WARNING: Webhook secret seems invalid. Expected format: whsec_...");
       console.error("Current secret length:", stripeWebhookSecret.length);
       console.error("Current secret prefix:", stripeWebhookSecret.substring(0, 10) + "...");
-      console.error("⚠️ CRITICAL: Webhook secret format is invalid. Please update STRIPE_WEBHOOK_SECRET in Supabase Edge Function environment variables.");
-      console.error("⚠️ Get the correct secret from: Stripe Dashboard > Webhooks > Your endpoint > Signing secret");
+      console.error("âš ï¸ CRITICAL: Webhook secret format is invalid. Please update STRIPE_WEBHOOK_SECRET in Supabase Edge Function environment variables.");
+      console.error("âš ï¸ Get the correct secret from: Stripe Dashboard > Webhooks > Your endpoint > Signing secret");
     }
 
     // Verificar webhook signature
@@ -338,7 +338,7 @@ Deno.serve(async (req: Request) => {
     
     // Tentar verificar com o secret escolhido primeiro
     try {
-      // Log detalhado antes da verificação
+      // Log detalhado antes da verificaÃ§Ã£o
       console.log("Attempting webhook signature verification...", {
         signatureLength: signature?.length,
         webhookSecretLength: stripeWebhookSecret?.length,
@@ -354,7 +354,7 @@ Deno.serve(async (req: Request) => {
         signature,
         stripeWebhookSecret
       );
-      console.log("✅ Webhook signature verified successfully. Event type:", event.type, "Event ID:", event.id);
+      console.log("âœ… Webhook signature verified successfully. Event type:", event.type, "Event ID:", event.id);
       verificationSucceeded = true;
       
       // Salvar tentativa bem-sucedida no banco de dados
@@ -383,32 +383,32 @@ Deno.serve(async (req: Request) => {
         console.error("Error attempting to save successful webhook attempt:", dbError.message);
       }
     } catch (err: any) {
-      console.error("❌ Webhook signature verification failed with primary secret:", err.message);
+      console.error("âŒ Webhook signature verification failed with primary secret:", err.message);
       
       // Se falhou, tentar com o secret alternativo (test vs production)
       if (!verificationSucceeded) {
         const alternateSecret = isTestMode 
-          ? Deno.env.get("STRIPE_WEBHOOK_SECRET") // Se test falhou, tentar o padrão
+          ? Deno.env.get("STRIPE_WEBHOOK_SECRET") // Se test falhou, tentar o padrÃ£o
           : Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST"); // Se live falhou, tentar test
         
         if (alternateSecret && alternateSecret !== stripeWebhookSecret) {
-          console.log("🔄 Attempting verification with alternate webhook secret...");
+          console.log("ðŸ”„ Attempting verification with alternate webhook secret...");
           try {
             event = await stripe.webhooks.constructEventAsync(
               body,
               signature,
               alternateSecret
             );
-            console.log("✅ Webhook signature verified successfully with alternate secret. Event type:", event.type, "Event ID:", event.id);
+            console.log("âœ… Webhook signature verified successfully with alternate secret. Event type:", event.type, "Event ID:", event.id);
             verificationSucceeded = true;
             stripeWebhookSecret = alternateSecret; // Atualizar para usar o secret correto
           } catch (altErr: any) {
-            console.error("❌ Alternate webhook secret also failed:", altErr.message);
+            console.error("âŒ Alternate webhook secret also failed:", altErr.message);
           }
         }
       }
       
-      // Se ainda não conseguiu verificar, continuar com o processamento abaixo
+      // Se ainda nÃ£o conseguiu verificar, continuar com o processamento abaixo
       if (!verificationSucceeded) {
         // Log detalhado do erro
         const errorDetails = {
@@ -436,7 +436,7 @@ Deno.serve(async (req: Request) => {
         
         console.error("Error details:", errorDetails);
         
-        // Tentar salvar tentativa falha no banco de dados para análise
+        // Tentar salvar tentativa falha no banco de dados para anÃ¡lise
         try {
           // Inserir registro da tentativa falha
           const { error: dbError } = await supabase.from('webhook_attempts').insert({
@@ -459,25 +459,25 @@ Deno.serve(async (req: Request) => {
           if (dbError) {
             console.error("Error saving webhook attempt to database:", dbError);
           } else {
-            console.log("✅ Webhook attempt saved to database for analysis");
+            console.log("âœ… Webhook attempt saved to database for analysis");
           }
         } catch (dbError: any) {
           console.error("Error attempting to save webhook attempt:", dbError.message);
         }
         
-        // Se a verificação de assinatura falhou, mas temos um evento válido, tentar processar mesmo assim
-        // Isso pode acontecer se o body foi modificado pelo proxy/load balancer ou se há um problema de configuração
-        // IMPORTANTE: Em produção, isso deve ser investigado, mas processamos para não perder pagamentos
+        // Se a verificaÃ§Ã£o de assinatura falhou, mas temos um evento vÃ¡lido, tentar processar mesmo assim
+        // Isso pode acontecer se o body foi modificado pelo proxy/load balancer ou se hÃ¡ um problema de configuraÃ§Ã£o
+        // IMPORTANTE: Em produÃ§Ã£o, isso deve ser investigado, mas processamos para nÃ£o perder pagamentos
         if (eventId && eventType) {
-          console.error("⚠️ ATTEMPTING TO PROCESS EVENT WITHOUT SIGNATURE VERIFICATION");
-          console.error("⚠️ Signature verification failed, but event appears valid. Processing to avoid payment loss.");
-          console.error("⚠️ This may indicate:");
+          console.error("âš ï¸ ATTEMPTING TO PROCESS EVENT WITHOUT SIGNATURE VERIFICATION");
+          console.error("âš ï¸ Signature verification failed, but event appears valid. Processing to avoid payment loss.");
+          console.error("âš ï¸ This may indicate:");
           console.error("   - The request body was modified by a proxy/load balancer");
           console.error("   - The STRIPE_WEBHOOK_SECRET in Supabase doesn't match the one in Stripe Dashboard");
           console.error("   - The webhook endpoint URL in Stripe doesn't match the actual function URL");
           
           try {
-            // Tentar parsear o evento manualmente (sem verificação de assinatura)
+            // Tentar parsear o evento manualmente (sem verificaÃ§Ã£o de assinatura)
             const bodyParsed = JSON.parse(body);
             const mockEvent: Stripe.Event = {
               id: bodyParsed.id,
@@ -491,12 +491,12 @@ Deno.serve(async (req: Request) => {
               data: bodyParsed.data,
             };
             
-            console.log("⚠️ Processing event without signature verification:", mockEvent.type, mockEvent.id);
+            console.log("âš ï¸ Processing event without signature verification:", mockEvent.type, mockEvent.id);
             event = mockEvent;
             
             // Continuar com o processamento normal abaixo
           } catch (parseError: any) {
-            console.error("❌ Failed to parse event body:", parseError.message);
+            console.error("âŒ Failed to parse event body:", parseError.message);
             return new Response(
               JSON.stringify({ 
                 error: `Webhook Error: ${err.message}`,
@@ -517,7 +517,7 @@ Deno.serve(async (req: Request) => {
             );
           }
         } else {
-          // Se não conseguimos extrair informações do evento, retornar erro
+          // Se nÃ£o conseguimos extrair informaÃ§Ãµes do evento, retornar erro
           return new Response(
             JSON.stringify({ 
               error: `Webhook Error: ${err.message}`,
@@ -537,11 +537,11 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Função auxiliar para obter método de pagamento do PaymentIntent ou Session
+    // FunÃ§Ã£o auxiliar para obter mÃ©todo de pagamento do PaymentIntent ou Session
     const getPaymentMethod = async (paymentIntentId: string | null, session?: Stripe.Checkout.Session): Promise<string | null> => {
-      // Primeiro, tentar obter da sessão diretamente (mais confiável)
+      // Primeiro, tentar obter da sessÃ£o diretamente (mais confiÃ¡vel)
       if (session) {
-        // Verificar payment_method_types na sessão
+        // Verificar payment_method_types na sessÃ£o
         if (session.payment_method_types && session.payment_method_types.length > 0) {
           const methodType = session.payment_method_types[0];
           if (methodType === "pix" || methodType === "card") {
@@ -549,7 +549,7 @@ Deno.serve(async (req: Request) => {
           }
         }
         
-        // Verificar payment_method_options na sessão
+        // Verificar payment_method_options na sessÃ£o
         if (session.payment_method_options) {
           if (session.payment_method_options.pix) {
             return "pix";
@@ -560,18 +560,18 @@ Deno.serve(async (req: Request) => {
         }
       }
       
-      // Se não encontrou na sessão, tentar via PaymentIntent
+      // Se nÃ£o encontrou na sessÃ£o, tentar via PaymentIntent
       if (!paymentIntentId) return null;
       
       try {
         // Expandir charges para obter payment_method_details
-        // NOTA: Não podemos expandir charges.data.payment_method diretamente
+        // NOTA: NÃ£o podemos expandir charges.data.payment_method diretamente
         // Precisamos expandir charges e depois acessar payment_method_details
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
           expand: ['charges'],
         });
         
-        // O método de pagamento está nos charges (quando o pagamento já foi processado)
+        // O mÃ©todo de pagamento estÃ¡ nos charges (quando o pagamento jÃ¡ foi processado)
         if (paymentIntent.charges?.data?.length > 0) {
           const charge = paymentIntent.charges.data[0];
           if (charge.payment_method_details?.type) {
@@ -580,7 +580,7 @@ Deno.serve(async (req: Request) => {
           }
         }
         
-        // Fallback: verificar payment_method_types (disponível antes do pagamento ser processado)
+        // Fallback: verificar payment_method_types (disponÃ­vel antes do pagamento ser processado)
         if (paymentIntent.payment_method_types?.length > 0) {
           const methodType = paymentIntent.payment_method_types[0];
           return methodType === "pix" ? "pix" : methodType === "card" ? "card" : methodType;
@@ -589,19 +589,19 @@ Deno.serve(async (req: Request) => {
         // Log mais detalhado do erro
         const errorMessage = err.message || String(err);
         if (errorMessage.includes("test mode") || errorMessage.includes("live mode")) {
-          console.warn("⚠️ PaymentIntent mode mismatch (test/live). This is usually harmless if the payment was processed correctly.");
-          console.warn("⚠️ Error details:", errorMessage);
+          console.warn("âš ï¸ PaymentIntent mode mismatch (test/live). This is usually harmless if the payment was processed correctly.");
+          console.warn("âš ï¸ Error details:", errorMessage);
         } else {
           console.error("Error retrieving payment intent:", errorMessage);
         }
-        // Não falhar o webhook por causa disso, apenas logar o erro
+        // NÃ£o falhar o webhook por causa disso, apenas logar o erro
       }
       return null;
     };
 
     // Verificar se o evento foi inicializado
     if (!event) {
-      console.error("❌ Event was not initialized. This should not happen.");
+      console.error("âŒ Event was not initialized. This should not happen.");
       return new Response(
         JSON.stringify({ error: "Event not initialized" }),
         {
@@ -616,10 +616,10 @@ Deno.serve(async (req: Request) => {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // Obter método de pagamento (tentar da sessão primeiro, depois do PaymentIntent)
+        // Obter mÃ©todo de pagamento (tentar da sessÃ£o primeiro, depois do PaymentIntent)
         const paymentMethod = await getPaymentMethod(session.payment_intent as string, session);
 
-        // Preparar update com informações adicionais
+        // Preparar update com informaÃ§Ãµes adicionais
         const updateData: any = {
           status: "completed",
           stripe_payment_intent_id: session.payment_intent as string,
@@ -631,12 +631,12 @@ Deno.serve(async (req: Request) => {
           updateData.amount = session.amount_total ? session.amount_total / 100 : null;
           updateData.currency = session.currency.toUpperCase();
         } else if (session.amount_total) {
-          // Atualizar amount mesmo para USD para garantir consistência
+          // Atualizar amount mesmo para USD para garantir consistÃªncia
           updateData.amount = session.amount_total / 100;
           updateData.currency = (session.currency || "USD").toUpperCase();
         }
 
-        // Adicionar método de pagamento ao metadata se existir
+        // Adicionar mÃ©todo de pagamento ao metadata se existir
         if (paymentMethod) {
           const { data: currentPayment } = await supabase
             .from("payments")
@@ -664,7 +664,7 @@ Deno.serve(async (req: Request) => {
         } else {
           console.log(`Payment completed (${paymentMethod || "unknown"}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
           
-          // Enviar email de confirmação de pagamento com link do formulário
+          // Enviar email de confirmaÃ§Ã£o de pagamento com link do formulÃ¡rio
           const leadId = session.metadata?.lead_id;
           const termAcceptanceId = session.metadata?.term_acceptance_id;
           
@@ -677,14 +677,14 @@ Deno.serve(async (req: Request) => {
                 .eq("stripe_session_id", session.id)
                 .single();
 
-              // Buscar lead com user_id e email para sincronização com 323 Network
+              // Buscar lead com user_id e email para sincronizaÃ§Ã£o com 323 Network
               const { data: leadWithUserId } = await supabase
                 .from("leads")
                 .select("user_id, email")
                 .eq("id", leadId)
                 .single();
 
-              // Obter user_id correto do 323 Network (busca por email se necessário)
+              // Obter user_id correto do 323 Network (busca por email se necessÃ¡rio)
               if (leadWithUserId && updatedPayment?.id) {
                 try {
                   const correctUserId = await getCorrectUserIdFrom323Network(
@@ -693,11 +693,11 @@ Deno.serve(async (req: Request) => {
                   );
 
                   if (!correctUserId) {
-                    console.warn(`⚠️ Could not find user in 323 Network for email ${leadWithUserId.email} - skipping sync`);
+                    console.warn(`âš ï¸ Could not find user in 323 Network for email ${leadWithUserId.email} - skipping sync`);
                   } else {
-                    // Se encontrou um user_id diferente, atualizar o lead para próximas vezes
+                    // Se encontrou um user_id diferente, atualizar o lead para prÃ³ximas vezes
                     if (leadWithUserId.user_id !== correctUserId) {
-                      console.log(`🔄 Updating lead.user_id from ${leadWithUserId.user_id} to ${correctUserId}`);
+                      console.log(`ðŸ”„ Updating lead.user_id from ${leadWithUserId.user_id} to ${correctUserId}`);
                       await supabase
                         .from("leads")
                         .update({ user_id: correctUserId })
@@ -707,7 +707,7 @@ Deno.serve(async (req: Request) => {
                     // Converter amount para centavos (multiplicar por 100)
                     const amountInCents = Math.round((updateData.amount || 0) * 100);
                     
-                    // Determinar método de pagamento
+                    // Determinar mÃ©todo de pagamento
                     const paymentMethodFor323 = paymentMethod === "pix" ? "pix" : "card";
                     
                     await syncPaymentTo323Network({
@@ -732,15 +732,15 @@ Deno.serve(async (req: Request) => {
                     });
                   }
                 } catch (syncError: any) {
-                  // Logar erro mas não falhar o processamento do webhook
-                  console.error("❌ Failed to sync payment to 323 Network:", syncError.message);
-                  // Opcional: Enviar notificação ou criar log de erro
+                  // Logar erro mas nÃ£o falhar o processamento do webhook
+                  console.error("âŒ Failed to sync payment to 323 Network:", syncError.message);
+                  // Opcional: Enviar notificaÃ§Ã£o ou criar log de erro
                 }
               } else if (!leadWithUserId) {
-                console.warn("⚠️ Lead not found - skipping 323 Network sync");
+                console.warn("âš ï¸ Lead not found - skipping 323 Network sync");
               }
 
-              // Gerar ou buscar token de consulta (não falhar se der erro)
+              // Gerar ou buscar token de consulta (nÃ£o falhar se der erro)
               let consultationToken: string | null = null;
               try {
                 consultationToken = await getOrCreateConsultationToken(
@@ -751,7 +751,7 @@ Deno.serve(async (req: Request) => {
                 );
               } catch (tokenError: any) {
                 console.error("Error generating consultation token (non-fatal):", tokenError.message);
-                // Continuar sem o token - email será enviado sem link
+                // Continuar sem o token - email serÃ¡ enviado sem link
               }
 
               const { data: lead } = await supabase
@@ -761,7 +761,7 @@ Deno.serve(async (req: Request) => {
                 .single();
 
               if (lead && lead.email) {
-                const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "Cartão" : paymentMethod || "Pagamento";
+                const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "CartÃ£o" : paymentMethod || "Pagamento";
                 const amountFormatted = updateData.currency === "BRL" 
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
@@ -770,11 +770,11 @@ Deno.serve(async (req: Request) => {
                 const paymentPart = session.metadata?.payment_part || "1";
                 const isSecondPart = paymentPart === "2";
 
-                // Construir URL do formulário (garantir que não há barras duplas)
+                // Construir URL do formulÃ¡rio (garantir que nÃ£o hÃ¡ barras duplas)
                 let siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
-                // Remover todas as barras finais e espaços
+                // Remover todas as barras finais e espaÃ§os
                 siteUrl = siteUrl.trim().replace(/\/+$/, "");
-                // Garantir que começa com http:// ou https://
+                // Garantir que comeÃ§a com http:// ou https://
                 if (!siteUrl.match(/^https?:\/\//i)) {
                   siteUrl = `https://${siteUrl}`;
                 }
@@ -784,7 +784,7 @@ Deno.serve(async (req: Request) => {
                   : null;
 
                 const emailSubject = isSecondPart 
-                  ? "Confirmação - Segunda Parte do Pagamento - American Dream"
+                  ? "ConfirmaÃ§Ã£o - Segunda Parte do Pagamento - American Dream"
                   : "Pagamento Confirmado - American Dream";
                 const emailHtml = `
                   <!DOCTYPE html>
@@ -809,7 +809,7 @@ Deno.serve(async (req: Request) => {
                                   Pagamento Confirmado!
                                 </h2>
                                 <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                                  Olá ${lead.name},
+                                  OlÃ¡ ${lead.name},
                                 </p>
                                 <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
                                   Seu pagamento foi confirmado com sucesso!
@@ -821,7 +821,7 @@ Deno.serve(async (req: Request) => {
                                         <tr>
                                           <td style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
                                             <p style="margin: 0 0 8px; color: #6b7280; font-size: 14px; line-height: 1.5;">
-                                              Método de pagamento
+                                              MÃ©todo de pagamento
                                             </p>
                                             <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 600; line-height: 1.5;">
                                               ${paymentMethodName}
@@ -846,14 +846,14 @@ Deno.serve(async (req: Request) => {
                                 </table>
                                 ${consultationLink ? `
                                 <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                                  Agora você pode preencher o formulário de consultoria. Clique no botão abaixo para começar:
+                                  Agora vocÃª pode preencher o formulÃ¡rio de consultoria. Clique no botÃ£o abaixo para comeÃ§ar:
                                 </p>
                                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 30px;">
                                   <tr>
                                     <td align="center" style="padding: 0 0 20px;">
                                       <a href="${consultationLink}" 
                                          style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; text-align: center; min-width: 200px;">
-                                        Preencher Formulário de Consultoria
+                                        Preencher FormulÃ¡rio de Consultoria
                                       </a>
                                     </td>
                                   </tr>
@@ -870,7 +870,7 @@ Deno.serve(async (req: Request) => {
                                 </table>
                                 ` : `
                                 <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
-                                  Em breve você receberá mais informações sobre os próximos passos do seu processo.
+                                  Em breve vocÃª receberÃ¡ mais informaÃ§Ãµes sobre os prÃ³ximos passos do seu processo.
                                 </p>
                                 `}
                                 <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 500; line-height: 1.6;">
@@ -881,10 +881,10 @@ Deno.serve(async (req: Request) => {
                             <tr>
                               <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; text-align: center;">
                                 <p style="margin: 0 0 10px; color: #6b7280; font-size: 12px; line-height: 1.5;">
-                                  Este é um email automático, por favor não responda.
+                                  Este Ã© um email automÃ¡tico, por favor nÃ£o responda.
                                 </p>
                                 <p style="margin: 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">
-                                  © 2025 American Dream. Todos os direitos reservados.
+                                  Â© 2025 American Dream. Todos os direitos reservados.
                                 </p>
                               </td>
                             </tr>
@@ -900,7 +900,7 @@ Deno.serve(async (req: Request) => {
               }
             } catch (emailError: any) {
               console.error("Error sending payment confirmation email:", emailError.message);
-              // Não falhar o webhook por causa do email
+              // NÃ£o falhar o webhook por causa do email
             }
           }
         }
@@ -911,23 +911,23 @@ Deno.serve(async (req: Request) => {
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // Para pagamentos assíncronos, geralmente é PIX (tentar da sessão primeiro)
+        // Para pagamentos assÃ­ncronos, geralmente Ã© PIX (tentar da sessÃ£o primeiro)
         const paymentMethod = await getPaymentMethod(session.payment_intent as string, session) || "pix";
 
-        // Preparar update com informações adicionais
+        // Preparar update com informaÃ§Ãµes adicionais
         const updateData: any = {
           status: "completed",
           stripe_payment_intent_id: session.payment_intent as string,
           updated_at: new Date().toISOString(),
         };
 
-        // Para PIX, sempre atualizar amount e currency (será BRL)
+        // Para PIX, sempre atualizar amount e currency (serÃ¡ BRL)
         if (session.amount_total && session.currency) {
           updateData.amount = session.amount_total / 100;
           updateData.currency = session.currency.toUpperCase();
         }
 
-        // Adicionar método de pagamento ao metadata
+        // Adicionar mÃ©todo de pagamento ao metadata
         const { data: currentPayment } = await supabase
           .from("payments")
           .select("metadata")
@@ -953,7 +953,7 @@ Deno.serve(async (req: Request) => {
         } else {
           console.log(`Async payment completed (${paymentMethod}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
           
-          // Enviar email de confirmação de pagamento com link do formulário
+          // Enviar email de confirmaÃ§Ã£o de pagamento com link do formulÃ¡rio
           const leadId = session.metadata?.lead_id;
           const termAcceptanceId = session.metadata?.term_acceptance_id;
           
@@ -966,14 +966,14 @@ Deno.serve(async (req: Request) => {
                 .eq("stripe_session_id", session.id)
                 .single();
 
-              // Buscar lead com user_id e email para sincronização com 323 Network
+              // Buscar lead com user_id e email para sincronizaÃ§Ã£o com 323 Network
               const { data: leadWithUserId } = await supabase
                 .from("leads")
                 .select("user_id, email")
                 .eq("id", leadId)
                 .single();
 
-              // Obter user_id correto do 323 Network (busca por email se necessário)
+              // Obter user_id correto do 323 Network (busca por email se necessÃ¡rio)
               if (leadWithUserId && updatedPayment?.id) {
                 try {
                   const correctUserId = await getCorrectUserIdFrom323Network(
@@ -982,11 +982,11 @@ Deno.serve(async (req: Request) => {
                   );
 
                   if (!correctUserId) {
-                    console.warn(`⚠️ Could not find user in 323 Network for email ${leadWithUserId.email} - skipping sync`);
+                    console.warn(`âš ï¸ Could not find user in 323 Network for email ${leadWithUserId.email} - skipping sync`);
                   } else {
-                    // Se encontrou um user_id diferente, atualizar o lead para próximas vezes
+                    // Se encontrou um user_id diferente, atualizar o lead para prÃ³ximas vezes
                     if (leadWithUserId.user_id !== correctUserId) {
-                      console.log(`🔄 Updating lead.user_id from ${leadWithUserId.user_id} to ${correctUserId}`);
+                      console.log(`ðŸ”„ Updating lead.user_id from ${leadWithUserId.user_id} to ${correctUserId}`);
                       await supabase
                         .from("leads")
                         .update({ user_id: correctUserId })
@@ -996,7 +996,7 @@ Deno.serve(async (req: Request) => {
                     // Converter amount para centavos (multiplicar por 100)
                     const amountInCents = Math.round((updateData.amount || 0) * 100);
                     
-                    // Determinar método de pagamento
+                    // Determinar mÃ©todo de pagamento
                     const paymentMethodFor323 = paymentMethod === "pix" ? "pix" : "card";
                     
                     await syncPaymentTo323Network({
@@ -1021,15 +1021,15 @@ Deno.serve(async (req: Request) => {
                     });
                   }
                 } catch (syncError: any) {
-                  // Logar erro mas não falhar o processamento do webhook
-                  console.error("❌ Failed to sync payment to 323 Network:", syncError.message);
-                  // Opcional: Enviar notificação ou criar log de erro
+                  // Logar erro mas nÃ£o falhar o processamento do webhook
+                  console.error("âŒ Failed to sync payment to 323 Network:", syncError.message);
+                  // Opcional: Enviar notificaÃ§Ã£o ou criar log de erro
                 }
               } else if (!leadWithUserId) {
-                console.warn("⚠️ Lead not found - skipping 323 Network sync");
+                console.warn("âš ï¸ Lead not found - skipping 323 Network sync");
               }
 
-              // Gerar ou buscar token de consulta (não falhar se der erro)
+              // Gerar ou buscar token de consulta (nÃ£o falhar se der erro)
               let consultationToken: string | null = null;
               try {
                 consultationToken = await getOrCreateConsultationToken(
@@ -1040,7 +1040,7 @@ Deno.serve(async (req: Request) => {
                 );
               } catch (tokenError: any) {
                 console.error("Error generating consultation token (non-fatal):", tokenError.message);
-                // Continuar sem o token - email será enviado sem link
+                // Continuar sem o token - email serÃ¡ enviado sem link
               }
 
               const { data: lead } = await supabase
@@ -1050,7 +1050,7 @@ Deno.serve(async (req: Request) => {
                 .single();
 
               if (lead && lead.email) {
-                const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "Cartão" : paymentMethod || "Pagamento";
+                const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "CartÃ£o" : paymentMethod || "Pagamento";
                 const amountFormatted = updateData.currency === "BRL" 
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
@@ -1059,11 +1059,11 @@ Deno.serve(async (req: Request) => {
                 const paymentPart = session.metadata?.payment_part || "1";
                 const isSecondPart = paymentPart === "2";
 
-                // Construir URL do formulário (garantir que não há barras duplas)
+                // Construir URL do formulÃ¡rio (garantir que nÃ£o hÃ¡ barras duplas)
                 let siteUrl = Deno.env.get("SITE_URL") || "https://americandream.323network.com";
-                // Remover todas as barras finais e espaços
+                // Remover todas as barras finais e espaÃ§os
                 siteUrl = siteUrl.trim().replace(/\/+$/, "");
-                // Garantir que começa com http:// ou https://
+                // Garantir que comeÃ§a com http:// ou https://
                 if (!siteUrl.match(/^https?:\/\//i)) {
                   siteUrl = `https://${siteUrl}`;
                 }
@@ -1073,7 +1073,7 @@ Deno.serve(async (req: Request) => {
                   : null;
 
                 const emailSubject = isSecondPart 
-                  ? "Confirmação - Segunda Parte do Pagamento - American Dream"
+                  ? "ConfirmaÃ§Ã£o - Segunda Parte do Pagamento - American Dream"
                   : "Pagamento Confirmado - American Dream";
                 const emailHtml = `
                   <!DOCTYPE html>
@@ -1098,7 +1098,7 @@ Deno.serve(async (req: Request) => {
                                   Pagamento Confirmado!
                                 </h2>
                                 <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                                  Olá ${lead.name},
+                                  OlÃ¡ ${lead.name},
                                 </p>
                                 <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
                                   Seu pagamento foi confirmado com sucesso!
@@ -1110,7 +1110,7 @@ Deno.serve(async (req: Request) => {
                                         <tr>
                                           <td style="padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
                                             <p style="margin: 0 0 8px; color: #6b7280; font-size: 14px; line-height: 1.5;">
-                                              Método de pagamento
+                                              MÃ©todo de pagamento
                                             </p>
                                             <p style="margin: 0; color: #111827; font-size: 18px; font-weight: 600; line-height: 1.5;">
                                               ${paymentMethodName}
@@ -1135,14 +1135,14 @@ Deno.serve(async (req: Request) => {
                                 </table>
                                 ${consultationLink ? `
                                 <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
-                                  Agora você pode preencher o formulário de consultoria. Clique no botão abaixo para começar:
+                                  Agora vocÃª pode preencher o formulÃ¡rio de consultoria. Clique no botÃ£o abaixo para comeÃ§ar:
                                 </p>
                                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 30px;">
                                   <tr>
                                     <td align="center" style="padding: 0 0 20px;">
                                       <a href="${consultationLink}" 
                                          style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 16px; font-weight: bold; text-align: center; min-width: 200px;">
-                                        Preencher Formulário de Consultoria
+                                        Preencher FormulÃ¡rio de Consultoria
                                       </a>
                                     </td>
                                   </tr>
@@ -1159,7 +1159,7 @@ Deno.serve(async (req: Request) => {
                                 </table>
                                 ` : `
                                 <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
-                                  Em breve você receberá mais informações sobre os próximos passos do seu processo.
+                                  Em breve vocÃª receberÃ¡ mais informaÃ§Ãµes sobre os prÃ³ximos passos do seu processo.
                                 </p>
                                 `}
                                 <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 500; line-height: 1.6;">
@@ -1170,10 +1170,10 @@ Deno.serve(async (req: Request) => {
                             <tr>
                               <td style="padding: 30px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; text-align: center;">
                                 <p style="margin: 0 0 10px; color: #6b7280; font-size: 12px; line-height: 1.5;">
-                                  Este é um email automático, por favor não responda.
+                                  Este Ã© um email automÃ¡tico, por favor nÃ£o responda.
                                 </p>
                                 <p style="margin: 0; color: #9ca3af; font-size: 11px; line-height: 1.5;">
-                                  © 2025 American Dream. Todos os direitos reservados.
+                                  Â© 2025 American Dream. Todos os direitos reservados.
                                 </p>
                               </td>
                             </tr>
@@ -1189,7 +1189,7 @@ Deno.serve(async (req: Request) => {
               }
             } catch (emailError: any) {
               console.error("Error sending payment confirmation email:", emailError.message);
-              // Não falhar o webhook por causa do email
+              // NÃ£o falhar o webhook por causa do email
             }
           }
         }
@@ -1249,4 +1249,5 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
 
