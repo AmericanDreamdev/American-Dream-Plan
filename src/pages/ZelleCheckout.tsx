@@ -194,7 +194,7 @@ const ZelleCheckout = () => {
             </div>
 
             {/* Botões de ação */}
-            <div className="flex gap-4 pt-4">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 pt-4">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -204,7 +204,7 @@ const ZelleCheckout = () => {
                         navigate(`/payment-options?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
                     }
                 }}
-                className="flex-1"
+                className="w-full sm:flex-1"
               >
                 Escolher outro método
               </Button>
@@ -250,7 +250,7 @@ const ZelleCheckout = () => {
                     setLoading(false);
                   }
                 }}
-                className="flex-1 bg-green-600 hover:bg-green-700"
+                className="w-full sm:flex-1 bg-green-600 hover:bg-green-700"
               >
                 {loading ? "Processando..." : "Entendi, já realizei o pagamento"}
               </Button>

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
+import { extractUserFrom323Token } from "@/lib/jwt";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -30,36 +31,151 @@ export default function AuthCallback() {
           return;
         }
 
-        // 1. Autenticar usuário com o token
-        // O token deve ser um access_token válido do Supabase
-        // Primeiro, verificamos se o token é válido usando getUser
+        // 1. Autenticar usuário com o token do 323 Network
+        // O token é do projeto do 323 Network, então precisamos:
+        // - Decodificar o token para obter os dados do usuário
+        // - Criar/login do usuário no projeto do American Dream
+        // - Criar uma sessão no projeto do American Dream
         let authenticatedUser;
         
         try {
-          // Verificar se o token é válido tentando obter o usuário
-          const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+          console.log("[AuthCallback] Processando token do 323 Network...");
           
-          if (userError || !user) {
-            throw new Error("Token inválido ou expirado");
+          // Decodificar o token para obter os dados do usuário
+          const tokenData = extractUserFrom323Token(token);
+          if (!tokenData || !tokenData.email) {
+            throw new Error("Não foi possível decodificar o token ou email não encontrado");
           }
+
+          console.log("[AuthCallback] Dados do usuário extraídos do token:", tokenData);
+
+          // Usar email dos parâmetros da URL ou do token (prioridade para URL)
+          const userEmail = email || tokenData.email;
+          const userName = name || tokenData.name || userEmail.split("@")[0];
+          const userPhone = phone || tokenData.phone || "";
+          const userPhoneCountryCode = phoneCountryCode || tokenData.phoneCountryCode || null;
+
+          if (!userEmail) {
+            throw new Error("Email não encontrado no token ou nos parâmetros");
+          }
+
+          // Chamar Edge Function para autenticar com token do 323 Network
+          // A Edge Function vai validar o token e criar/login do usuário no projeto do American Dream
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+          if (!supabaseUrl || !supabaseAnonKey) {
+            throw new Error("Configuração do Supabase não encontrada");
+          }
+
+          console.log("[AuthCallback] Chamando Edge Function para autenticar...");
           
-          authenticatedUser = user;
-          
-          // Tentar criar uma sessão com o token
-          // Nota: setSession pode precisar de refresh_token também
-          // Se a 323 Network passar apenas access_token, tentamos usar o mesmo valor para ambos
-          const { data: { session }, error: sessionError } = await supabase.auth.setSession({
-            access_token: token,
-            refresh_token: token, // Usar o mesmo token como fallback
+          const functionUrl = `${supabaseUrl}/functions/v1/auth-with-323-token`;
+          const response = await fetch(functionUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseAnonKey}`,
+            },
+            body: JSON.stringify({
+              token,
+              email: userEmail,
+              name: userName,
+              phone: userPhone,
+              phoneCountryCode: userPhoneCountryCode,
+            }),
           });
 
-          if (sessionError) {
-            console.warn("Aviso: Não foi possível criar sessão completa, mas o token é válido:", sessionError);
-            // Continuar mesmo assim, pois o token é válido e podemos usar getUser
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: "Erro desconhecido" }));
+            throw new Error(errorData.error || `Erro ao autenticar: ${response.statusText}`);
           }
+
+          const responseData = await response.json();
+          const { access_token, refresh_token, magic_token, user: userData } = responseData;
+
+          if (!userData) {
+            throw new Error("Dados do usuário não retornados pela Edge Function");
+          }
+
+          console.log("[AuthCallback] Dados recebidos da Edge Function:", userData);
+          console.log("[AuthCallback] Tentando criar sessão com o token retornado...");
+
+          // A Edge Function retornou um magic_token
+          // Vamos tentar usar verifyOtp para verificar o token
+          if (magic_token) {
+            console.log("[AuthCallback] Usando verifyOtp com o magic token...");
+            
+            const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+              token_hash: magic_token,
+              type: "magiclink",
+            });
+
+            if (verifyError) {
+              console.error("[AuthCallback] Erro ao verificar magic token:", verifyError);
+              // Se falhar, tentar setSession como fallback
+              console.log("[AuthCallback] Tentando setSession como fallback...");
+              
+              const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                access_token: access_token || magic_token,
+                refresh_token: refresh_token || magic_token,
+              });
+
+              if (sessionError) {
+                throw new Error(`Erro ao criar sessão: ${sessionError.message}`);
+              }
+
+              if (!sessionData?.session?.user) {
+                throw new Error("Sessão não criada após setSession");
+              }
+
+              authenticatedUser = sessionData.session.user;
+              console.log("[AuthCallback] Sessão criada com setSession:", authenticatedUser.id);
+            } else {
+              authenticatedUser = verifyData.user;
+              console.log("[AuthCallback] Usuário autenticado via verifyOtp:", authenticatedUser.id);
+            }
+          } else if (access_token) {
+            // Se não tiver magic_token, tentar setSession direto
+            console.log("[AuthCallback] Usando setSession com access_token...");
+            
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token,
+              refresh_token: refresh_token || access_token,
+            });
+
+            if (sessionError) {
+              throw new Error(`Erro ao criar sessão: ${sessionError.message}`);
+            }
+
+            if (!sessionData?.session?.user) {
+              throw new Error("Sessão não criada");
+            }
+
+            authenticatedUser = sessionData.session.user;
+            console.log("[AuthCallback] Usuário autenticado via setSession:", authenticatedUser.id);
+          } else {
+            throw new Error("Nenhum token retornado pela Edge Function");
+          }
+
+          // Atualizar metadata do usuário se necessário
+          if (userName || userPhone) {
+            const { error: updateError } = await supabase.auth.updateUser({
+              data: {
+                name: userName || authenticatedUser.user_metadata?.name,
+                nome: userName || authenticatedUser.user_metadata?.nome,
+                phone: userPhone || authenticatedUser.user_metadata?.phone,
+                phoneCountryCode: userPhoneCountryCode || authenticatedUser.user_metadata?.phoneCountryCode,
+              },
+            });
+            if (updateError) {
+              console.warn("[AuthCallback] Aviso ao atualizar metadata:", updateError);
+            }
+          }
+
         } catch (authError: any) {
-          console.error("Erro na autenticação:", authError);
-          setError("Falha ao autenticar. Por favor, tente novamente.");
+          console.error("[AuthCallback] Erro na autenticação:", authError);
+          setError(`Falha ao autenticar: ${authError.message || "Por favor, tente novamente."}`);
           setTimeout(() => {
             navigate("/lead-form");
           }, 3000);
@@ -265,8 +381,8 @@ export default function AuthCallback() {
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center">
         <Loader2 className="h-12 w-12 animate-spin mx-auto text-[#0575E6] mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Processando Autenticação...</h1>
-        <p className="text-gray-600">Por favor, aguarde enquanto configuramos sua sessão.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Preparando tudo para você</h1>
+        <p className="text-gray-600">Estamos configurando seu ambiente. Isso levará apenas alguns instantes.</p>
       </div>
     </div>
   );

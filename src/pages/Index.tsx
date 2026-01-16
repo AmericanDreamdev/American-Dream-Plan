@@ -30,7 +30,7 @@ const Index = () => {
             className="w-full h-full object-cover opacity-30"
             id="hero-background-hat"
             loading="eager"
-            fetchPriority="high"
+            fetchpriority="high"
             decoding="sync"
           />
           {/* Gradiente patriótico azul/branco/vermelho como overlay */}
@@ -576,7 +576,7 @@ const Index = () => {
             <img 
               src="/foto bone american dream.webp"
               loading="lazy"
-              fetchPriority="low"
+              fetchpriority="low"
               decoding="async" 
               alt="American Dream - Boné" 
               className="w-full max-w-md mx-auto mb-8"

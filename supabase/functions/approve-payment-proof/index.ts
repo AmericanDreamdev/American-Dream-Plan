@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { syncPaymentTo323Network } from "../utils/syncPaymentTo323Network.ts";
+import { getCorrectUserIdFrom323Network } from "../utils/findUserIn323Network.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -215,6 +217,67 @@ serve(async (req) => {
       if (updatePaymentError) {
         console.error("Error updating payment:", updatePaymentError);
         // Não falhar se não conseguir atualizar o payment
+      } else {
+        // Buscar dados do payment e lead para sincronização com 323 Network
+        const { data: paymentData } = await supabase
+          .from("payments")
+          .select("amount, currency, lead_id, leads(user_id, email)")
+          .eq("id", paymentIdToUse)
+          .single();
+
+        // Obter user_id correto do 323 Network (busca por email se necessário)
+        if (paymentData && paymentData.amount) {
+          try {
+            const lead = paymentData.leads as any;
+            const correctUserId = await getCorrectUserIdFrom323Network(
+              lead?.user_id,
+              lead?.email || ""
+            );
+
+            if (!correctUserId) {
+              console.warn(`⚠️ Could not find user in 323 Network for email ${lead?.email} - skipping sync`);
+            } else {
+              // Se encontrou um user_id diferente, atualizar o lead para próximas vezes
+              if (lead?.user_id !== correctUserId) {
+                console.log(`🔄 Updating lead.user_id from ${lead?.user_id} to ${correctUserId}`);
+                await supabase
+                  .from("leads")
+                  .update({ user_id: correctUserId })
+                  .eq("id", proof.lead_id);
+              }
+
+              // Converter amount para centavos (multiplicar por 100)
+              const amountInCents = Math.round((paymentData.amount || 0) * 100);
+              
+              // Mapear método de pagamento (zelle ou infinitepay -> zelle para 323 Network)
+              const paymentMethodFor323 = proof.payment_method === "zelle" || proof.payment_method === "infinitepay" 
+                ? "zelle" 
+                : "zelle"; // Fallback para zelle
+              
+              await syncPaymentTo323Network({
+                user_id: correctUserId,
+                payment_id: paymentIdToUse,
+                lead_id: proof.lead_id,
+                amount: amountInCents,
+                currency: paymentData.currency || "USD",
+                payment_method: paymentMethodFor323,
+                status: "completed",
+                metadata: {
+                  american_dream_payment_id: paymentIdToUse,
+                  lead_id: proof.lead_id,
+                  zelle_proof_id: proof_id,
+                  approved_at: new Date().toISOString(),
+                  original_user_id: lead?.user_id,
+                  found_by_email: lead?.user_id !== correctUserId,
+                },
+              });
+            }
+          } catch (syncError: any) {
+            // Logar erro mas não falhar a aprovação
+            console.error("❌ Failed to sync Zelle payment to 323 Network:", syncError.message);
+            // Opcional: Enviar notificação ou criar log de erro
+          }
+        }
       }
     }
 

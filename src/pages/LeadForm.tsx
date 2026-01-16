@@ -27,6 +27,7 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { countries } from "@/data/countries";
 import { parsePhoneNumber, isValidPhoneNumber, AsYouType } from "libphonenumber-js";
 import { useTermsAcceptance } from "@/hooks/useTermsAcceptance";
+import { buildCallbackUrl, get323NetworkUrl } from "@/lib/env";
 
 const FORM_CACHE_KEY = "lead_form_cache";
 
@@ -300,15 +301,16 @@ const LeadForm = () => {
       clearCache();
 
       // Construir URL de retorno (callback do American Dream)
-      const callbackUrl = new URL("/auth/callback", window.location.origin);
-      callbackUrl.searchParams.set("country", userCountry);
-      const returnTo = encodeURIComponent(callbackUrl.toString());
+      // Usa URL dinâmica baseada no ambiente (localhost:5173 em dev, site em prod)
+      const callbackUrl = buildCallbackUrl("/auth/callback", { country: userCountry });
+      // Não usar encodeURIComponent aqui - searchParams.set() já faz o encoding automaticamente
 
       // Construir URL de redirecionamento para 323 Network
-      const network323Url = import.meta.env.VITE_323_NETWORK_URL || "https://323network.com";
+      // Usa URL dinâmica baseada no ambiente (localhost em dev, 323network.com em prod)
+      const network323Url = get323NetworkUrl();
       const redirectUrl = new URL("/login", network323Url);
       redirectUrl.searchParams.set("source", "american-dream");
-      redirectUrl.searchParams.set("returnTo", returnTo);
+      redirectUrl.searchParams.set("returnTo", callbackUrl);
       redirectUrl.searchParams.set("email", values.email);
       redirectUrl.searchParams.set("name", values.name);
       redirectUrl.searchParams.set("phone", formattedPhone);

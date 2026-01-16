@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, LogIn } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { get323NetworkUrl, buildCallbackUrl } from "@/lib/env";
 
 const ClientLogin = () => {
   const [email, setEmail] = useState("");
@@ -92,26 +93,32 @@ const ClientLogin = () => {
     }
   };
 
+  const handleRegisterClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const callbackUrl = buildCallbackUrl('/auth/callback', { country: 'US' });
+    const network323Url = get323NetworkUrl();
+    const returnTo = encodeURIComponent(callbackUrl);
+    window.location.href = `${network323Url}/login?source=american-dream&returnTo=${returnTo}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur">
-        <CardHeader className="space-y-1 text-center pb-2">
-          <div className="mx-auto mb-4">
-            <img 
-              src="/logo.png" 
-              alt="American Dream" 
-              className="h-16 mx-auto"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
+      <Card className="w-full max-w-md shadow-2xl border-0 bg-white">
+        <CardHeader className="space-y-1 text-center pb-6">
+          <div className="mx-auto mb-6 flex items-center justify-center">
+            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-3 rounded-full">
+              <LogIn className="h-8 w-8 text-white" />
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            Acesse sua conta
+          <CardTitle className="text-3xl font-bold text-gray-900">
+            Login
           </CardTitle>
-          <CardDescription className="text-gray-600">
-            Acompanhe seu processo American Dream
+          <CardDescription className="text-gray-600 mt-2">
+            Acesse sua conta para acompanhar seu processo
           </CardDescription>
+          <p className="text-sm text-gray-500 mt-4 text-center">
+            Use suas credenciais do 323 Network
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -123,7 +130,7 @@ const ClientLogin = () => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -132,12 +139,12 @@ const ClientLogin = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className="w-full"
+                className="w-full h-11"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-gray-700 font-medium">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -146,13 +153,13 @@ const ClientLogin = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="w-full"
+                className="w-full h-11"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+              className="w-full h-11 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold mt-6"
               disabled={loading}
             >
               {loading ? (
@@ -166,14 +173,17 @@ const ClientLogin = () => {
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-3 pt-0">
+        <CardFooter className="flex flex-col space-y-4 pt-6">
           <div className="text-sm text-gray-600 text-center">
             Ainda não tem conta?{" "}
-            <Link to="/lead-form" className="text-blue-600 hover:underline font-medium">
+            <button
+              onClick={handleRegisterClick}
+              className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+            >
               Cadastre-se
-            </Link>
+            </button>
           </div>
-          <div className="w-full border-t pt-3">
+          <div className="w-full border-t pt-4">
             <Link 
               to="/oferta" 
               className="text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-1"
