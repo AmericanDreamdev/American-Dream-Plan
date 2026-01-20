@@ -21,27 +21,27 @@ async function sendEmail(
   try {
     // Obter chave de autenticação do endpoint de email
     const emailApiKey = Deno.env.get("EMAIL_API_KEY");
-    
+
     if (!emailApiKey) {
       console.error("EMAIL_API_KEY not configured. Please set EMAIL_API_KEY environment variable.");
       return false;
     }
-    
+
     // Construir URL com chave de autenticação
     const emailEndpoint = `http://212.1.213.163:3000/send-smtp?key=${encodeURIComponent(emailApiKey)}`;
-    
+
     // Obter credenciais SMTP das variáveis de ambiente
     const smtpHost = Deno.env.get("SMTP_HOST") || "smtp.gmail.com";
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
     const smtpSecure = Deno.env.get("SMTP_SECURE") === "true";
     const smtpUser = Deno.env.get("SMTP_USER");
     const smtpPassword = Deno.env.get("SMTP_PASSWORD");
-    
+
     if (!smtpUser || !smtpPassword) {
       console.error("SMTP credentials not configured. Please set SMTP_USER and SMTP_PASSWORD environment variables.");
       return false;
     }
-    
+
     const emailData = {
       host: smtpHost,
       port: smtpPort,
@@ -65,7 +65,7 @@ async function sendEmail(
     });
 
     const responseText = await response.text();
-    
+
     if (!response.ok) {
       console.error("Error sending email:", {
         status: response.status,
@@ -83,7 +83,7 @@ async function sendEmail(
       status: response.status,
       response: responseText.substring(0, 200), // Primeiros 200 caracteres da resposta
     });
-    
+
     return true;
   } catch (error: any) {
     console.error("Error sending email:", error.message);
@@ -112,7 +112,7 @@ async function getOrCreateConsultationToken(
     // Verificar se já existe token válido
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
-    
+
     // Construir query baseada em termAcceptanceId (pode ser null)
     let query = supabase
       .from("approval_tokens")
@@ -120,14 +120,14 @@ async function getOrCreateConsultationToken(
       .eq("lead_id", leadId)
       .is("used_at", null)
       .gt("expires_at", new Date().toISOString());
-    
+
     // Se termAcceptanceId for null, usar .is(), senão usar .eq()
     if (termAcceptanceId === null) {
       query = query.is("term_acceptance_id", null);
     } else {
       query = query.eq("term_acceptance_id", termAcceptanceId);
     }
-    
+
     const { data: existingToken } = await query.maybeSingle();
 
     if (existingToken) {
@@ -204,11 +204,11 @@ Deno.serve(async (req: Request) => {
     // Primeiro, tentar detectar se estamos em test ou production baseado nas chaves disponíveis
     let stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
     let stripeWebhookSecret: string | undefined;
-    
+
     // Verificar se a chave é de teste ou produção
     const isTestMode = stripeSecretKey?.startsWith("sk_test_");
     const isLiveMode = stripeSecretKey?.startsWith("sk_live_");
-    
+
     // Escolher webhook secret baseado no modo
     if (isTestMode) {
       // Modo teste: priorizar STRIPE_WEBHOOK_SECRET_TEST, depois STRIPE_WEBHOOK_SECRET
@@ -223,7 +223,7 @@ Deno.serve(async (req: Request) => {
       stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
       console.warn("⚠️ UNKNOWN MODE - Using default webhook secret");
     }
-    
+
     // Se não encontrou chave secreta, tentar alternativas
     if (!stripeSecretKey) {
       stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY_TEST") || Deno.env.get("STRIPE_SECRET_KEY_LIVE");
@@ -257,12 +257,12 @@ Deno.serve(async (req: Request) => {
     // O Stripe precisa do corpo exato como recebido para verificar a assinatura
     // Tentar obter o body de forma que preserve exatamente como o Stripe enviou
     const signature = req.headers.get("stripe-signature");
-    
+
     // Obter body como arrayBuffer primeiro e depois converter para string
     // Isso garante que não há modificações no body
     const bodyArrayBuffer = await req.arrayBuffer();
     const body = new TextDecoder().decode(bodyArrayBuffer);
-    
+
     // Coletar informações da requisição para rastreamento
     const requestInfo = {
       method: req.method,
@@ -270,7 +270,7 @@ Deno.serve(async (req: Request) => {
       headers: Object.fromEntries(req.headers.entries()),
       timestamp: new Date().toISOString(),
     };
-    
+
     // Tentar extrair informações do evento mesmo se a assinatura falhar
     let eventId: string | null = null;
     let eventType: string | null = null;
@@ -335,7 +335,7 @@ Deno.serve(async (req: Request) => {
     // NOTA: O body DEVE ser o texto raw exatamente como recebido do Stripe
     let event: Stripe.Event;
     let verificationSucceeded = false;
-    
+
     // Tentar verificar com o secret escolhido primeiro
     try {
       // Log detalhado antes da verificação
@@ -356,7 +356,7 @@ Deno.serve(async (req: Request) => {
       );
       console.log("✅ Webhook signature verified successfully. Event type:", event.type, "Event ID:", event.id);
       verificationSucceeded = true;
-      
+
       // Salvar tentativa bem-sucedida no banco de dados
       try {
         const { error: dbError } = await supabase.from('webhook_attempts').insert({
@@ -375,7 +375,7 @@ Deno.serve(async (req: Request) => {
           request_method: requestInfo.method,
           success: true,
         });
-        
+
         if (dbError) {
           console.error("Error saving successful webhook attempt:", dbError);
         }
@@ -384,13 +384,13 @@ Deno.serve(async (req: Request) => {
       }
     } catch (err: any) {
       console.error("❌ Webhook signature verification failed with primary secret:", err.message);
-      
+
       // Se falhou, tentar com o secret alternativo (test vs production)
       if (!verificationSucceeded) {
-        const alternateSecret = isTestMode 
+        const alternateSecret = isTestMode
           ? Deno.env.get("STRIPE_WEBHOOK_SECRET") // Se test falhou, tentar o padrão
           : Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST"); // Se live falhou, tentar test
-        
+
         if (alternateSecret && alternateSecret !== stripeWebhookSecret) {
           console.log("🔄 Attempting verification with alternate webhook secret...");
           try {
@@ -407,7 +407,7 @@ Deno.serve(async (req: Request) => {
           }
         }
       }
-      
+
       // Se ainda não conseguiu verificar, continuar com o processamento abaixo
       if (!verificationSucceeded) {
         // Log detalhado do erro
@@ -433,9 +433,9 @@ Deno.serve(async (req: Request) => {
             xRealIp: requestInfo.headers["x-real-ip"],
           },
         };
-        
+
         console.error("Error details:", errorDetails);
-        
+
         // Tentar salvar tentativa falha no banco de dados para análise
         try {
           // Inserir registro da tentativa falha
@@ -455,7 +455,7 @@ Deno.serve(async (req: Request) => {
             request_method: requestInfo.method,
             success: false,
           });
-          
+
           if (dbError) {
             console.error("Error saving webhook attempt to database:", dbError);
           } else {
@@ -464,7 +464,7 @@ Deno.serve(async (req: Request) => {
         } catch (dbError: any) {
           console.error("Error attempting to save webhook attempt:", dbError.message);
         }
-        
+
         // Se a verificação de assinatura falhou, mas temos um evento válido, tentar processar mesmo assim
         // Isso pode acontecer se o body foi modificado pelo proxy/load balancer ou se há um problema de configuração
         // IMPORTANTE: Em produção, isso deve ser investigado, mas processamos para não perder pagamentos
@@ -475,7 +475,7 @@ Deno.serve(async (req: Request) => {
           console.error("   - The request body was modified by a proxy/load balancer");
           console.error("   - The STRIPE_WEBHOOK_SECRET in Supabase doesn't match the one in Stripe Dashboard");
           console.error("   - The webhook endpoint URL in Stripe doesn't match the actual function URL");
-          
+
           try {
             // Tentar parsear o evento manualmente (sem verificação de assinatura)
             const bodyParsed = JSON.parse(body);
@@ -490,15 +490,15 @@ Deno.serve(async (req: Request) => {
               type: bodyParsed.type,
               data: bodyParsed.data,
             };
-            
+
             console.log("⚠️ Processing event without signature verification:", mockEvent.type, mockEvent.id);
             event = mockEvent;
-            
+
             // Continuar com o processamento normal abaixo
           } catch (parseError: any) {
             console.error("❌ Failed to parse event body:", parseError.message);
             return new Response(
-              JSON.stringify({ 
+              JSON.stringify({
                 error: `Webhook Error: ${err.message}`,
                 hint: "Failed to verify webhook signature and could not parse event body. Please check your configuration.",
                 troubleshooting: [
@@ -519,7 +519,7 @@ Deno.serve(async (req: Request) => {
         } else {
           // Se não conseguimos extrair informações do evento, retornar erro
           return new Response(
-            JSON.stringify({ 
+            JSON.stringify({
               error: `Webhook Error: ${err.message}`,
               hint: "Failed to verify webhook signature and could not extract event information.",
               troubleshooting: [
@@ -548,7 +548,7 @@ Deno.serve(async (req: Request) => {
             return methodType;
           }
         }
-        
+
         // Verificar payment_method_options na sessão
         if (session.payment_method_options) {
           if (session.payment_method_options.pix) {
@@ -559,10 +559,10 @@ Deno.serve(async (req: Request) => {
           }
         }
       }
-      
+
       // Se não encontrou na sessão, tentar via PaymentIntent
       if (!paymentIntentId) return null;
-      
+
       try {
         // Expandir charges para obter payment_method_details
         // NOTA: Não podemos expandir charges.data.payment_method diretamente
@@ -570,7 +570,7 @@ Deno.serve(async (req: Request) => {
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
           expand: ['charges'],
         });
-        
+
         // O método de pagamento está nos charges (quando o pagamento já foi processado)
         if (paymentIntent.charges?.data?.length > 0) {
           const charge = paymentIntent.charges.data[0];
@@ -579,7 +579,7 @@ Deno.serve(async (req: Request) => {
             return methodType === "pix" ? "pix" : methodType === "card" ? "card" : methodType;
           }
         }
-        
+
         // Fallback: verificar payment_method_types (disponível antes do pagamento ser processado)
         if (paymentIntent.payment_method_types?.length > 0) {
           const methodType = paymentIntent.payment_method_types[0];
@@ -663,11 +663,11 @@ Deno.serve(async (req: Request) => {
           console.error("Error updating payment:", updateError);
         } else {
           console.log(`Payment completed (${paymentMethod || "unknown"}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
-          
+
           // Enviar email de confirmação de pagamento com link do formulário
           const leadId = session.metadata?.lead_id;
           const termAcceptanceId = session.metadata?.term_acceptance_id;
-          
+
           if (leadId) {
             try {
               // Buscar payment_id atualizado e lead com user_id
@@ -706,10 +706,10 @@ Deno.serve(async (req: Request) => {
 
                     // Converter amount para centavos (multiplicar por 100)
                     const amountInCents = Math.round((updateData.amount || 0) * 100);
-                    
+
                     // Determinar método de pagamento
                     const paymentMethodFor323 = paymentMethod === "pix" ? "pix" : "card";
-                    
+
                     await syncPaymentTo323Network({
                       user_id: correctUserId,
                       payment_id: updatedPayment.id,
@@ -719,8 +719,8 @@ Deno.serve(async (req: Request) => {
                       payment_method: paymentMethodFor323,
                       status: "completed",
                       stripe_session_id: session.id,
-                      stripe_payment_intent_id: typeof session.payment_intent === "string" 
-                        ? session.payment_intent 
+                      stripe_payment_intent_id: typeof session.payment_intent === "string"
+                        ? session.payment_intent
                         : (session.payment_intent as any)?.id,
                       metadata: {
                         american_dream_payment_id: updatedPayment.id,
@@ -762,7 +762,7 @@ Deno.serve(async (req: Request) => {
 
               if (lead && lead.email) {
                 const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "Cartão" : paymentMethod || "Pagamento";
-                const amountFormatted = updateData.currency === "BRL" 
+                const amountFormatted = updateData.currency === "BRL"
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
 
@@ -779,11 +779,11 @@ Deno.serve(async (req: Request) => {
                   siteUrl = `https://${siteUrl}`;
                 }
                 // Construir link sem barras duplas
-                const consultationLink = consultationToken 
+                const consultationLink = consultationToken
                   ? `${siteUrl}/consultation-form/${consultationToken}`.replace(/([^:]\/)\/+/g, '$1')
                   : null;
 
-                const emailSubject = isSecondPart 
+                const emailSubject = isSecondPart
                   ? "Confirmação - Segunda Parte do Pagamento - American Dream"
                   : "Pagamento Confirmado - American Dream";
                 const emailHtml = `
@@ -952,11 +952,11 @@ Deno.serve(async (req: Request) => {
           console.error("Error updating payment:", updateError);
         } else {
           console.log(`Async payment completed (${paymentMethod}) for lead: ${session.metadata?.lead_id || "unknown"}, amount: ${updateData.amount} ${updateData.currency}`);
-          
+
           // Enviar email de confirmação de pagamento com link do formulário
           const leadId = session.metadata?.lead_id;
           const termAcceptanceId = session.metadata?.term_acceptance_id;
-          
+
           if (leadId) {
             try {
               // Buscar payment_id atualizado e lead com user_id
@@ -995,10 +995,10 @@ Deno.serve(async (req: Request) => {
 
                     // Converter amount para centavos (multiplicar por 100)
                     const amountInCents = Math.round((updateData.amount || 0) * 100);
-                    
+
                     // Determinar método de pagamento
                     const paymentMethodFor323 = paymentMethod === "pix" ? "pix" : "card";
-                    
+
                     await syncPaymentTo323Network({
                       user_id: correctUserId,
                       payment_id: updatedPayment.id,
@@ -1008,8 +1008,8 @@ Deno.serve(async (req: Request) => {
                       payment_method: paymentMethodFor323,
                       status: "completed",
                       stripe_session_id: session.id,
-                      stripe_payment_intent_id: typeof session.payment_intent === "string" 
-                        ? session.payment_intent 
+                      stripe_payment_intent_id: typeof session.payment_intent === "string"
+                        ? session.payment_intent
                         : (session.payment_intent as any)?.id,
                       metadata: {
                         american_dream_payment_id: updatedPayment.id,
@@ -1051,7 +1051,7 @@ Deno.serve(async (req: Request) => {
 
               if (lead && lead.email) {
                 const paymentMethodName = paymentMethod === "pix" ? "PIX" : paymentMethod === "card" ? "Cartão" : paymentMethod || "Pagamento";
-                const amountFormatted = updateData.currency === "BRL" 
+                const amountFormatted = updateData.currency === "BRL"
                   ? `R$ ${updateData.amount.toFixed(2).replace(".", ",")}`
                   : `US$ ${updateData.amount.toFixed(2)}`;
 
@@ -1068,11 +1068,11 @@ Deno.serve(async (req: Request) => {
                   siteUrl = `https://${siteUrl}`;
                 }
                 // Construir link sem barras duplas
-                const consultationLink = consultationToken 
+                const consultationLink = consultationToken
                   ? `${siteUrl}/consultation-form/${consultationToken}`.replace(/([^:]\/)\/+/g, '$1')
                   : null;
 
-                const emailSubject = isSecondPart 
+                const emailSubject = isSecondPart
                   ? "Confirmação - Segunda Parte do Pagamento - American Dream"
                   : "Pagamento Confirmado - American Dream";
                 const emailHtml = `

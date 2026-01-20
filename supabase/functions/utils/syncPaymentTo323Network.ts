@@ -19,11 +19,11 @@ interface SyncPaymentPayload {
 }
 
 export async function syncPaymentTo323Network(payload: SyncPaymentPayload) {
-  const URL_323_NETWORK = Deno.env.get('URL_323_NETWORK') || 
+  const URL_323_NETWORK = Deno.env.get('URL_323_NETWORK') ||
     'https://pgdvbanwumqjmqeybqnw.supabase.co';
-  
+
   const API_KEY = Deno.env.get('AMERICAN_DREAM_SHARED_API_KEY');
-  
+
   if (!API_KEY) {
     console.error('❌ AMERICAN_DREAM_SHARED_API_KEY not configured');
     throw new Error('AMERICAN_DREAM_SHARED_API_KEY not configured');
@@ -58,13 +58,13 @@ export async function syncPaymentTo323Network(payload: SyncPaymentPayload) {
       } catch {
         errorData = { error: errorText };
       }
-      
+
       console.error('❌ Error syncing payment:', {
         status: response.status,
         statusText: response.statusText,
         error: errorData,
       });
-      
+
       throw new Error(`Failed to sync payment: ${errorData.error || response.statusText}`);
     }
 

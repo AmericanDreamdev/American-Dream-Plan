@@ -28,6 +28,7 @@ import { ScrollToTop } from "./components/ScrollToTop";
 import ClientLogin from "./pages/client/ClientLogin";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientResetPassword from "./pages/client/ClientResetPassword";
+import ClientSSOCallback from "./pages/client/ClientSSOCallback";
 
 const queryClient = new QueryClient();
 
@@ -123,6 +124,7 @@ const App = () => (
             } 
           />
           {/* Client Routes */}
+          <Route path="/client/sso-callback" element={<ClientSSOCallback />} />
           <Route path="/client/login" element={<ClientLogin />} />
           <Route path="/client/reset-password" element={<ClientResetPassword />} />
           <Route 
