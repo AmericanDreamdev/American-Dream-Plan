@@ -5,6 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // URLs das imagens dos métodos de pagamento
 const PAYMENT_METHOD_IMAGES = {
@@ -68,22 +78,7 @@ const ZelleIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Componente SVG do Infinite Pay (placeholder - substitua pelo logo oficial quando disponível)
-const InfinitePayIcon = ({ className }: { className?: string }) => (
-  <svg 
-    className={className}
-    xmlns="http://www.w3.org/2000/svg" 
-    x="0px" 
-    y="0px" 
-    width="100" 
-    height="100" 
-    viewBox="0 0 48 48"
-  >
-    <path fill="#00A8FF" d="M24,4C12.954,4,4,12.954,4,24s8.954,20,20,20s20-8.954,20-20S35.046,4,24,4z"></path>
-    <path fill="#fff" d="M24,12c-6.627,0-12,5.373-12,12s5.373,12,12,12s12-5.373,12-12S30.627,12,24,12z M24,32	c-4.418,0-8-3.582-8-8s3.582-8,8-8s8,3.582,8,8S28.418,32,24,32z"></path>
-    <path fill="#00A8FF" d="M24,20c-2.209,0-4,1.791-4,4s1.791,4,4,4s4-1.791,4-4S26.209,20,24,20z"></path>
-  </svg>
-);
+// O componente ParcelowIcon foi removido para usar a imagem oficial em /public/parcelow_share.webp
 
 const PaymentOptions = () => {
   const navigate = useNavigate();
@@ -94,65 +89,18 @@ const PaymentOptions = () => {
   
   const [loadingCard, setLoadingCard] = useState(false);
   const [loadingPix, setLoadingPix] = useState(false);
+  const [loadingParcelow, setLoadingParcelow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userCountry, setUserCountry] = useState<string>(countryParam.toUpperCase());
+  const [leadData, setLeadData] = useState<any>(null);
+  const [showCPFModal, setShowCPFModal] = useState(false);
+  const [cpf, setCpf] = useState("");
+  const [isUpdatingCPF, setIsUpdatingCPF] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
   
   // Flag para evitar processamento múltiplo do retorno
   const hasProcessedReturn = useRef(false);
-  
-  // Verificar estado inicial de retorno do InfinitePay
-  const getInitialReturnState = () => {
-    if (!leadId || !termAcceptanceId) {
-      console.log("[PaymentOptions] Initial state: No leadId or termAcceptanceId");
-      return false;
-    }
-    
-    const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
-    const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
-    const hasReturned = sessionStorage.getItem(returnKey) === "true";
-    const wasRedirected = sessionStorage.getItem(redirectKey) === "true";
-    const referrer = document.referrer;
-    const isFromInfinitePay = referrer && referrer.includes("infinitepay.io");
-    
-    console.log("[PaymentOptions] Initial state check:", {
-      hasReturned,
-      wasRedirected,
-      isFromInfinitePay,
-      referrer: referrer ? referrer.substring(0, 50) + "..." : "none"
-    });
-    
-    // Se já tem flag de retorno, usar ela
-    if (hasReturned) {
-      console.log("[PaymentOptions] Initial state: Already returned (hasReturned flag)");
-      return true;
-    }
-    
-    // Se voltou do InfinitePay (referrer), marcar como retornado IMEDIATAMENTE
-    if (isFromInfinitePay) {
-      console.log("[PaymentOptions] Initial state: Detected return from InfinitePay (referrer)");
-      sessionStorage.setItem(returnKey, "true");
-      if (wasRedirected) {
-        sessionStorage.removeItem(redirectKey);
-      }
-      return true;
-    }
-    
-    // Se foi redirecionado e está de volta na página, provavelmente voltou
-    // IMPORTANTE: Só marcar como retornado se realmente voltou (não apenas se foi redirecionado)
-    // A lógica aqui é: se wasRedirected é true MAS não estamos mais no InfinitePay, significa que voltou
-    if (wasRedirected && !isFromInfinitePay) {
-      console.log("[PaymentOptions] Initial state: Detected return (wasRedirected but not on InfinitePay)");
-      // Marcar como retornado e limpar flag de redirecionamento
-      sessionStorage.setItem(returnKey, "true");
-      sessionStorage.removeItem(redirectKey);
-      return true;
-    }
-    
-    console.log("[PaymentOptions] Initial state: No return detected");
-    return false;
-  };
-  
-  const [returnedFromInfinitePay, setReturnedFromInfinitePay] = useState(getInitialReturnState());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Estado para forçar re-avaliação quando página é restaurada do bfcache
   const [pageShowTrigger, setPageShowTrigger] = useState(0);
@@ -217,8 +165,7 @@ const PaymentOptions = () => {
     checkAuthToken();
   }, [searchParams, leadId]);
   
-  // Determinar se é Brasil
-  // Qualquer país que NÃO seja Brasil recebe: Zelle, Stripe Card e Stripe PIX
+  // Determinar se é Brasil (usado apenas para logs e possíveis futuras customizações)
   const isBrazil = userCountry === "BR";
 
   // Valores base (sem taxas)
@@ -265,6 +212,30 @@ const PaymentOptions = () => {
     
     fetchExchangeRate();
   }, []);
+
+  // Carregar dados do lead
+  useEffect(() => {
+    const fetchLeadData = async () => {
+      if (!leadId) return;
+      console.log("[PaymentOptions] Fetching lead data for CPF validation...");
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", leadId)
+        .single();
+      
+      if (!error && data) {
+        console.log("[PaymentOptions] Lead data fetched:", data.id);
+        setLeadData(data);
+        if (data.document_number) {
+          setCpf(data.document_number);
+        }
+      } else if (error) {
+        console.error("[PaymentOptions] Error fetching lead data:", error);
+      }
+    };
+    fetchLeadData();
+  }, [leadId]);
   
   // Calcular valores finais com taxas
   const cardFinalAmount = baseUsdAmount + (baseUsdAmount * cardFeePercentage) + cardFeeFixed; // US$ 1,038.26
@@ -293,9 +264,6 @@ const PaymentOptions = () => {
         console.log("[PaymentOptions] Page restored from bfcache. Re-evaluating state.");
         // Resetar flag de processamento para permitir re-avaliação
         hasProcessedReturn.current = false;
-        // Forçar re-avaliação do estado inicial
-        const newReturnState = getInitialReturnState();
-        setReturnedFromInfinitePay(newReturnState);
         // Forçar o useEffect principal a re-executar
         setPageShowTrigger(prev => prev + 1);
       }
@@ -323,8 +291,7 @@ const PaymentOptions = () => {
     console.log("[PaymentOptions] useEffect: Starting processing", {
       leadId,
       termAcceptanceId,
-      isBrazil,
-      returnedFromInfinitePay
+      isBrazil
     });
 
     // ===== VERIFICAÇÃO DE RETORNO DO PIX =====
@@ -519,101 +486,6 @@ const PaymentOptions = () => {
       console.log("[PaymentOptions] ℹ️ No PIX tracker found");
     }
     // ===== FIM VERIFICAÇÃO DE RETORNO DO PIX =====
-
-    // Chave para rastrear redirecionamento - usar uma chave mais persistente
-    const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
-    const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
-    
-    // Verificar se o usuário voltou do InfinitePay
-    const isFromInfinitePay = referrer && referrer.includes("infinitepay.io");
-    
-    // Verificar se já foi marcado como retornado
-    const hasReturned = sessionStorage.getItem(returnKey) === "true";
-    // Verificar se já foi redirecionado (mas ainda não voltou)
-    const wasRedirected = sessionStorage.getItem(redirectKey) === "true";
-    
-    console.log("[PaymentOptions] useEffect: State check", {
-      hasReturned,
-      wasRedirected,
-      isFromInfinitePay,
-      returnedFromInfinitePay
-    });
-    
-    // Se voltou do InfinitePay OU já foi marcado como retornado, apenas limpar flags
-    if (isFromInfinitePay || hasReturned) {
-      console.log("[PaymentOptions] useEffect: Detected return from InfinitePay");
-      // Marcar como processado e limpar flags
-      hasProcessedReturn.current = true;
-      sessionStorage.removeItem(returnKey);
-      sessionStorage.removeItem(redirectKey);
-      // Não redirecionar mais - o usuário pode escolher outro método ou aguardar o link
-      return;
-    }
-
-    // Se for Brasil e não voltou do InfinitePay, registrar e redirecionar diretamente
-    // IMPORTANTE: Só executar se NÃO voltou do InfinitePay (verificação explícita)
-    if (isBrazil && !isFromInfinitePay && !hasReturned) {
-      // Se já foi redirecionado antes, apenas limpar flags
-      if (wasRedirected) {
-        console.log("[PaymentOptions] useEffect: Was redirected but returned, clearing flags");
-        // Marcar como processado e limpar flags
-        hasProcessedReturn.current = true;
-        sessionStorage.removeItem(returnKey);
-        sessionStorage.removeItem(redirectKey);
-        // Não redirecionar mais - o usuário pode escolher outro método ou aguardar o link
-        return;
-      }
-      
-      console.log("[PaymentOptions] useEffect: First time, redirecting to InfinitePay");
-      // Marcar como processado ANTES de redirecionar
-      hasProcessedReturn.current = true;
-      
-      // Primeira vez - marcar no sessionStorage ANTES de redirecionar
-      sessionStorage.setItem(redirectKey, "true");
-      
-      const registerAndRedirect = async () => {
-        try {
-          // Tentar inserir - se der erro, não bloquear o redirecionamento
-          // Não fazer SELECT primeiro para evitar erro 403
-          const { error } = await supabase.from("payments").insert({
-            lead_id: leadId,
-            term_acceptance_id: termAcceptanceId,
-            amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
-            currency: "BRL",
-            status: "redirected_to_infinitepay",
-            metadata: {
-              payment_method: "infinitepay",
-              infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
-              redirected_at: new Date().toISOString(),
-            },
-          });
-          
-          // Se der erro (incluindo duplicata ou 403), apenas logar mas não bloquear
-          if (error) {
-            console.error("[PaymentOptions] Error registering InfinitePay redirect:", error);
-            // Não bloquear o redirecionamento mesmo se houver erro
-          } else {
-            console.log("[PaymentOptions] Successfully registered InfinitePay redirect");
-          }
-        } catch (err) {
-          console.error("[PaymentOptions] Error registering InfinitePay redirect:", err);
-          // Não bloquear o redirecionamento mesmo se houver erro
-        }
-        
-        console.log("[PaymentOptions] Redirecting to InfinitePay");
-        // Redirecionar após tentar registrar (mesmo se houver erro)
-        window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
-      };
-      
-      // Aguardar o registro antes de redirecionar
-      registerAndRedirect();
-    } else {
-      console.log("[PaymentOptions] useEffect: No action needed", {
-        isBrazil,
-        isFromInfinitePay,
-        hasReturned
-      });
-    }
   }, [leadId, termAcceptanceId, navigate, isBrazil, pageShowTrigger]);
 
   // Forçar fundo branco na página
@@ -654,6 +526,42 @@ const PaymentOptions = () => {
       if (styleEl) {
         styleEl.remove();
       }
+    };
+  }, []);
+
+  // Detectar scroll e atualizar indicador ativo
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const cards = container.querySelectorAll('.snap-center');
+      const containerRect = container.getBoundingClientRect();
+      const containerCenter = containerRect.left + containerRect.width / 2;
+
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+      cards.forEach((card, index) => {
+        const cardRect = card.getBoundingClientRect();
+        const cardCenter = cardRect.left + cardRect.width / 2;
+        const distance = Math.abs(cardCenter - containerCenter);
+
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      setActiveCardIndex(closestIndex);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    // Chamar uma vez para definir o estado inicial
+    handleScroll();
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -791,275 +699,393 @@ const PaymentOptions = () => {
     navigate(`/zelle-checkout?lead_id=${leadId}&term_acceptance_id=${termAcceptanceId}`);
   };
 
-  const handleInfinitePayCheckout = async () => {
+  const handleParcelowCheckout = async () => {
     if (!leadId || !termAcceptanceId) return;
-    
-    // Chaves para rastrear redirecionamento
-    const redirectKey = `infinitePay_redirect_${leadId}_${termAcceptanceId}`;
-    const returnKey = `infinitePay_returned_${leadId}_${termAcceptanceId}`;
-    
-    // Limpar flag de retorno e marcar como redirecionado
-    sessionStorage.removeItem(returnKey);
-    sessionStorage.setItem(redirectKey, "true");
-    
-    // Registrar redirecionamento para InfinitePay
-    try {
-      // Tentar inserir diretamente - se der erro (duplicata ou 403), não bloquear
-      // Não fazer SELECT primeiro para evitar erro 403
-      const { error } = await supabase.from("payments").insert({
-        lead_id: leadId,
-        term_acceptance_id: termAcceptanceId,
-        amount: 5776.00, // Valor do InfinitePay em BRL (R$ 5.776,00)
-        currency: "BRL",
-        status: "redirected_to_infinitepay",
-        metadata: {
-          payment_method: "infinitepay",
-          infinitepay_url: "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream",
-          redirected_at: new Date().toISOString(),
-        },
-      });
-      
-      // Se der erro (incluindo duplicata ou 403), apenas logar mas não bloquear
-      if (error) {
-        console.error("Error registering InfinitePay redirect:", error);
-        // Não bloquear o redirecionamento mesmo se houver erro
-      }
-    } catch (err) {
-      console.error("Error registering InfinitePay redirect:", err);
-      // Não bloquear o redirecionamento mesmo se houver erro
+
+    // Se não tiver CPF, abrir modal
+    if (!cpf || cpf.replace(/\D/g, "").length !== 11) {
+      console.log("[PaymentOptions] CPF missing or invalid, opening modal...");
+      setShowCPFModal(true);
+      return;
     }
     
-    // Redirecionar diretamente para o link da InfinitePay
-    window.location.href = "https://loja.infinitepay.io/brantimmigration/hea9241-american-dream";
+    // Limpar tracker de PIX se existir (usuário escolheu outro método)
+    const pixTrackerKey = `pix_checkout_${leadId}_${termAcceptanceId}`;
+    const pixTrackerData = sessionStorage.getItem(pixTrackerKey);
+    if (pixTrackerData) {
+      console.log("[PaymentOptions] Clearing PIX tracker - user chose Parcelow instead");
+      sessionStorage.removeItem(pixTrackerKey);
+    }
+    
+    setLoadingParcelow(true);
+    setError(null);
+
+    try {
+      // Primeiro, criar um payment record no banco de dados se não existir ou atualizar
+      const { data: payment, error: paymentError } = await supabase
+        .from("payments")
+        .insert({
+          lead_id: leadId,
+          term_acceptance_id: termAcceptanceId,
+          amount: 1999.00,
+          currency: "USD",
+          status: "pending",
+          metadata: {
+            payment_method: "parcelow",
+            created_at: new Date().toISOString(),
+          },
+        })
+        .select()
+        .single();
+
+      if (paymentError || !payment) {
+        console.error("Error creating payment record:", paymentError);
+        setError("Erro ao processar pagamento. Tente novamente.");
+        setLoadingParcelow(false);
+        return;
+      }
+
+      console.log("[PaymentOptions] Payment record created:", payment.id);
+
+      // Chamar Edge Function para criar checkout no Parcelow
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
+        "create-parcelow-checkout",
+        {
+          body: {
+            payment_id: payment.id,
+            currency: "USD"
+          },
+        }
+      );
+
+      if (checkoutError || !checkoutData?.checkout_url) {
+        console.error("Error creating Parcelow checkout session:", {
+          checkoutError,
+          checkoutData,
+          errorMessage: checkoutError?.message,
+        });
+        
+        const errorMessage = checkoutError?.message || checkoutData?.error || checkoutData?.message || "Erro desconhecido";
+        
+        setError(
+          checkoutData?.error === "CPF_REQUIRED" 
+            ? "CPF é obrigatório para pagamento via Parcelow." 
+            : errorMessage.includes("credentials not configured")
+            ? "Configuração de credenciais Parcelow ausente. Entre em contato com o suporte."
+            : errorMessage.includes("Failed to authenticate")
+            ? "Erro de autenticação com Parcelow. Verifique as credenciais configuradas."
+            : `Erro ao processar pagamento via Parcelow: ${errorMessage}`
+        );
+        setLoadingParcelow(false);
+        if (checkoutData?.error === "CPF_REQUIRED") setShowCPFModal(true);
+        return;
+      }
+
+      // Redirecionar para o checkout da Parcelow
+      window.location.href = checkoutData.checkout_url;
+    } catch (err) {
+      console.error("Error calling Parcelow checkout function:", err);
+      setError("Erro ao processar pagamento. Tente novamente.");
+      setLoadingParcelow(false);
+    }
+  };
+
+  const handleUpdateCPF = async () => {
+    const cleanCpf = cpf.replace(/\D/g, "");
+    if (cleanCpf.length !== 11) {
+      setError("CPF deve ter 11 dígitos.");
+      return;
+    }
+
+    setIsUpdatingCPF(true);
+    try {
+      const { error: updateError } = await supabase
+        .from("leads")
+        .update({ document_number: cpf })
+        .eq("id", leadId);
+
+      if (updateError) throw updateError;
+
+      setShowCPFModal(false);
+      // Iniciar o checkout após atualizar o CPF
+      handleParcelowCheckout();
+    } catch (err) {
+      console.error("Error updating CPF:", err);
+      setError("Erro ao atualizar CPF. Tente novamente.");
+    } finally {
+      setIsUpdatingCPF(false);
+    }
   };
 
   if (!leadId || !termAcceptanceId) {
     return null;
   }
 
-  // Se for Brasil e voltou do InfinitePay, mostrar mensagem informativa
-  if (isBrazil && returnedFromInfinitePay) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
-          <Card className="shadow-xl bg-white border border-gray-200">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-                Pagamento Realizado
-              </CardTitle>
-              <CardDescription className="text-base">
-                Após a verificação do pagamento, você receberá um link para preencher o formulário de consulta.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 p-6">
-              <div className="flex flex-col gap-4">
-                <Button
-                  onClick={handleInfinitePayCheckout}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  size="lg"
-                >
-                  Tentar Pagamento Novamente
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/lead-form")}
-                  className="w-full"
-                  size="lg"
-                >
-                  Voltar ao Formulário
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // Se for Brasil e ainda não voltou, mostrar loading enquanto redireciona
-  if (isBrazil && !returnedFromInfinitePay) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-gray-600 mb-4" />
-          <p className="text-gray-600">Redirecionando para o pagamento...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Renderizar métodos de pagamento baseado no país
   const renderPaymentMethods = () => {
-    if (isBrazil) {
-      // Brasil: apenas Infinite Pay
-      return (
-        <div className="grid md:grid-cols-1 gap-4 max-w-md mx-auto">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white"
-            onClick={handleInfinitePayCheckout}
-          >
-            <CardContent className="p-6 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-20 h-20">
-                  <InfinitePayIcon className="w-full h-full" />
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Infinite Pay</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Pagamento via Infinite Pay
-              </p>
-              <Button 
-                className="w-full"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleInfinitePayCheckout();
-                }}
-              >
-                Pagar com Infinite Pay
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    } else {
-      // Qualquer país que NÃO seja Brasil: Zelle, Stripe Card e Stripe PIX
-      return (
-        <div className="grid md:grid-cols-3 gap-4">
-          {/* Zelle */}
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
-            onClick={handleZelleCheckout}
-          >
-            <CardContent className="p-6 text-center flex flex-col flex-grow">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-20 h-20">
-                  <ZelleIcon className="w-full h-full" />
-                </div>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">Zelle</h3>
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                Pagamento rápido e seguro via Zelle
-              </p>
-              <div className="mb-4">
-                <p className="text-base sm:text-lg font-bold text-blue-600">
-                  ${zelleAmount.toFixed(2)}
-                </p>
-              </div>
-              <div className="flex-grow"></div>
-              <Button 
-                className="w-full mt-auto"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleZelleCheckout();
-                }}
-              >
-                Pagar com Zelle
-              </Button>
-            </CardContent>
-          </Card>
+    // Todos os países: Parcelow, Zelle, Stripe Card, Stripe PIX
+    return (
+      <div className="space-y-4">
+          {/* Indicador de scroll no mobile */}
+          <div className="md:hidden text-center mb-3">
+            <p className="text-sm text-gray-600 flex items-center justify-center gap-2">
+              <span>Deslize para ver mais opções</span>
+              <svg className="w-5 h-5 animate-bounce-horizontal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </p>
+          </div>
 
-          {/* Stripe Card */}
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
-            onClick={() => handleStripeCheckout("card")}
-          >
-            <CardContent className="p-6 text-center flex flex-col flex-grow">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-full max-w-[200px] h-20">
-                  <StripeIcon className="w-full h-full" />
+          {/* Mobile: Swiper horizontal / Desktop: Grid */}
+          <div className="relative">
+            {/* Gradiente indicador de mais conteúdo à direita - apenas mobile */}
+            <div className="md:hidden absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white via-white/40 to-transparent pointer-events-none z-0" style={{ right: '8px' }}></div>
+            
+            <div 
+              ref={scrollContainerRef}
+              className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 flex md:flex-none overflow-x-auto gap-4 pb-4 md:pb-0 pr-8 md:pr-0 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              style={{ scrollPaddingRight: '8px' }}
+            >
+            {/* Parcelow - PRIMEIRO */}
+            <div 
+              className="group rounded-xl border-2 border-gray-200 hover:border-gray-400 bg-white transition-all duration-200 cursor-pointer hover:shadow-lg relative flex-shrink-0 w-[280px] md:w-auto snap-center flex flex-col z-10"
+              onClick={handleParcelowCheckout}
+            >
+              {/* Badge destaque */}
+              <div className="absolute top-2 right-2 bg-emerald-500 text-white px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm z-10">
+                21x
+              </div>
+              
+              <div className="p-5 pt-10 flex flex-col flex-grow">
+                {/* Logo */}
+                <div className="flex justify-center mb-3">
+                  <div className="w-16 h-16 flex items-center justify-center overflow-hidden rounded-xl shadow-sm">
+                    <img src="/parcelow_share.webp" alt="Parcelow" className="w-full h-full object-cover" />
+                  </div>
                 </div>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">Cartão de Crédito</h3>
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                Visa, Mastercard, American Express
-              </p>
-              <div className="mb-2">
-                <p className="text-base sm:text-lg font-bold text-blue-600">
-                  ${cardFinalAmount.toFixed(2)}
+                
+                <h4 className="text-lg font-semibold text-gray-900 text-center mb-1">Parcelow</h4>
+                <p className="text-xs text-gray-500 text-center mb-3">
+                  Parcele em até 21x no cartão
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
-                  * Taxa de processamento incluída
-                </p>
-              </div>
-              <div className="flex-grow"></div>
-              <Button 
-                className="w-full mt-auto"
-                variant="outline"
-                disabled={loadingCard}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStripeCheckout("card");
-                }}
-              >
-                {loadingCard ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  "Pagar com Cartão"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Stripe PIX */}
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-shadow border-2 border-gray-200 hover:border-gray-400 bg-white flex flex-col h-full"
-            onClick={() => handleStripeCheckout("pix")}
-          >
-            <CardContent className="p-6 text-center flex flex-col flex-grow">
-              <div className="flex justify-center mb-4">
-                <div className="flex items-center justify-center w-20 h-20">
-                  <PixIcon className="w-full h-full" />
-                </div>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">PIX</h3>
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                Pagamento instantâneo via PIX
-              </p>
-              <div className="mb-4">
-                {loadingExchangeRate || pixFinalAmount === null ? (
-                  <p className="text-base sm:text-lg font-bold text-gray-400">
-                    Carregando...
+                
+                {/* Valor */}
+                <div className="mb-4 text-center flex-grow">
+                  <p className="text-2xl font-bold text-blue-600">
+                    ${baseUsdAmount.toFixed(2)}
                   </p>
-                ) : (
-                  <>
-                    <p className="text-base sm:text-lg font-bold text-blue-600">
-                      R$ {pixFinalAmount.toFixed(2)}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
-                      * Taxa de processamento incluída
-                    </p>
-                  </>
-                )}
+                </div>
+                
+                {/* Botão sempre no final */}
+                <div className="mt-auto">
+                  <Button 
+                    variant="outline"
+                    className="w-full border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                    disabled={loadingParcelow}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleParcelowCheckout();
+                    }}
+                  >
+                    {loadingParcelow ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      "Pagar com Parcelow"
+                    )}
+                  </Button>
+                </div>
               </div>
-              <div className="flex-grow"></div>
-              <Button 
-                className="w-full mt-auto"
-                variant="outline"
-                disabled={loadingPix}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStripeCheckout("pix");
-                }}
-              >
-                {loadingPix ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  "Pagar com PIX"
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* Zelle */}
+            <div 
+              className="group rounded-xl border-2 border-gray-200 hover:border-gray-400 bg-white transition-all duration-200 cursor-pointer hover:shadow-lg flex-shrink-0 w-[280px] md:w-auto snap-center flex flex-col relative z-10"
+              onClick={handleZelleCheckout}
+            >
+              <div className="p-5 flex flex-col flex-grow">
+                {/* Logo */}
+                <div className="flex justify-center mb-3">
+                  <div className="w-16 h-16 flex items-center justify-center">
+                    <ZelleIcon className="w-full h-full" />
+                  </div>
+                </div>
+                
+                <h4 className="text-lg font-semibold text-gray-900 text-center mb-1">Zelle</h4>
+                <p className="text-xs text-gray-500 text-center mb-3">
+                  Transferência bancária instantânea
+                </p>
+                
+                {/* Valor */}
+                <div className="mb-4 text-center flex-grow">
+                  <p className="text-2xl font-bold text-blue-600">
+                    ${zelleAmount.toFixed(2)}
+                  </p>
+                </div>
+                
+                {/* Botão sempre no final */}
+                <div className="mt-auto">
+                  <Button 
+                    variant="outline"
+                    className="w-full border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleZelleCheckout();
+                    }}
+                  >
+                    Pagar com Zelle
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Stripe Card */}
+            <div 
+              className="group rounded-xl border-2 border-gray-200 hover:border-gray-400 bg-white transition-all duration-200 cursor-pointer hover:shadow-lg flex-shrink-0 w-[280px] md:w-auto snap-center flex flex-col relative z-10"
+              onClick={() => handleStripeCheckout("card")}
+            >
+              <div className="p-5 flex flex-col flex-grow">
+                {/* Logo */}
+                <div className="flex justify-center mb-3">
+                  <div className="w-full max-w-[140px] h-14 flex items-center justify-center">
+                    <StripeIcon className="w-full h-full" />
+                  </div>
+                </div>
+                
+                <h4 className="text-lg font-semibold text-gray-900 text-center mb-1">Cartão de Crédito</h4>
+                <p className="text-xs text-gray-500 text-center mb-3">
+                  Visa, Mastercard, American Express
+                </p>
+                
+                {/* Valor */}
+                <div className="mb-4 text-center flex-grow">
+                  <p className="text-2xl font-bold text-blue-600">
+                    ${cardFinalAmount.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Taxa de processamento incluída
+                  </p>
+                </div>
+                
+                {/* Botão sempre no final */}
+                <div className="mt-auto">
+                  <Button 
+                    variant="outline"
+                    className="w-full border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                    disabled={loadingCard}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStripeCheckout("card");
+                    }}
+                  >
+                    {loadingCard ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      "Pagar com Cartão"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Stripe PIX */}
+            <div 
+              className="group rounded-xl border-2 border-gray-200 hover:border-gray-400 bg-white transition-all duration-200 cursor-pointer hover:shadow-lg flex-shrink-0 w-[280px] md:w-auto snap-center flex flex-col relative z-10"
+              onClick={() => handleStripeCheckout("pix")}
+            >
+              <div className="p-5 flex flex-col flex-grow">
+                {/* Logo */}
+                <div className="flex justify-center mb-3">
+                  <div className="w-16 h-16 flex items-center justify-center">
+                    <PixIcon className="w-full h-full" />
+                  </div>
+                </div>
+                
+                <h4 className="text-lg font-semibold text-gray-900 text-center mb-1">PIX</h4>
+                <p className="text-xs text-gray-500 text-center mb-3">
+                  Pagamento instantâneo via PIX
+                </p>
+                
+                {/* Valor */}
+                <div className="mb-4 text-center flex-grow">
+                  {loadingExchangeRate || pixFinalAmount === null ? (
+                    <p className="text-2xl font-bold text-gray-400">
+                      Calculando...
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-blue-600">
+                        R$ {pixFinalAmount.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Taxa de processamento incluída
+                      </p>
+                    </>
+                  )}
+                </div>
+                
+                {/* Botão sempre no final */}
+                <div className="mt-auto">
+                  <Button 
+                    variant="outline"
+                    className="w-full border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                    disabled={loadingPix}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStripeCheckout("pix");
+                    }}
+                  >
+                    {loadingPix ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processando...
+                      </>
+                      ) : (
+                        "Pagar com PIX"
+                      )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+          
+          {/* Indicadores de navegação (dots) - apenas mobile */}
+          <div className="md:hidden flex justify-center gap-2 pt-2">
+            {[0, 1, 2, 3].map((index) => (
+              <div
+                key={index}
+                className={`h-2 rounded-full transition-all duration-300 ease-out ${
+                  activeCardIndex === index 
+                    ? 'w-8 bg-blue-600 payment-dot-active' 
+                    : 'w-2 bg-gray-300'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Informações de segurança */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Pagamento 100% Seguro</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Todas as transações são criptografadas e protegidas. Seus dados estão seguros.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      );
-    }
+    );
   };
 
   return (
@@ -1093,14 +1119,57 @@ const PaymentOptions = () => {
 
             {/* Métodos de pagamento renderizados baseado no país */}
             {renderPaymentMethods()}
-
-            <div className="mt-6 space-y-2">
-              <div className="text-center text-sm text-gray-500">
-                <p>Pagamento seguro processado via Stripe e Zelle</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
+
+        {/* Modal para solicitar CPF (Parcelow) */}
+        <Dialog open={showCPFModal} onOpenChange={setShowCPFModal}>
+          <DialogContent className="sm:max-w-md bg-white">
+            <DialogHeader>
+              <DialogTitle>Informação Necessária</DialogTitle>
+              <DialogDescription>
+                A Parcelow exige o seu CPF para processar pagamentos parcelados para o Brasil.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col space-y-4 py-4">
+              <div className="grid w-full items-center gap-1.5">
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  type="text"
+                  id="cpf"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter className="sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowCPFModal(false)}
+                className="bg-gray-100 hover:bg-gray-200"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                onClick={handleUpdateCPF}
+                disabled={isUpdatingCPF || !cpf}
+              >
+                {isUpdatingCPF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Continuar para Pagamento"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

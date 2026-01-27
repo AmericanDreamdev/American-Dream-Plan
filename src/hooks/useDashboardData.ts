@@ -44,6 +44,12 @@ export const useDashboardData = (): UseDashboardDataReturn => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Emails que devem aparecer apenas em ambiente local (localhost)
+  const HIDDEN_IN_PRODUCTION_EMAILS = [
+    "admin@323network.com",
+    "antoniocruzgomes940@gmail.com",
+  ];
+
   const transformData = (
     leadsData: RawLead[],
     termAcceptancesData: RawTermAcceptance[],
@@ -369,10 +375,28 @@ export const useDashboardData = (): UseDashboardDataReturn => {
         clientPlansData || []
       );
 
-      setUsers(transformedData);
+      // Em produção, ocultar alguns usuários específicos da listagem do dashboard.
+      // Em localhost continuamos vendo todos para facilitar testes.
+      const isLocalhost =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1");
+
+      const filteredUsers = isLocalhost
+        ? transformedData
+        : transformedData.filter(
+            (user) => {
+              const email = user.email || "";
+              const isHiddenEmail = HIDDEN_IN_PRODUCTION_EMAILS.includes(email);
+              const isUorakEmail = email.toLowerCase().endsWith("@uorak.com");
+              return !isHiddenEmail && !isUorakEmail;
+            }
+          );
+
+      setUsers(filteredUsers);
 
       // Calcular estatísticas
-      const calculatedStats = calculateStats(transformedData);
+      const calculatedStats = calculateStats(filteredUsers);
       calculatedStats.totalConsultationForms = enrichedForms.length;
       setStats(calculatedStats);
     } catch (err: any) {

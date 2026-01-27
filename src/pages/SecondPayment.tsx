@@ -454,12 +454,6 @@ const SecondPayment = () => {
             {/* Métodos de pagamento renderizados baseado no país */}
             {renderPaymentMethods()}
 
-            <div className="mt-6 space-y-2">
-              <div className="text-center text-sm text-gray-500">
-                <p>Pagamento seguro processado via Stripe e Zelle</p>
-                <p className="mt-2 font-semibold text-gray-700">Esta é a segunda parcela da consultoria American Dream</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

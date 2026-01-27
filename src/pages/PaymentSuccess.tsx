@@ -22,9 +22,26 @@ const PaymentSuccess = () => {
   const checkPaymentStatus = (paymentData: any): boolean => {
     if (!paymentData) return false;
     
-    // Pagamento confirmado se status for 'completed'
-    if (paymentData.status === 'completed') {
+    // Status confirmados: 'completed' (Stripe), 'paid' (Parcelow), 'zelle_confirmed' (Zelle)
+    const confirmedStatuses = ['completed', 'paid', 'zelle_confirmed'];
+    if (confirmedStatuses.includes(paymentData.status)) {
       return true;
+    }
+    
+    // Para InfinitePay, verificar metadata
+    if (paymentData.status === 'redirected_to_infinitepay') {
+      const metadata = paymentData.metadata || {};
+      if (metadata.infinitepay_confirmed === true || metadata.infinitepay_paid === true) {
+        return true;
+      }
+    }
+    
+    // Para Zelle redirecionado, verificar metadata
+    if (paymentData.status === 'redirected_to_zelle') {
+      const metadata = paymentData.metadata || {};
+      if (metadata.zelle_confirmed === true || metadata.zelle_paid === true) {
+        return true;
+      }
     }
     
     // Para PIX, verificar se está pendente mas pode estar aguardando confirmação
@@ -34,6 +51,12 @@ const PaymentSuccess = () => {
     // Se for PIX e estiver pendente, ainda não está confirmado
     if (isPix && paymentData.status === 'pending') {
       return false;
+    }
+    
+    // Para Parcelow, verificar status específico
+    const isParcelow = paymentData.metadata?.payment_method === 'parcelow';
+    if (isParcelow && paymentData.status === 'pending') {
+      return false; // Aguardando confirmação via webhook
     }
     
     return false;
@@ -69,12 +92,37 @@ const PaymentSuccess = () => {
   const fetchPaymentInfo = async () => {
     const leadId = searchParams.get("lead_id");
     const termAcceptanceId = searchParams.get("term_acceptance_id");
+    const paymentId = searchParams.get("payment_id");
+    const method = searchParams.get("method");
 
     try {
       let payment = null;
 
+      // Se tiver payment_id (Parcelow ou outros métodos), buscar por payment_id primeiro
+      if (paymentId) {
+        console.log("Fetching payment by payment_id:", paymentId);
+        const { data, error } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("id", paymentId)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error fetching payment by payment_id:", error);
+        } else if (data) {
+          payment = data;
+          setPayment(data);
+          console.log("Payment found by payment_id:", data.id, "Status:", data.status);
+          
+          // Se for Parcelow e estiver pendente, pode precisar aguardar webhook
+          if (method === "parcelow" && data.status === "pending") {
+            console.log("Parcelow payment pending, will wait for webhook confirmation");
+          }
+        }
+      }
+
       // Se tiver session_id, buscar por session_id (Stripe card/PIX direto)
-      if (sessionId) {
+      if (!payment && sessionId) {
         const { data, error } = await supabase
           .from("payments")
           .select("*")
@@ -153,11 +201,35 @@ const PaymentSuccess = () => {
         const confirmed = checkPaymentStatus(payment);
         setIsPaymentConfirmed(confirmed);
         
-        // Se não estiver confirmado e for PIX, iniciar polling
-        if (!confirmed && (payment.metadata?.payment_method === 'pix' || payment.metadata?.requested_payment_method === 'pix')) {
+        console.log("Payment status check:", {
+          paymentId: payment.id,
+          status: payment.status,
+          confirmed,
+          method: method || payment.metadata?.payment_method,
+        });
+        
+        // Se não estiver confirmado e for PIX ou Parcelow, iniciar polling
+        const isParcelow = method === "parcelow" || payment.metadata?.payment_method === 'parcelow';
+        const isPix = payment.metadata?.payment_method === 'pix' || payment.metadata?.requested_payment_method === 'pix';
+        
+        if (!confirmed && (isPix || isParcelow)) {
+          console.log("Starting polling for payment:", {
+            isParcelow,
+            isPix,
+            currentPolling: isPolling,
+            attempts: pollingAttemptsRef.current,
+          });
+          
           if (!isPolling && pollingAttemptsRef.current < maxPollingAttempts) {
             setIsPolling(true);
             startPolling();
+          }
+        } else if (confirmed) {
+          console.log("Payment already confirmed, stopping any polling");
+          setIsPolling(false);
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
           }
         }
       }
@@ -210,6 +282,25 @@ const PaymentSuccess = () => {
           }
         }
 
+        // Se tiver payment_id no polling, buscar por ele primeiro (prioridade para Parcelow)
+        const currentPaymentId = searchParams.get("payment_id");
+        if (!payment && currentPaymentId) {
+          console.log(`Polling: Fetching payment by payment_id: ${currentPaymentId}`);
+          const { data } = await supabase
+            .from("payments")
+            .select("*")
+            .eq("id", currentPaymentId)
+            .maybeSingle();
+          
+          if (data) {
+            payment = data;
+            currentSessionId = data.stripe_session_id || null;
+            console.log(`Polling: Found payment by payment_id, status: ${data.status}`);
+          } else {
+            console.log(`Polling: Payment not found by payment_id: ${currentPaymentId}`);
+          }
+        }
+
         if (!payment && leadId && termAcceptanceId) {
           const { data } = await supabase
             .from("payments")
@@ -227,8 +318,9 @@ const PaymentSuccess = () => {
         }
 
         if (payment) {
-          // Se estiver pendente e tiver session_id, verificar no Stripe
-          if (payment.status === "pending" && currentSessionId) {
+          // Se estiver pendente e tiver session_id, verificar no Stripe (apenas para Stripe, não Parcelow)
+          const isParcelow = payment.metadata?.payment_method === 'parcelow';
+          if (payment.status === "pending" && currentSessionId && !isParcelow) {
             const verified = await verifyStripeSession(currentSessionId);
             
             if (verified) {
@@ -248,7 +340,15 @@ const PaymentSuccess = () => {
           setPayment(payment);
           const confirmed = checkPaymentStatus(payment);
           
+          console.log(`Polling attempt ${pollingAttemptsRef.current}:`, {
+            paymentId: payment.id,
+            status: payment.status,
+            confirmed,
+            method: payment.metadata?.payment_method,
+          });
+          
           if (confirmed) {
+            console.log("✅ Payment confirmed! Stopping polling.");
             setIsPaymentConfirmed(true);
             setIsPolling(false);
             // Parar polling quando confirmado
@@ -257,6 +357,8 @@ const PaymentSuccess = () => {
               pollingIntervalRef.current = null;
             }
           }
+        } else {
+          console.log(`Polling attempt ${pollingAttemptsRef.current}: Payment not found`);
         }
       } catch (err) {
         console.error("Error polling payment status:", err);
@@ -276,7 +378,9 @@ const PaymentSuccess = () => {
     };
   }, [sessionId, searchParams]);
 
-  // Determinar se é PIX
+  // Determinar método de pagamento
+  const method = searchParams.get("method");
+  const isParcelow = method === "parcelow" || payment?.metadata?.payment_method === 'parcelow';
   const isPix = payment?.metadata?.payment_method === 'pix' || 
                 payment?.metadata?.requested_payment_method === 'pix';
 
@@ -329,7 +433,7 @@ const PaymentSuccess = () => {
                 </p>
               </>
             )
-          ) : isPix && isPolling ? (
+          ) : (isPix || isParcelow) && isPolling ? (
             <>
                 <div className="flex justify-center">
                   <Loader2 className="w-16 h-16 sm:w-20 sm:h-20 text-[#0575E6] mx-auto animate-spin" />
@@ -338,7 +442,9 @@ const PaymentSuccess = () => {
                   Aguardando Confirmação do Pagamento
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl text-gray-700 px-2">
-                Estamos verificando o pagamento PIX. Isso pode levar alguns minutos.
+                {isParcelow 
+                  ? "Estamos verificando o pagamento Parcelow. Isso pode levar alguns minutos."
+                  : "Estamos verificando o pagamento PIX. Isso pode levar alguns minutos."}
               </p>
                 <div className="mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg mx-2">
                   <p className="text-xs sm:text-sm text-blue-800">
@@ -365,19 +471,28 @@ const PaymentSuccess = () => {
             <div className="mt-6 sm:mt-8 space-y-3 sm:space-y-4 px-2">
             {/* Mostrar botão apenas se o pagamento estiver confirmado */}
             {/* Mostrar botão apenas se o pagamento estiver confirmado e não for a segunda parcela */}
-            {isPaymentConfirmed && !isSecondPayment && (sessionId || searchParams.get("lead_id")) && searchParams.get("lead_id") && (
-              <Button
-                onClick={() => {
-                  const leadId = searchParams.get("lead_id");
-                  const paymentId = payment?.id || searchParams.get("payment_id") || "temp";
-                  const finalSessionId = sessionId || searchParams.get("session_id");
-                  navigate(`/consultation-form?lead_id=${leadId}&payment_id=${paymentId}${finalSessionId ? `&session_id=${finalSessionId}` : ''}`);
-                }}
-                  className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base py-6 sm:py-7"
-                size="lg"
-              >
-                Preencher Formulário de Consultoria
-              </Button>
+            {isPaymentConfirmed && !isSecondPayment && (
+              (() => {
+                const leadId = searchParams.get("lead_id") || payment?.lead_id;
+                const paymentId = payment?.id || searchParams.get("payment_id") || "temp";
+                const finalSessionId = sessionId || searchParams.get("session_id");
+                
+                // Se tiver lead_id (direto ou do payment), mostrar botão
+                if (leadId) {
+                  return (
+                    <Button
+                      onClick={() => {
+                        navigate(`/consultation-form?lead_id=${leadId}&payment_id=${paymentId}${finalSessionId ? `&session_id=${finalSessionId}` : ''}`);
+                      }}
+                      className="w-full bg-gradient-to-r from-[#0575E6] to-[#021B79] hover:from-[#0685F6] hover:to-[#032B89] text-white font-semibold shadow-lg hover:shadow-xl transition-all text-sm sm:text-base py-6 sm:py-7"
+                      size="lg"
+                    >
+                      Preencher Formulário de Consultoria
+                    </Button>
+                  );
+                }
+                return null;
+              })()
             )}
             <Button
               onClick={() => navigate("/client/login")}
